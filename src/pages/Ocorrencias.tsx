@@ -655,71 +655,145 @@ const Ocorrencias = () => {
         <div className={
           viewMode === 'grid' 
             ? "grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-            : "space-y-4"
+            : "space-y-2"
         }>
           {filteredOcorrencias.map((ocorrencia) => (
-            <Card key={ocorrencia.id} className={viewMode === 'list' ? "p-4" : ""}>
-              <CardHeader className={viewMode === 'list' ? "pb-2" : ""}>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg line-clamp-2">
-                      {ocorrencia.tipo_ocorrencia}
-                    </CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      {ocorrencia.local_mapa_grade || "Local não informado"}
-                    </CardDescription>
+            viewMode === 'grid' ? (
+              // Visualização em Card (Grid)
+              <Card key={ocorrencia.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg line-clamp-2">
+                        {ocorrencia.tipo_ocorrencia}
+                      </CardTitle>
+                      <CardDescription className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        {ocorrencia.local_mapa_grade || "Local não informado"}
+                      </CardDescription>
+                    </div>
+                    <Badge variant="secondary">{ocorrencia.equipe}</Badge>
                   </div>
-                  <Badge variant="secondary">{ocorrencia.equipe}</Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Data</p>
-                    <p className="font-medium">
-                      {format(new Date(ocorrencia.data_ocorrencia), "dd/MM/yyyy", { locale: ptBR })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Acionamento</p>
-                    <p className="font-medium">{ocorrencia.hora_acionamento}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <div className="text-center">
-                    <p className="text-muted-foreground">Bombeiros</p>
-                    <div className="flex items-center justify-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span className="font-medium">{ocorrencia.quantidade_bombeiros}</span>
+                </CardHeader>
+                
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Data</p>
+                      <p className="font-medium">
+                        {format(new Date(ocorrencia.data_ocorrencia), "dd/MM/yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Acionamento</p>
+                      <p className="font-medium">{ocorrencia.hora_acionamento}</p>
                     </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-muted-foreground">Vítimas</p>
-                    <span className="font-medium">{ocorrencia.quantidade_vitimas}</span>
+
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="text-center">
+                      <p className="text-muted-foreground">Bombeiros</p>
+                      <div className="flex items-center justify-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="font-medium">{ocorrencia.quantidade_bombeiros}</span>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground">Vítimas</p>
+                      <span className="font-medium">{ocorrencia.quantidade_vitimas}</span>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground">Óbitos</p>
+                      <span className="font-medium text-destructive">{ocorrencia.quantidade_obitos}</span>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-muted-foreground">Óbitos</p>
-                    <span className="font-medium text-destructive">{ocorrencia.quantidade_obitos}</span>
+
+                  {ocorrencia.tempo_gasto_minutos && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span>Duração: {Math.floor(ocorrencia.tempo_gasto_minutos / 60)}h {ocorrencia.tempo_gasto_minutos % 60}min</span>
+                    </div>
+                  )}
+
+                  {ocorrencia.descricao_inicial && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {ocorrencia.descricao_inicial}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              // Visualização em Lista (Linha única)
+              <Card key={ocorrencia.id} className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    {/* Data */}
+                    <div className="min-w-[80px] text-sm">
+                      <p className="font-medium">
+                        {format(new Date(ocorrencia.data_ocorrencia), "dd/MM", { locale: ptBR })}
+                      </p>
+                    </div>
+                    
+                    {/* Hora */}
+                    <div className="min-w-[60px] text-sm text-muted-foreground">
+                      {ocorrencia.hora_acionamento}
+                    </div>
+                    
+                    {/* Equipe */}
+                    <Badge variant="secondary" className="min-w-fit">
+                      {ocorrencia.equipe}
+                    </Badge>
+                    
+                    {/* Tipo de Ocorrência */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {ocorrencia.tipo_ocorrencia}
+                      </p>
+                    </div>
+                    
+                    {/* Local */}
+                    <div className="min-w-[80px] text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span className="truncate">
+                          {ocorrencia.local_mapa_grade || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Duração */}
+                    <div className="min-w-[60px] text-sm text-muted-foreground">
+                      {ocorrencia.tempo_gasto_minutos ? (
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {Math.floor(ocorrencia.tempo_gasto_minutos / 60)}h{ocorrencia.tempo_gasto_minutos % 60}m
+                          </span>
+                        </div>
+                      ) : (
+                        "N/A"
+                      )}
+                    </div>
+                    
+                    {/* Estatísticas */}
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3 text-muted-foreground" />
+                        <span className="font-medium">{ocorrencia.quantidade_bombeiros}</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        V: {ocorrencia.quantidade_vitimas}
+                      </div>
+                      {ocorrencia.quantidade_obitos > 0 && (
+                        <div className="text-destructive font-medium">
+                          Ó: {ocorrencia.quantidade_obitos}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                {ocorrencia.tempo_gasto_minutos && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>Duração: {Math.floor(ocorrencia.tempo_gasto_minutos / 60)}h {ocorrencia.tempo_gasto_minutos % 60}min</span>
-                  </div>
-                )}
-
-                {ocorrencia.descricao_inicial && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {ocorrencia.descricao_inicial}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+              </Card>
+            )
           ))}
         </div>
       )}
