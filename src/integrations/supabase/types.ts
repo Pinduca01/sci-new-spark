@@ -23,6 +23,7 @@ export type Database = {
           data_aso: string | null
           data_curso_habilitacao: string | null
           data_vencimento_credenciamento: string | null
+          data_vencimento_cve: string | null
           documentos_certificados: string[] | null
           email: string
           equipe: string | null
@@ -48,6 +49,7 @@ export type Database = {
           data_aso?: string | null
           data_curso_habilitacao?: string | null
           data_vencimento_credenciamento?: string | null
+          data_vencimento_cve?: string | null
           documentos_certificados?: string[] | null
           email: string
           equipe?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           data_aso?: string | null
           data_curso_habilitacao?: string | null
           data_vencimento_credenciamento?: string | null
+          data_vencimento_cve?: string | null
           documentos_certificados?: string[] | null
           email?: string
           equipe?: string | null
