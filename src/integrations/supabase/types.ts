@@ -18,14 +18,24 @@ export type Database = {
         Row: {
           avatar: string
           created_at: string
+          cve: string | null
           data_admissao: string
+          data_aso: string | null
+          data_curso_habilitacao: string | null
+          data_vencimento_credenciamento: string | null
+          documentos_certificados: string[] | null
           email: string
+          equipe: string | null
+          ferista: boolean | null
           funcao: string
           funcao_completa: string
           id: string
+          matricula: string | null
           nome: string
+          proxima_atualizacao: string | null
           status: string
           telefone: string
+          telefone_sos: string | null
           turno: string
           updated_at: string
           user_id: string
@@ -33,14 +43,24 @@ export type Database = {
         Insert: {
           avatar: string
           created_at?: string
+          cve?: string | null
           data_admissao: string
+          data_aso?: string | null
+          data_curso_habilitacao?: string | null
+          data_vencimento_credenciamento?: string | null
+          documentos_certificados?: string[] | null
           email: string
+          equipe?: string | null
+          ferista?: boolean | null
           funcao: string
           funcao_completa: string
           id?: string
+          matricula?: string | null
           nome: string
+          proxima_atualizacao?: string | null
           status?: string
           telefone: string
+          telefone_sos?: string | null
           turno: string
           updated_at?: string
           user_id: string
@@ -48,14 +68,24 @@ export type Database = {
         Update: {
           avatar?: string
           created_at?: string
+          cve?: string | null
           data_admissao?: string
+          data_aso?: string | null
+          data_curso_habilitacao?: string | null
+          data_vencimento_credenciamento?: string | null
+          documentos_certificados?: string[] | null
           email?: string
+          equipe?: string | null
+          ferista?: boolean | null
           funcao?: string
           funcao_completa?: string
           id?: string
+          matricula?: string | null
           nome?: string
+          proxima_atualizacao?: string | null
           status?: string
           telefone?: string
+          telefone_sos?: string | null
           turno?: string
           updated_at?: string
           user_id?: string
