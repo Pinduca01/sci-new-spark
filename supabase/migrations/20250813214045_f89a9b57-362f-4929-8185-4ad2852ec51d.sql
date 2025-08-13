@@ -1,0 +1,51 @@
+-- Limpar dados fictícios existentes
+DELETE FROM bombeiros;
+
+-- Inserir os funcionários reais da empresa
+INSERT INTO bombeiros (
+    nome, email, telefone, funcao, funcao_completa, equipe, status, turno, 
+    matricula, data_admissao, avatar, user_id, ferista
+) VALUES
+-- Funcionários da equipe ALFA
+('ARIDELCIO ARAUJO DO NASCIMENTO', 'aridelcio.nascimento@aeroporto.gov.br', '(62) 99999-0001', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Delta', 'ativo', 'manha', '001', '2020-01-15', 'AN', gen_random_uuid(), false),
+('BRENO AUGUSTO MARANHÃO', 'breno.maranhao@aeroporto.gov.br', '(62) 99999-0002', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Alfa', 'ativo', 'tarde', '002', '2019-05-10', 'BM', gen_random_uuid(), false),
+('CAMILA GODOY SILVA', 'camila.silva@aeroporto.gov.br', '(62) 99999-0003', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Delta', 'ativo', 'noite', '003', '2021-03-20', 'CS', gen_random_uuid(), false),
+('CARMEN LÍDIA MASCARENHAS', 'carmen.mascarenhas@aeroporto.gov.br', '(62) 99999-0004', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Charlie', 'ativo', 'manha', '004', '2020-08-12', 'CM', gen_random_uuid(), false),
+('DIEGO DE JESUS RODRIGUES', 'diego.rodrigues@aeroporto.gov.br', '(62) 99999-0005', 'BA-CE', 'Chefe de Equipe (BA-CE)', 'Delta', 'ativo', 'tarde', '005', '2018-11-30', 'DR', gen_random_uuid(), false),
+('GABRIEL ARAÚJO LOPES', 'gabriel.lopes@aeroporto.gov.br', '(62) 99999-0006', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Charlie', 'ativo', 'noite', '006', '2019-07-18', 'GL', gen_random_uuid(), false),
+('GABRIEL FERREIRA GONÇALVES', 'gabriel.goncalves@aeroporto.gov.br', '(62) 99999-0007', 'BA-LR', 'Líder de Resgate (BA-LR)', 'Delta', 'ativo', 'manha', '007', '2020-02-14', 'GG', gen_random_uuid(), false),
+('GABRIEL MARTINS DE ABREU', 'gabriel.abreu@aeroporto.gov.br', '(62) 99999-0008', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Bravo', 'ativo', 'tarde', '008', '2021-09-05', 'GA', gen_random_uuid(), false),
+('GEDIAEL SANTOS FERREIRA', 'gediael.ferreira@aeroporto.gov.br', '(62) 99999-0009', 'BA-CE', 'Chefe de Equipe (BA-CE)', 'Bravo', 'ativo', 'noite', '009', '2018-04-22', 'GF', gen_random_uuid(), false),
+('GUSTAVO ALVES DE SOUZA', 'gustavo.souza@aeroporto.gov.br', '(62) 99999-0010', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Bravo', 'ativo', 'manha', '010', '2020-12-03', 'GS', gen_random_uuid(), false),
+('HELI DE ALMEIDA NERES', 'heli.neres@aeroporto.gov.br', '(62) 99999-0011', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Charlie', 'ativo', 'tarde', '011', '2019-10-25', 'HN', gen_random_uuid(), false),
+('HENRIQUE ELER ASSUNÇÃO PINTO', 'henrique.pinto@aeroporto.gov.br', '(62) 99999-0012', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Charlie', 'ativo', 'noite', '012', '2021-01-17', 'HP', gen_random_uuid(), false),
+('IGOR ALMEIDA DOS SANTOS', 'igor.santos@aeroporto.gov.br', '(62) 99999-0013', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Charlie', 'ativo', 'manha', '013', '2020-06-08', 'IS', gen_random_uuid(), false),
+('JEFFERSON PEREIRA LOYOLA DOS SANTOS', 'jefferson.santos@aeroporto.gov.br', '(62) 99999-0014', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Charlie', 'ativo', 'tarde', '014', '2019-12-11', 'JS', gen_random_uuid(), false),
+('JONATAZ JÚNIOR DA SILVA NASCIMENTO', 'jonataz.nascimento@aeroporto.gov.br', '(62) 99999-0015', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Alfa', 'ativo', 'noite', '015', '2020-04-07', 'JN', gen_random_uuid(), false),
+('JOSÉ ANTÔNIO DE MORAES LEAL', 'jose.leal@aeroporto.gov.br', '(62) 99999-0016', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Delta', 'ativo', 'manha', '016', '2018-08-19', 'JL', gen_random_uuid(), false),
+('KAIQUE CHARLES RATKEIVISZ', 'kaique.ratkeivisz@aeroporto.gov.br', '(62) 99999-0017', 'BA-LR', 'Líder de Resgate (BA-LR)', 'Charlie', 'ativo', 'tarde', '017', '2021-05-13', 'KR', gen_random_uuid(), false),
+('LAURA MARIA CARVALHAIS DE SOUZA', 'laura.souza@aeroporto.gov.br', '(62) 99999-0018', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Alfa', 'ativo', 'noite', '018', '2020-09-28', 'LS', gen_random_uuid(), false),
+('LEANDRO SOARES GARCIA', 'leandro.garcia@aeroporto.gov.br', '(62) 99999-0019', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Delta', 'ativo', 'manha', '019', '2019-03-06', 'LG', gen_random_uuid(), false),
+('LEONARDO FERREIRA DA SILVA', 'leonardo.silva@aeroporto.gov.br', '(62) 99999-0020', 'BA-CE', 'Chefe de Equipe (BA-CE)', 'Charlie', 'ativo', 'tarde', '020', '2018-07-24', 'LS', gen_random_uuid(), false),
+('LUIS FERNANDO ABDON NUNES JÚNIOR', 'luis.nunes@aeroporto.gov.br', '(62) 99999-0021', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Bravo', 'ativo', 'noite', '021', '2020-11-15', 'LN', gen_random_uuid(), false),
+('MARCOS VINÍCIUS SILVA OLIVEIRA', 'marcos.oliveira@aeroporto.gov.br', '(62) 99999-0022', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Bravo', 'ativo', 'manha', '022', '2021-02-09', 'MO', gen_random_uuid(), false),
+('MATHEUS GOMES DOS SANTOS', 'matheus.santos@aeroporto.gov.br', '(62) 99999-0023', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Charlie', 'ativo', 'tarde', '023', '2019-08-31', 'MS', gen_random_uuid(), false),
+('MAXWELL ALVES LOPES', 'maxwell.lopes@aeroporto.gov.br', '(62) 99999-0024', 'BA-LR', 'Líder de Resgate (BA-LR)', 'Alfa', 'ativo', 'noite', '024', '2020-05-16', 'ML', gen_random_uuid(), false),
+('NÁRIA SANTANA DA SILVA', 'naria.silva@aeroporto.gov.br', '(62) 99999-0025', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Delta', 'ativo', 'manha', '025', '2018-12-04', 'NS', gen_random_uuid(), false),
+('NILTON DE SOUZA CABRAL FILHO', 'nilton.cabral@aeroporto.gov.br', '(62) 99999-0026', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Alfa', 'ativo', 'tarde', '026', '2021-06-20', 'NC', gen_random_uuid(), false),
+('PAULO AUGUSTO CARDOSO NORONHA', 'paulo.noronha@aeroporto.gov.br', '(62) 99999-0027', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Bravo', 'ativo', 'noite', '027', '2019-04-14', 'PN', gen_random_uuid(), false),
+('PAULO CÉSAR DA SILVA OLIVEIRA', 'paulo.oliveira@aeroporto.gov.br', '(62) 99999-0028', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Delta', 'ativo', 'manha', '028', '2020-10-01', 'PO', gen_random_uuid(), false),
+('PEDRO HENRIQUE NUNES RAMOS', 'pedro.ramos@aeroporto.gov.br', '(62) 99999-0029', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Delta', 'ativo', 'tarde', '029', '2018-09-27', 'PR', gen_random_uuid(), false),
+('RAFAEL BATISTA JUNQUEIRA', 'rafael.junqueira@aeroporto.gov.br', '(62) 99999-0030', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Alfa', 'ativo', 'noite', '030', '2021-07-12', 'RJ', gen_random_uuid(), true),
+('RICARDO RODRIGUES GONÇALVES', 'ricardo.goncalves@aeroporto.gov.br', '(62) 99999-0031', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Alfa', 'ativo', 'manha', '031', '2020-01-23', 'RG', gen_random_uuid(), false),
+('ROGÉRIO ALVES MARTINS', 'rogerio.martins@aeroporto.gov.br', '(62) 99999-0032', 'BA-LR', 'Líder de Resgate (BA-LR)', 'Bravo', 'ativo', 'tarde', '032', '2019-11-08', 'RM', gen_random_uuid(), false),
+('RONAN MARTINS DA COSTA', 'ronan.costa@aeroporto.gov.br', '(62) 99999-0033', 'BA-CE', 'Chefe de Equipe (BA-CE)', 'Alfa', 'ativo', 'noite', '033', '2018-05-15', 'RC', gen_random_uuid(), false),
+('RONILDO TEODORO DA SILVA JÚNIOR', 'ronildo.silva@aeroporto.gov.br', '(62) 99999-0034', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Alfa', 'ativo', 'manha', '034', '2020-08-29', 'RS', gen_random_uuid(), false),
+('SÍLVIO CÉSAR FERNANDES FILHO', 'silvio.fernandes@aeroporto.gov.br', '(62) 99999-0035', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Delta', 'ativo', 'tarde', '035', '2021-04-05', 'SF', gen_random_uuid(), false),
+('SÍLVIO PASSOS DA SILVA', 'silvio.silva@aeroporto.gov.br', '(62) 99999-0036', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Alfa', 'ativo', 'noite', '036', '2019-06-18', 'SS', gen_random_uuid(), false),
+('THAIS CRISTINA', 'thais.cristina@aeroporto.gov.br', '(62) 99999-0037', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Alfa', 'ativo', 'manha', '037', '2020-12-21', 'TC', gen_random_uuid(), true),
+('THIAGO DE SOUZA MONTEIRO', 'thiago.monteiro@aeroporto.gov.br', '(62) 99999-0038', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Charlie', 'ativo', 'tarde', '038', '2018-10-13', 'TM', gen_random_uuid(), false),
+('VICTOR ANTUNES BRETAS', 'victor.bretas@aeroporto.gov.br', '(62) 99999-0039', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Bravo', 'ativo', 'noite', '039', '2021-08-07', 'VB', gen_random_uuid(), false),
+('VINÍCIUS LOPES DOS SANTOS', 'vinicius.santos@aeroporto.gov.br', '(62) 99999-0040', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Bravo', 'ativo', 'manha', '040', '2020-03-26', 'VS', gen_random_uuid(), false),
+('WDSON JUNIOR PINHEIRO DA SILVA', 'wdson.silva@aeroporto.gov.br', '(62) 99999-0041', 'BA-MC', 'Motorista Condutor (BA-MC)', 'Alfa', 'ativo', 'tarde', '041', '2019-09-11', 'WS', gen_random_uuid(), false),
+('ZACARIAS KEVIN VIEIRA NUNES', 'zacarias.nunes@aeroporto.gov.br', '(62) 99999-0042', 'BA-2', 'Bombeiro de Aeródromo (BA-2)', 'Bravo', 'ativo', 'noite', '042', '2021-01-30', 'ZN', gen_random_uuid(), false);
