@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Clock, Users, AlertTriangle, Grid, List, MapPin, Filter, Bot, Sparkles } from "lucide-react";
+import { Plus, Search, Clock, Users, AlertTriangle, Grid, List, MapPin, Filter } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -82,9 +82,7 @@ const Ocorrencias = () => {
   const [bombeiros, setBombeiros] = useState<Bombeiro[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [aiText, setAiText] = useState("");
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -537,7 +535,7 @@ const Ocorrencias = () => {
                 {/* Descrições */}
                 <div className="space-y-4 border rounded-lg p-4">
                   <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
-                    <Sparkles className="h-5 w-5" />
+                    <AlertTriangle className="h-5 w-5" />
                     Descrições
                   </h3>
                   
@@ -581,61 +579,6 @@ const Ocorrencias = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Botão de IA - apenas quando modal está aberto */}
-        {isModalOpen && (
-          <div className="fixed top-1/2 right-6 z-50 transform -translate-y-1/2">
-            <Dialog open={isAiModalOpen} onOpenChange={setIsAiModalOpen}>
-              <DialogTrigger asChild>
-                <Button 
-                  size="lg" 
-                  className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0 animate-pulse"
-                >
-                  <Bot className="h-6 w-6" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Bot className="h-5 w-5 text-purple-600" />
-                    Assistente de IA - Correção de Textos
-                  </DialogTitle>
-                  <DialogDescription>
-                    Cole seu texto aqui e nossa IA irá corrigir erros de gramática, ortografia e melhorar a estrutura
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Texto a ser corrigido:</label>
-                    <Textarea
-                      value={aiText}
-                      onChange={(e) => setAiText(e.target.value)}
-                      placeholder="Cole aqui o texto que deseja corrigir..."
-                      rows={6}
-                      className="mt-2"
-                    />
-                  </div>
-                  
-                  <div className="flex justify-end gap-3">
-                    <Button type="button" variant="outline" onClick={() => setIsAiModalOpen(false)}>
-                      Fechar
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        // Aqui seria integrada a IA para correção de textos
-                        toast.success("Funcionalidade de IA será implementada em breve!");
-                      }}
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Corrigir Texto
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        )}
       </div>
 
 
