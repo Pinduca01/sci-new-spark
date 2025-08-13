@@ -142,6 +142,13 @@ const ControlePessoal: React.FC = () => {
     setLoading(true);
 
     try {
+      console.log('Iniciando cadastro de bombeiro:', formData);
+      
+      // Validar campos obrigatórios
+      if (!formData.nome || !formData.email || !formData.telefone || !formData.funcao || !formData.turno || !formData.data_admissao) {
+        throw new Error('Preencha todos os campos obrigatórios');
+      }
+
       // Generate avatar from name
       const names = formData.nome.trim().split(' ').filter(name => name.length > 0);
       const avatar = names.length >= 2 
@@ -149,16 +156,40 @@ const ControlePessoal: React.FC = () => {
         : formData.nome.trim().substring(0, 2).toUpperCase();
 
       const bombeiroData = {
-        ...formData,
-        user_id: crypto.randomUUID(), // Temporary user_id
+        nome: formData.nome,
+        matricula: formData.matricula || null,
+        email: formData.email,
+        telefone: formData.telefone,
+        telefone_sos: formData.telefone_sos || null,
+        funcao: formData.funcao,
+        funcao_completa: formData.funcao_completa,
+        equipe: formData.equipe,
+        status: formData.status,
+        turno: formData.turno,
+        ferista: formData.ferista,
+        data_admissao: formData.data_admissao,
+        data_curso_habilitacao: formData.data_curso_habilitacao || null,
+        data_vencimento_credenciamento: formData.data_vencimento_credenciamento || null,
+        proxima_atualizacao: formData.proxima_atualizacao || null,
+        data_aso: formData.data_aso || null,
+        data_vencimento_cve: formData.data_vencimento_cve || null,
+        documentos_certificados: formData.documentos_certificados.length > 0 ? formData.documentos_certificados : null,
+        user_id: crypto.randomUUID(),
         avatar,
       };
 
-      const { error } = await supabase
+      console.log('Dados a serem inseridos:', bombeiroData);
+
+      const { data, error } = await supabase
         .from('bombeiros')
         .insert([bombeiroData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro do Supabase:', error);
+        throw error;
+      }
+
+      console.log('Bombeiro inserido com sucesso:', data);
 
       toast({
         title: "Sucesso",
@@ -191,7 +222,7 @@ const ControlePessoal: React.FC = () => {
       console.error('Erro ao adicionar bombeiro:', error);
       toast({
         title: "Erro",
-        description: "Erro ao adicionar bombeiro.",
+        description: error instanceof Error ? error.message : "Erro ao adicionar bombeiro.",
         variant: "destructive",
       });
     } finally {
