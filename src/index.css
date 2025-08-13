@@ -119,6 +119,18 @@ All colors MUST be HSL.
     --card: 220 15% 9%;
     --card-foreground: 0 0% 100%;
     --gradient-glass: linear-gradient(135deg, hsl(var(--coal-black) / 0.9), hsl(var(--coal-black) / 0.7));
+    
+    /* Gradients para dark mode */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--radiant-orange)), hsl(var(--radiant-orange) / 0.8));
+    --gradient-abstract: linear-gradient(135deg, hsl(var(--radiant-orange) / 0.1), hsl(var(--radiant-orange) / 0.05));
+    
+    /* Shadows para dark mode */
+    --shadow-glass: 0 8px 32px hsl(var(--pure-white) / 0.1);
+    --shadow-elegant: 0 20px 25px -5px hsl(var(--pure-white) / 0.1), 0 10px 10px -5px hsl(var(--pure-white) / 0.04);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 }
 

@@ -110,7 +110,7 @@ const Login = () => {
               SCI-Core
             </CardTitle>
             <CardDescription className="text-base mt-2">
-              Acesse sua plataforma de gestão científica
+              Sistema de Gestão para Seção Contraincêndio
             </CardDescription>
           </div>
         </CardHeader>
@@ -122,7 +122,7 @@ const Login = () => {
                 E-mail
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5 z-10" />
                 <Input
                   id="email"
                   type="email"
@@ -140,7 +140,7 @@ const Login = () => {
                 Senha
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground/70 w-5 h-5 z-10" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -153,7 +153,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-foreground/70 hover:text-foreground transition-colors z-10"
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -180,7 +180,7 @@ const Login = () => {
       {/* Footer */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-center">
         <p className="text-sm text-muted-foreground">
-          SCI-Core © 2024 - Plataforma de Gestão Científica
+          SCI-Core © 2024 - Sistema de Gestão para Seção Contraincêndio
         </p>
       </div>
     </div>
