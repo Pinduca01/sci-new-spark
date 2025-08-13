@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Clock, Users, AlertTriangle, Grid, List, MapPin, Filter } from "lucide-react";
+import { Plus, Search, Clock, Users, AlertTriangle, Grid, List, MapPin, Filter, Bot, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -82,7 +82,9 @@ const Ocorrencias = () => {
   const [bombeiros, setBombeiros] = useState<Bombeiro[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [aiText, setAiText] = useState("");
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -99,6 +101,8 @@ const Ocorrencias = () => {
   });
 
   const selectedEquipe = form.watch("equipe");
+  const horaAcionamento = form.watch("hora_acionamento");
+  const horaTermino = form.watch("hora_termino");
 
   useEffect(() => {
     fetchOcorrencias();
@@ -237,12 +241,15 @@ const Ocorrencias = () => {
             </DialogHeader>
             
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                  {/* Informações Iniciais */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Informações Iniciais</h3>
-                    
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {/* Informações Iniciais */}
+                <div className="space-y-4 border rounded-lg p-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                    <MapPin className="h-5 w-5" />
+                    Informações Iniciais
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="tipo_ocorrencia"
@@ -286,7 +293,7 @@ const Ocorrencias = () => {
                       control={form.control}
                       name="data_ocorrencia"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="md:col-span-2">
                           <FormLabel>Data da Ocorrência</FormLabel>
                           <FormControl>
                             <Input {...field} type="date" />
@@ -296,11 +303,16 @@ const Ocorrencias = () => {
                       )}
                     />
                   </div>
+                </div>
 
-                  {/* Horários */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Controle de Horários</h3>
-                    
+                {/* Controle de Horários */}
+                <div className="space-y-4 border rounded-lg p-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                    <Clock className="h-5 w-5" />
+                    Controle de Horários
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="hora_acionamento"
@@ -343,13 +355,37 @@ const Ocorrencias = () => {
                       )}
                     />
                   </div>
+
+                  {/* Caixa de Duração */}
+                  {horaAcionamento && horaTermino && (
+                    <div className="mt-4 p-3 bg-secondary/20 rounded-lg border border-secondary">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Clock className="h-4 w-4 text-primary" />
+                        <span>Duração Total da Ocorrência:</span>
+                        <span className="text-primary font-bold">
+                          {(() => {
+                            const duracao = calculateTempoGasto(horaAcionamento, horaTermino);
+                            if (duracao !== null && duracao >= 0) {
+                              const horas = Math.floor(duracao / 60);
+                              const minutos = duracao % 60;
+                              return `${horas}h ${minutos}min`;
+                            }
+                            return "Calcular duração";
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Equipe e Recursos */}
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Equipe e Recursos</h3>
-                    
+                <div className="space-y-4 border rounded-lg p-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                    <Users className="h-5 w-5" />
+                    Equipe e Recursos
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="equipe"
@@ -419,11 +455,45 @@ const Ocorrencias = () => {
                         </FormItem>
                       )}
                     />
-                  </div>
 
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Dados da Ocorrência</h3>
-                    
+                    <FormField
+                      control={form.control}
+                      name="viaturas"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Viaturas Utilizadas</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Ex: AB-01, AR-02" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="equipamentos"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Equipamentos Utilizados</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Ex: Espuma, Mangueiras, EPIs" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Dados da Ocorrência */}
+                <div className="space-y-4 border rounded-lg p-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                    <AlertTriangle className="h-5 w-5" />
+                    Dados da Ocorrência
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="quantidade_vitimas"
@@ -461,40 +531,15 @@ const Ocorrencias = () => {
                         </FormItem>
                       )}
                     />
-
-                    <FormField
-                      control={form.control}
-                      name="viaturas"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Viaturas Utilizadas</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Ex: AB-01, AR-02" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="equipamentos"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Equipamentos Utilizados</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Ex: Espuma, Mangueiras, EPIs" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
                 </div>
 
                 {/* Descrições */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Descrições</h3>
+                <div className="space-y-4 border rounded-lg p-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                    <Sparkles className="h-5 w-5" />
+                    Descrições
+                  </h3>
                   
                   <FormField
                     control={form.control}
@@ -533,6 +578,60 @@ const Ocorrencias = () => {
                 </div>
               </form>
             </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Botão Flutuante de IA */}
+      <div className="fixed top-20 right-6 z-50">
+        <Dialog open={isAiModalOpen} onOpenChange={setIsAiModalOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              size="lg" 
+              className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0"
+            >
+              <Bot className="h-6 w-6" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-purple-600" />
+                Assistente de IA - Correção de Textos
+              </DialogTitle>
+              <DialogDescription>
+                Cole seu texto aqui e nossa IA irá corrigir erros de gramática, ortografia e melhorar a estrutura
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Texto a ser corrigido:</label>
+                <Textarea
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                  placeholder="Cole aqui o texto que deseja corrigir..."
+                  rows={6}
+                  className="mt-2"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => setIsAiModalOpen(false)}>
+                  Fechar
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // Aqui seria integrada a IA para correção de textos
+                    toast.success("Funcionalidade de IA será implementada em breve!");
+                  }}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Corrigir Texto
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
