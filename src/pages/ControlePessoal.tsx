@@ -1,105 +1,85 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { 
-  Search, 
-  Plus, 
-  Users, 
-  UserCheck, 
-  UserX, 
-  MoreVertical,
-  Mail,
-  Phone,
-  Calendar as CalendarIcon,
-  Car,
-  Shield,
-  Wrench,
-  Clipboard,
-  UserCog,
-  Star,
-  FileText
-} from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Filter, MoreHorizontal, Users, UserCheck, Calendar, AlertTriangle, Eye, Edit, Trash2, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { DocumentUpload } from '@/components/DocumentUpload';
+import { BombeiroDetailsModal } from '@/components/BombeiroDetailsModal';
+import { BombeiroEditModal } from '@/components/BombeiroEditModal';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-type Bombeiro = {
+interface Bombeiro {
   id: string;
   nome: string;
+  matricula?: string;
   email: string;
   telefone: string;
   telefone_sos?: string;
-  matricula: string;
   funcao: string;
   funcao_completa: string;
-  equipe: string;
+  equipe?: string;
   status: string;
-  data_admissao: string;
   turno: string;
-  ferista: boolean;
+  ferista?: boolean;
+  data_admissao: string;
   data_curso_habilitacao?: string;
   data_vencimento_credenciamento?: string;
+  data_vencimento_cve?: string;
   proxima_atualizacao?: string;
-  cve?: string;
   data_aso?: string;
+  cve?: string;
   documentos_certificados?: string[];
-  avatar: string;
-};
+  created_at: string;
+  updated_at: string;
+}
 
-const ControlePessoal = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("todos");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+const ControlePessoal: React.FC = () => {
   const [bombeiros, setBombeiros] = useState<Bombeiro[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('todos');
+  const [funcaoFilter, setFuncaoFilter] = useState('todas');
+  const [equipeFilter, setEquipeFilter] = useState('todas');
+  const [feristaFilter, setFeristaFilter] = useState('todos');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedBombeiro, setSelectedBombeiro] = useState<Bombeiro | null>(null);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const [newPersonnel, setNewPersonnel] = useState({
-    nome: "",
-    email: "",
-    telefone: "",
-    telefone_sos: "",
-    matricula: "",
-    funcao: "",
-    equipe: "",
-    status: "Ativo",
-    dataAdmissao: null as Date | null,
-    turno: "",
+
+  const [formData, setFormData] = useState({
+    nome: '',
+    matricula: '',
+    email: '',
+    telefone: '',
+    telefone_sos: '',
+    funcao: '',
+    funcao_completa: '',
+    equipe: 'Alfa',
+    status: 'ativo',
+    turno: '',
     ferista: false,
-    dataCursoHabilitacao: null as Date | null,
-    dataVencimentoCredenciamento: null as Date | null,
-    proximaAtualizacao: null as Date | null,
-    cve: "",
-    dataAso: null as Date | null,
-    documentos: ""
+    data_admissao: '',
+    data_curso_habilitacao: '',
+    data_vencimento_credenciamento: '',
+    data_vencimento_cve: '',
+    proxima_atualizacao: '',
+    data_aso: '',
+    cve: '',
+    documentos_certificados: [] as string[],
   });
 
-  // Buscar bombeiros do Supabase
   useEffect(() => {
     fetchBombeiros();
   }, []);
@@ -117,7 +97,102 @@ const ControlePessoal = () => {
       console.error('Erro ao buscar bombeiros:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar os dados dos bombeiros.",
+        description: "Erro ao carregar dados dos bombeiros.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredPersonnel = bombeiros.filter(person => {
+    const matchesSearch = person.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         person.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (person.matricula && person.matricula.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesStatus = statusFilter === 'todos' || person.status === statusFilter;
+    const matchesFuncao = funcaoFilter === 'todas' || person.funcao === funcaoFilter;
+    const matchesEquipe = equipeFilter === 'todas' || person.equipe === equipeFilter;
+    const matchesFerista = feristaFilter === 'todos' || 
+                          (feristaFilter === 'sim' && person.ferista) ||
+                          (feristaFilter === 'nao' && !person.ferista);
+
+    return matchesSearch && matchesStatus && matchesFuncao && matchesEquipe && matchesFerista;
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'ativo': return 'bg-green-100 text-green-800 border-green-200';
+      case 'ferias': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'licenca_medica': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'afastamento': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getFuncaoIcon = (funcao: string) => {
+    return UserCheck;
+  };
+
+  const formatDate = (date: string | null) => {
+    if (!date) return '-';
+    return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
+  };
+
+  const handleAddPersonnel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Generate avatar from name
+      const names = formData.nome.split(' ');
+      const avatar = names.length >= 2 
+        ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+        : formData.nome.substring(0, 2).toUpperCase();
+
+      const bombeiroData = {
+        ...formData,
+        user_id: crypto.randomUUID(), // Temporary user_id
+        avatar,
+      };
+
+      const { error } = await supabase
+        .from('bombeiros')
+        .insert([bombeiroData]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Bombeiro adicionado com sucesso.",
+      });
+
+      setIsDialogOpen(false);
+      setFormData({
+        nome: '',
+        matricula: '',
+        email: '',
+        telefone: '',
+        telefone_sos: '',
+        funcao: '',
+        funcao_completa: '',
+        equipe: 'Alfa',
+        status: 'ativo',
+        turno: '',
+        ferista: false,
+        data_admissao: '',
+        data_curso_habilitacao: '',
+        data_vencimento_credenciamento: '',
+        data_vencimento_cve: '',
+        proxima_atualizacao: '',
+        data_aso: '',
+        cve: '',
+        documentos_certificados: [],
+      });
+      fetchBombeiros();
+    } catch (error) {
+      console.error('Erro ao adicionar bombeiro:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar bombeiro.",
         variant: "destructive",
       });
     } finally {
@@ -125,222 +200,125 @@ const ControlePessoal = () => {
     }
   };
 
-  const filteredPersonnel = bombeiros.filter(person => {
-    const matchesSearch = person.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         person.funcao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         person.matricula.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = selectedFilter === "todos" || person.status === selectedFilter;
-    
-    return matchesSearch && matchesFilter;
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "Férias":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Atestado":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "Licença":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getFuncaoIcon = (funcao: string) => {
-    switch (funcao) {
-      case "GS":
-        return Clipboard;
-      case "BA-CE":
-        return Shield;
-      case "BA-LR":
-        return Wrench;
-      case "BA-MC":
-        return Car;
-      case "BA-2":
-        return UserCog;
-      default:
-        return UserCog;
-    }
-  };
-
-  const handleAddPersonnel = async () => {
+  const handleDeleteBombeiro = async (id: string) => {
     try {
-      // Gerar iniciais do avatar a partir do nome
-      const names = newPersonnel.nome.split(' ');
-      const avatar = names.length >= 2 
-        ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
-        : newPersonnel.nome.substring(0, 2).toUpperCase();
-
-      // Mapear função para função completa
-      const funcaoCompletaMap: Record<string, string> = {
-        'GS': 'Gerente de Seção',
-        'BA-CE': 'Chefe de Equipe',
-        'BA-LR': 'Líder de Resgate',
-        'BA-MC': 'Motorista Condutor',
-        'BA-2': 'Bombeiro de Aeródromo'
-      };
-
       const { error } = await supabase
         .from('bombeiros')
-        .insert({
-          user_id: crypto.randomUUID(),
-          nome: newPersonnel.nome,
-          email: newPersonnel.email,
-          telefone: newPersonnel.telefone,
-          telefone_sos: newPersonnel.telefone_sos,
-          matricula: newPersonnel.matricula,
-          funcao: newPersonnel.funcao,
-          funcao_completa: funcaoCompletaMap[newPersonnel.funcao] || newPersonnel.funcao,
-          equipe: newPersonnel.equipe,
-          status: newPersonnel.status,
-          turno: newPersonnel.turno,
-          data_admissao: newPersonnel.dataAdmissao?.toISOString().split('T')[0],
-          ferista: newPersonnel.ferista,
-          data_curso_habilitacao: newPersonnel.dataCursoHabilitacao?.toISOString().split('T')[0],
-          data_vencimento_credenciamento: newPersonnel.dataVencimentoCredenciamento?.toISOString().split('T')[0],
-          proxima_atualizacao: newPersonnel.proximaAtualizacao?.toISOString().split('T')[0],
-          cve: newPersonnel.cve,
-          data_aso: newPersonnel.dataAso?.toISOString().split('T')[0],
-          documentos_certificados: newPersonnel.documentos ? [newPersonnel.documentos] : [],
-          avatar
-        });
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
 
       toast({
         title: "Sucesso",
-        description: "Bombeiro adicionado com sucesso!",
+        description: "Bombeiro removido com sucesso.",
       });
 
-      // Recarregar lista
       fetchBombeiros();
-      setIsDialogOpen(false);
-      setNewPersonnel({
-        nome: "",
-        email: "",
-        telefone: "",
-        telefone_sos: "",
-        matricula: "",
-        funcao: "",
-        equipe: "",
-        status: "Ativo",
-        dataAdmissao: null,
-        turno: "",
-        ferista: false,
-        dataCursoHabilitacao: null,
-        dataVencimentoCredenciamento: null,
-        proximaAtualizacao: null,
-        cve: "",
-        dataAso: null,
-        documentos: ""
-      });
     } catch (error) {
-      console.error('Erro ao adicionar bombeiro:', error);
+      console.error('Erro ao remover bombeiro:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível adicionar o bombeiro.",
+        description: "Erro ao remover bombeiro.",
         variant: "destructive",
       });
     }
   };
 
-  // Estatísticas
-  const totalAtivos = bombeiros.filter(p => p.status === "Ativo").length;
-  const totalFerias = bombeiros.filter(p => p.status === "Férias").length;
-  const totalAtestados = bombeiros.filter(p => p.status === "Atestado").length;
-  const totalFeristas = bombeiros.filter(p => p.ferista).length;
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-complete funcao_completa based on funcao
+      if (field === 'funcao') {
+        newData.funcao_completa = value === 'GS' ? 'Guarda-Vida Supervisor' :
+                                  value === 'BA-CE' ? 'Bombeiro Aquático - Condutor Embarcação' :
+                                  value === 'BA-LR' ? 'Bombeiro Aquático - Lifeguard de Resgate' :
+                                  value === 'BA-VS' ? 'Bombeiro Aquático - Vigilante de Surf' :
+                                  value === 'APH' ? 'Atendimento Pré-Hospitalar' :
+                                  value === 'MERGULHO' ? 'Mergulho Aquático' : value;
+      }
+      
+      return newData;
+    });
+  };
+
+  const totalPessoal = bombeiros.length;
+  const pessoalAtivo = bombeiros.filter(p => p.status === 'ativo').length;
+  const pessoalFerias = bombeiros.filter(p => p.status === 'ferias').length;
+  const feristas = bombeiros.filter(p => p.ferista).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between bg-gradient-to-r from-primary/5 to-primary/10 p-6 rounded-xl border border-primary/10">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Controle de Pessoal
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Gestão completa da equipe da Seção Contraincêndio
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Controle de Pessoal</h1>
+          <p className="text-muted-foreground">
+            Gerencie o pessoal do Corpo de Bombeiros
           </p>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {bombeiros.length} Colaboradores
-            </span>
-            <span className="flex items-center gap-1">
-              <UserCheck className="w-4 h-4 text-green-600" />
-              {totalAtivos} Ativos
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="w-4 h-4 text-yellow-600" />
-              {totalFeristas} Feristas
-            </span>
-          </div>
         </div>
-        
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 px-6 py-3 text-base font-medium">
-              <Plus className="w-5 h-5 mr-2" />
-              Adicionar Novo Bombeiro
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Bombeiro
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-primary">Adicionar Novo Bombeiro</DialogTitle>
+              <DialogTitle>Adicionar Novo Bombeiro</DialogTitle>
               <DialogDescription>
-                Preencha os dados do novo colaborador
+                Preencha as informações do novo bombeiro.
               </DialogDescription>
             </DialogHeader>
-            
-            <div className="grid gap-6 py-4">
+            <form onSubmit={handleAddPersonnel} className="space-y-6">
               {/* Dados Pessoais */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  Dados Pessoais
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <h3 className="font-semibold text-lg">Dados Pessoais</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     <Label htmlFor="nome">Nome Completo *</Label>
                     <Input
                       id="nome"
-                      placeholder="Digite o nome completo"
-                      value={newPersonnel.nome}
-                      onChange={(e) => setNewPersonnel({...newPersonnel, nome: e.target.value})}
+                      value={formData.nome}
+                      onChange={(e) => handleInputChange('nome', e.target.value)}
+                      required
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="telefone">Telefone *</Label>
+                  <div>
+                    <Label htmlFor="matricula">Matrícula</Label>
                     <Input
-                      id="telefone"
-                      placeholder="(11) 99999-9999"
-                      value={newPersonnel.telefone}
-                      onChange={(e) => setNewPersonnel({...newPersonnel, telefone: e.target.value})}
+                      id="matricula"
+                      value={formData.matricula}
+                      onChange={(e) => handleInputChange('matricula', e.target.value)}
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                  <div>
+                    <Label htmlFor="email">E-mail *</Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="email@aeroporto.gov.br"
-                      value={newPersonnel.email}
-                      onChange={(e) => setNewPersonnel({...newPersonnel, email: e.target.value})}
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      required
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="telefone">Telefone *</Label>
+                    <Input
+                      id="telefone"
+                      value={formData.telefone}
+                      onChange={(e) => handleInputChange('telefone', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="telefone_sos">Telefone SOS</Label>
                     <Input
                       id="telefone_sos"
-                      placeholder="(11) 99999-9999"
-                      value={newPersonnel.telefone_sos}
-                      onChange={(e) => setNewPersonnel({...newPersonnel, telefone_sos: e.target.value})}
+                      value={formData.telefone_sos}
+                      onChange={(e) => handleInputChange('telefone_sos', e.target.value)}
                     />
                   </div>
                 </div>
@@ -348,40 +326,33 @@ const ControlePessoal = () => {
 
               {/* Dados Funcionais */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  Dados Funcionais
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="matricula">Matrícula *</Label>
-                    <Input
-                      id="matricula"
-                      placeholder="000001"
-                      value={newPersonnel.matricula}
-                      onChange={(e) => setNewPersonnel({...newPersonnel, matricula: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
+                <h3 className="font-semibold text-lg">Dados Funcionais</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     <Label htmlFor="funcao">Função *</Label>
-                    <Select value={newPersonnel.funcao} onValueChange={(value) => setNewPersonnel({...newPersonnel, funcao: value})}>
+                    <Select
+                      value={formData.funcao}
+                      onValueChange={(value) => handleInputChange('funcao', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a função" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="GS">GS - Gerente de Seção</SelectItem>
-                        <SelectItem value="BA-CE">BA-CE - Chefe de Equipe</SelectItem>
-                        <SelectItem value="BA-LR">BA-LR - Líder de Resgate</SelectItem>
-                        <SelectItem value="BA-MC">BA-MC - Motorista Condutor</SelectItem>
-                        <SelectItem value="BA-2">BA-2 - Bombeiro de Aeródromo</SelectItem>
+                        <SelectItem value="GS">GS - Guarda-Vida Supervisor</SelectItem>
+                        <SelectItem value="BA-CE">BA-CE - Bombeiro Aquático - Condutor Embarcação</SelectItem>
+                        <SelectItem value="BA-LR">BA-LR - Bombeiro Aquático - Lifeguard de Resgate</SelectItem>
+                        <SelectItem value="BA-VS">BA-VS - Bombeiro Aquático - Vigilante de Surf</SelectItem>
+                        <SelectItem value="APH">APH - Atendimento Pré-Hospitalar</SelectItem>
+                        <SelectItem value="MERGULHO">MERGULHO - Mergulho Aquático</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="equipe">Equipe *</Label>
-                    <Select value={newPersonnel.equipe} onValueChange={(value) => setNewPersonnel({...newPersonnel, equipe: value})}>
+                  <div>
+                    <Label htmlFor="equipe">Equipe</Label>
+                    <Select
+                      value={formData.equipe}
+                      onValueChange={(value) => handleInputChange('equipe', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a equipe" />
                       </SelectTrigger>
@@ -393,475 +364,438 @@ const ControlePessoal = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="status">Status *</Label>
-                    <Select value={newPersonnel.status} onValueChange={(value) => setNewPersonnel({...newPersonnel, status: value})}>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => handleInputChange('status', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Ativo">Ativo</SelectItem>
-                        <SelectItem value="Licença">Licença</SelectItem>
-                        <SelectItem value="Atestado">Atestado</SelectItem>
-                        <SelectItem value="Férias">Férias</SelectItem>
+                        <SelectItem value="ativo">Ativo</SelectItem>
+                        <SelectItem value="ferias">Férias</SelectItem>
+                        <SelectItem value="licenca_medica">Licença Médica</SelectItem>
+                        <SelectItem value="afastamento">Afastamento</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="turno">Turno *</Label>
-                    <Select value={newPersonnel.turno} onValueChange={(value) => setNewPersonnel({...newPersonnel, turno: value})}>
+                    <Select
+                      value={formData.turno}
+                      onValueChange={(value) => handleInputChange('turno', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o turno" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Diurno">Diurno</SelectItem>
-                        <SelectItem value="Noturno">Noturno</SelectItem>
+                        <SelectItem value="manha">Manhã</SelectItem>
+                        <SelectItem value="tarde">Tarde</SelectItem>
+                        <SelectItem value="noite">Noite</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Data de Admissão *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newPersonnel.dataAdmissao && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newPersonnel.dataAdmissao ? format(newPersonnel.dataAdmissao, "dd/MM/yyyy") : "Selecione a data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={newPersonnel.dataAdmissao || undefined}
-                          onSelect={(date) => setNewPersonnel({...newPersonnel, dataAdmissao: date || null})}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
+                  <div>
+                    <Label htmlFor="cve">CVE (Condutor de Veículos de Emergência)</Label>
+                    <Input
+                      id="cve"
+                      value={formData.cve}
+                      onChange={(e) => handleInputChange('cve', e.target.value)}
+                      placeholder="Número do CVE"
+                    />
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="ferista" 
-                    checked={newPersonnel.ferista} 
-                    onCheckedChange={(checked) => setNewPersonnel({...newPersonnel, ferista: !!checked})}
-                  />
-                  <Label htmlFor="ferista">É ferista</Label>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="ferista"
+                      checked={formData.ferista}
+                      onCheckedChange={(checked) => handleInputChange('ferista', checked)}
+                    />
+                    <Label htmlFor="ferista">Ferista</Label>
+                  </div>
                 </div>
               </div>
 
-              {/* Datas e Certificações */}
+              {/* Datas Importantes */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  Certificações e Datas
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Data do Curso de Habilitação</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newPersonnel.dataCursoHabilitacao && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newPersonnel.dataCursoHabilitacao ? format(newPersonnel.dataCursoHabilitacao, "dd/MM/yyyy") : "Selecione a data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={newPersonnel.dataCursoHabilitacao || undefined}
-                          onSelect={(date) => setNewPersonnel({...newPersonnel, dataCursoHabilitacao: date || null})}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Data do Vencimento do Credenciamento</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newPersonnel.dataVencimentoCredenciamento && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newPersonnel.dataVencimentoCredenciamento ? format(newPersonnel.dataVencimentoCredenciamento, "dd/MM/yyyy") : "Selecione a data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={newPersonnel.dataVencimentoCredenciamento || undefined}
-                          onSelect={(date) => setNewPersonnel({...newPersonnel, dataVencimentoCredenciamento: date || null})}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Próxima Atualização</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newPersonnel.proximaAtualizacao && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newPersonnel.proximaAtualizacao ? format(newPersonnel.proximaAtualizacao, "dd/MM/yyyy") : "Selecione a data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={newPersonnel.proximaAtualizacao || undefined}
-                          onSelect={(date) => setNewPersonnel({...newPersonnel, proximaAtualizacao: date || null})}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Data do ASO</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newPersonnel.dataAso && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {newPersonnel.dataAso ? format(newPersonnel.dataAso, "dd/MM/yyyy") : "Selecione a data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={newPersonnel.dataAso || undefined}
-                          onSelect={(date) => setNewPersonnel({...newPersonnel, dataAso: date || null})}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-                {newPersonnel.funcao === "BA-MC" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="cve">CVE (Carteira de Veículo de Emergência)</Label>
+                <h3 className="font-semibold text-lg">Datas Importantes</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="data_admissao">Data de Admissão *</Label>
                     <Input
-                      id="cve"
-                      placeholder="Número da CVE"
-                      value={newPersonnel.cve}
-                      onChange={(e) => setNewPersonnel({...newPersonnel, cve: e.target.value})}
+                      id="data_admissao"
+                      type="date"
+                      value={formData.data_admissao}
+                      onChange={(e) => handleInputChange('data_admissao', e.target.value)}
+                      required
                     />
                   </div>
-                )}
+                  <div>
+                    <Label htmlFor="data_curso_habilitacao">Data Curso Habilitação</Label>
+                    <Input
+                      id="data_curso_habilitacao"
+                      type="date"
+                      value={formData.data_curso_habilitacao}
+                      onChange={(e) => handleInputChange('data_curso_habilitacao', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="data_vencimento_credenciamento">Vencimento Credenciamento</Label>
+                    <Input
+                      id="data_vencimento_credenciamento"
+                      type="date"
+                      value={formData.data_vencimento_credenciamento}
+                      onChange={(e) => handleInputChange('data_vencimento_credenciamento', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="data_vencimento_cve">Vencimento CVE</Label>
+                    <Input
+                      id="data_vencimento_cve"
+                      type="date"
+                      value={formData.data_vencimento_cve}
+                      onChange={(e) => handleInputChange('data_vencimento_cve', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="proxima_atualizacao">Próxima Atualização</Label>
+                    <Input
+                      id="proxima_atualizacao"
+                      type="date"
+                      value={formData.proxima_atualizacao}
+                      onChange={(e) => handleInputChange('proxima_atualizacao', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="data_aso">Data ASO</Label>
+                    <Input
+                      id="data_aso"
+                      type="date"
+                      value={formData.data_aso}
+                      onChange={(e) => handleInputChange('data_aso', e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Documentos */}
               <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  Documentos e Certificados
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="documentos">Observações sobre documentos</Label>
-                  <Textarea
-                    id="documentos"
-                    placeholder="Adicione informações sobre documentos e certificados..."
-                    value={newPersonnel.documentos}
-                    onChange={(e) => setNewPersonnel({...newPersonnel, documentos: e.target.value})}
-                  />
-                </div>
+                <h3 className="font-semibold text-lg">Documentos e Certificados</h3>
+                <DocumentUpload
+                  existingDocs={formData.documentos_certificados}
+                  onDocumentsChange={(docs) => handleInputChange('documentos_certificados', docs)}
+                />
               </div>
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleAddPersonnel} className="bg-primary hover:bg-primary/90">
-                Adicionar Colaborador
-              </Button>
-            </DialogFooter>
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Adicionando...' : 'Adicionar Bombeiro'}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="glass-card hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Efetivo</CardTitle>
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="h-6 w-6 text-primary" />
-            </div>
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Colaboradores</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{bombeiros.length}</div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Colaboradores registrados
-            </p>
+            <div className="text-2xl font-bold">{totalPessoal}</div>
+            <p className="text-xs text-muted-foreground">Bombeiros cadastrados</p>
           </CardContent>
         </Card>
-
-        <Card className="glass-card hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ativos</CardTitle>
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-              <UserCheck className="h-6 w-6 text-green-600" />
-            </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pessoal Ativo</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{totalAtivos}</div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Em atividade
-            </p>
+            <div className="text-2xl font-bold">{pessoalAtivo}</div>
+            <p className="text-xs text-muted-foreground">Em serviço ativo</p>
           </CardContent>
         </Card>
-
-        <Card className="glass-card hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Férias</CardTitle>
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <CalendarIcon className="h-6 w-6 text-blue-600" />
-            </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Férias</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{totalFerias}</div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Em período de férias
-            </p>
+            <div className="text-2xl font-bold">{pessoalFerias}</div>
+            <p className="text-xs text-muted-foreground">Em período de férias</p>
           </CardContent>
         </Card>
-
-        <Card className="glass-card hover:shadow-lg transition-all duration-300 border-l-4 border-l-yellow-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Feristas</CardTitle>
-            <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
-              <Star className="h-6 w-6 text-yellow-600" />
-            </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Feristas</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">{totalFeristas}</div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Colaboradores feristas
-            </p>
+            <div className="text-2xl font-bold">{feristas}</div>
+            <p className="text-xs text-muted-foreground">Bombeiros feristas</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros e Busca */}
-      <Card className="glass-card">
+      {/* Filters and Search */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-semibold">Controle de Efetivo</CardTitle>
-          <CardDescription>
-            Gerencie informações da equipe da seção contraincêndio
-          </CardDescription>
+          <CardTitle>Filtros e Busca</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Buscar por nome, função ou matrícula..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <CardContent className="space-y-4">
+          <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome, e-mail ou matrícula..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={selectedFilter === "todos" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedFilter("todos")}
-              >
-                Todos
-              </Button>
-              <Button
-                variant={selectedFilter === "Ativo" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedFilter("Ativo")}
-              >
-                Ativos
-              </Button>
-              <Button
-                variant={selectedFilter === "Férias" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedFilter("Férias")}
-              >
-                Férias
-              </Button>
-              <Button
-                variant={selectedFilter === "Atestado" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedFilter("Atestado")}
-              >
-                Atestados
-              </Button>
-              <Button
-                variant={selectedFilter === "Licença" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedFilter("Licença")}
-              >
-                Licenças
+            
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos Status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="ferias">Férias</SelectItem>
+                  <SelectItem value="licenca_medica">Licença Médica</SelectItem>
+                  <SelectItem value="afastamento">Afastamento</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={funcaoFilter} onValueChange={setFuncaoFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Função" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas Funções</SelectItem>
+                  <SelectItem value="GS">GS</SelectItem>
+                  <SelectItem value="BA-CE">BA-CE</SelectItem>
+                  <SelectItem value="BA-LR">BA-LR</SelectItem>
+                  <SelectItem value="BA-VS">BA-VS</SelectItem>
+                  <SelectItem value="APH">APH</SelectItem>
+                  <SelectItem value="MERGULHO">MERGULHO</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={equipeFilter} onValueChange={setEquipeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Equipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas Equipes</SelectItem>
+                  <SelectItem value="Alfa">Alfa</SelectItem>
+                  <SelectItem value="Bravo">Bravo</SelectItem>
+                  <SelectItem value="Charlie">Charlie</SelectItem>
+                  <SelectItem value="Delta">Delta</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={feristaFilter} onValueChange={setFeristaFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Ferista" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="sim">Feristas</SelectItem>
+                  <SelectItem value="nao">Não Feristas</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button variant="outline" onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('todos');
+                setFuncaoFilter('todas');
+                setEquipeFilter('todas');
+                setFeristaFilter('todos');
+              }}>
+                <Filter className="h-4 w-4 mr-2" />
+                Limpar
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabela de Pessoal */}
-      <Card className="glass-card">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Bombeiro</TableHead>
-                <TableHead>Matrícula</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Equipe</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Admissão</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    Carregando...
-                  </TableCell>
+      {/* Personnel Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Pessoal ({filteredPersonnel.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border/40 hover:bg-transparent">
+                  <TableHead className="h-8 px-2 text-xs font-medium text-muted-foreground">Nome</TableHead>
+                  <TableHead className="h-8 px-2 text-xs font-medium text-muted-foreground">Matrícula</TableHead>
+                  <TableHead className="h-8 px-2 text-xs font-medium text-muted-foreground">Função</TableHead>
+                  <TableHead className="h-8 px-2 text-xs font-medium text-muted-foreground">Equipe</TableHead>
+                  <TableHead className="h-8 px-2 text-xs font-medium text-muted-foreground">Status</TableHead>
+                  <TableHead className="h-8 px-2 text-xs font-medium text-muted-foreground">Contato</TableHead>
+                  <TableHead className="h-8 px-2 text-xs font-medium text-muted-foreground">Admissão</TableHead>
+                  <TableHead className="h-8 px-2 text-xs font-medium text-muted-foreground text-right">Ações</TableHead>
                 </TableRow>
-              ) : filteredPersonnel.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    Nenhum bombeiro encontrado
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredPersonnel.map((person) => {
+              </TableHeader>
+              <TableBody>
+                {filteredPersonnel.map((person) => {
                   const IconComponent = getFuncaoIcon(person.funcao);
                   return (
-                    <TableRow key={person.id} className="hover:bg-muted/50 transition-colors">
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary text-sm">
-                            {person.avatar}
+                    <TableRow key={person.id} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
+                      <TableCell className="py-2 px-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="flex-shrink-0">
+                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                              <IconComponent className="h-3 w-3 text-primary" />
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-medium flex items-center gap-2">
-                              {person.nome}
+                          <div className="min-w-0">
+                            <div className="flex items-center space-x-1">
+                              <p className="text-xs font-medium text-foreground truncate">{person.nome}</p>
                               {person.ferista && (
-                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
-                                  <Star className="w-3 h-3 mr-1" />
-                                  Ferista
+                                <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-[10px] px-1 py-0">
+                                  F
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-sm text-muted-foreground">{person.turno}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="font-mono text-sm">{person.matricula}</div>
+                      <TableCell className="py-2 px-2 text-xs text-muted-foreground">
+                        {person.matricula || '-'}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <IconComponent className="w-4 h-4 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium">{person.funcao}</div>
-                            <div className="text-sm text-muted-foreground">{person.funcao_completa}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-medium">
-                          {person.equipe}
+                      <TableCell className="py-2 px-2">
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">
+                          {person.funcao}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(person.status)}>
-                          {person.status}
+                      <TableCell className="py-2 px-2 text-xs text-muted-foreground">
+                        {person.equipe || '-'}
+                      </TableCell>
+                      <TableCell className="py-2 px-2">
+                        <Badge className={`${getStatusColor(person.status)} text-[10px] px-1 py-0`}>
+                          {person.status.replace('_', ' ').toUpperCase()}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1 text-sm">
-                            <Mail className="w-3 h-3" />
-                            {person.email}
-                          </div>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Phone className="w-3 h-3" />
-                            {person.telefone}
-                          </div>
+                      <TableCell className="py-2 px-2">
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-foreground">{person.telefone}</p>
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{person.email}</p>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <CalendarIcon className="w-3 h-3" />
-                          {new Date(person.data_admissao).toLocaleDateString('pt-BR')}
-                        </div>
+                      <TableCell className="py-2 px-2 text-xs text-muted-foreground">
+                        {formatDate(person.data_admissao)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2 px-2 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
+                            <Button variant="ghost" className="h-6 w-6 p-0">
+                              <span className="sr-only">Abrir menu</span>
+                              <MoreHorizontal className="h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-background border">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                              <FileText className="w-4 h-4 mr-2" />
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedBombeiro(person);
+                                setIsDetailsModalOpen(true);
+                              }}
+                            >
+                              <Eye className="mr-2 h-3 w-3" />
                               Ver detalhes
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedBombeiro(person);
+                                setIsEditModalOpen(true);
+                              }}
+                            >
+                              <Edit className="mr-2 h-3 w-3" />
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              Remover
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedBombeiro(person);
+                                setIsDetailsModalOpen(true);
+                              }}
+                            >
+                              <FileText className="mr-2 h-3 w-3" />
+                              Ver documentos
                             </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem
+                                  onSelect={(e) => e.preventDefault()}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-3 w-3" />
+                                  Remover
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirmar remoção</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja remover {person.nome}? Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteBombeiro(person.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Remover
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   );
-                })
-              )}
-            </TableBody>
-          </Table>
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          {filteredPersonnel.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Nenhum bombeiro encontrado.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <BombeiroDetailsModal
+        bombeiro={selectedBombeiro}
+        open={isDetailsModalOpen}
+        onOpenChange={setIsDetailsModalOpen}
+      />
+
+      <BombeiroEditModal
+        bombeiro={selectedBombeiro}
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        onSuccess={fetchBombeiros}
+      />
     </div>
   );
 };
