@@ -580,61 +580,64 @@ const Ocorrencias = () => {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Botão de IA - apenas quando modal está aberto */}
+        {isModalOpen && (
+          <div className="fixed top-1/2 right-6 z-50 transform -translate-y-1/2">
+            <Dialog open={isAiModalOpen} onOpenChange={setIsAiModalOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  size="lg" 
+                  className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0 animate-pulse"
+                >
+                  <Bot className="h-6 w-6" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-purple-600" />
+                    Assistente de IA - Correção de Textos
+                  </DialogTitle>
+                  <DialogDescription>
+                    Cole seu texto aqui e nossa IA irá corrigir erros de gramática, ortografia e melhorar a estrutura
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Texto a ser corrigido:</label>
+                    <Textarea
+                      value={aiText}
+                      onChange={(e) => setAiText(e.target.value)}
+                      placeholder="Cole aqui o texto que deseja corrigir..."
+                      rows={6}
+                      className="mt-2"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end gap-3">
+                    <Button type="button" variant="outline" onClick={() => setIsAiModalOpen(false)}>
+                      Fechar
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        // Aqui seria integrada a IA para correção de textos
+                        toast.success("Funcionalidade de IA será implementada em breve!");
+                      }}
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Corrigir Texto
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
       </div>
 
-      {/* Botão Flutuante de IA */}
-      <div className="fixed top-20 right-6 z-50">
-        <Dialog open={isAiModalOpen} onOpenChange={setIsAiModalOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              size="lg" 
-              className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0"
-            >
-              <Bot className="h-6 w-6" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-purple-600" />
-                Assistente de IA - Correção de Textos
-              </DialogTitle>
-              <DialogDescription>
-                Cole seu texto aqui e nossa IA irá corrigir erros de gramática, ortografia e melhorar a estrutura
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Texto a ser corrigido:</label>
-                <Textarea
-                  value={aiText}
-                  onChange={(e) => setAiText(e.target.value)}
-                  placeholder="Cole aqui o texto que deseja corrigir..."
-                  rows={6}
-                  className="mt-2"
-                />
-              </div>
-              
-              <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setIsAiModalOpen(false)}>
-                  Fechar
-                </Button>
-                <Button 
-                  onClick={() => {
-                    // Aqui seria integrada a IA para correção de textos
-                    toast.success("Funcionalidade de IA será implementada em breve!");
-                  }}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Corrigir Texto
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
 
       {/* Filtros e Busca */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
