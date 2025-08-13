@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { BombeiroDetailsModal } from '@/components/BombeiroDetailsModal';
 import { BombeiroEditModal } from '@/components/BombeiroEditModal';
+import { BombeiroDocumentsModal } from '@/components/BombeiroDocumentsModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -53,6 +54,7 @@ const ControlePessoal: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
   const [selectedBombeiro, setSelectedBombeiro] = useState<Bombeiro | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -414,9 +416,9 @@ const ControlePessoal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Datas Importantes */}
+              {/* Datas de Documentação */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Datas Importantes</h3>
+                <h3 className="font-semibold text-lg">Datas de Documentação</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="data_admissao">Data de Admissão *</Label>
@@ -718,7 +720,7 @@ const ControlePessoal: React.FC = () => {
                             <DropdownMenuItem
                               onClick={() => {
                                 setSelectedBombeiro(person);
-                                setIsDetailsModalOpen(true);
+                                setIsDocumentsModalOpen(true);
                               }}
                             >
                               <FileText className="mr-2 h-3 w-3" />
@@ -782,6 +784,12 @@ const ControlePessoal: React.FC = () => {
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         onSuccess={fetchBombeiros}
+      />
+
+      <BombeiroDocumentsModal
+        bombeiro={selectedBombeiro}
+        open={isDocumentsModalOpen}
+        onOpenChange={setIsDocumentsModalOpen}
       />
     </div>
   );

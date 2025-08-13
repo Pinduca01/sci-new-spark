@@ -235,6 +235,14 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="ferista"
+                  checked={formData.ferista || false}
+                  onCheckedChange={(checked) => handleInputChange('ferista', checked)}
+                />
+                <Label htmlFor="ferista">Ferista</Label>
+              </div>
               {formData.funcao === 'BA-MC' && (
                 <div>
                   <Label htmlFor="data_curso_cve">Data do Curso CVE</Label>
@@ -246,22 +254,14 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                   />
                 </div>
               )}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="ferista"
-                  checked={formData.ferista || false}
-                  onCheckedChange={(checked) => handleInputChange('ferista', checked)}
-                />
-                <Label htmlFor="ferista">Ferista</Label>
-              </div>
             </div>
           </div>
 
           <Separator />
 
-          {/* Datas Importantes */}
+          {/* Datas de Documentação */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Datas Importantes</h3>
+            <h3 className="font-semibold text-lg">Datas de Documentação</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="data_admissao">Data de Admissão *</Label>

@@ -137,7 +137,7 @@ export const BombeiroDetailsModal: React.FC<BombeiroDetailsModalProps> = ({
 
         {/* Certificações e Datas */}
         <div className="space-y-4">
-          <h3 className="font-semibold text-lg">Certificações e Datas Importantes</h3>
+          <h3 className="font-semibold text-lg">Certificações e Datas de Documentação</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Curso Habilitação</label>
