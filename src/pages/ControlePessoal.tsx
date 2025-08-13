@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Search, 
   Plus, 
@@ -13,7 +16,12 @@ import {
   MoreVertical,
   Mail,
   Phone,
-  Calendar
+  Calendar,
+  Car,
+  Shield,
+  Wrench,
+  Clipboard,
+  UserCog
 } from "lucide-react";
 import {
   Table,
@@ -111,6 +119,15 @@ const mockPersonnel = [
 const ControlePessoal = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("todos");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newPersonnel, setNewPersonnel] = useState({
+    nome: "",
+    email: "",
+    telefone: "",
+    funcao: "",
+    turno: "",
+    dataAdmissao: ""
+  });
 
   const filteredPersonnel = mockPersonnel.filter(person => {
     const matchesSearch = person.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -151,21 +168,35 @@ const ControlePessoal = () => {
     }
   };
 
-  const getFuncaoColor = (funcao: string) => {
+  const getFuncaoIcon = (funcao: string) => {
     switch (funcao) {
       case "GS":
-        return "bg-purple-100 text-purple-800 border-purple-200";
+        return Clipboard;
       case "BA-CE":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return Shield;
       case "BA-LR":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return Wrench;
       case "BA-MC":
-        return "bg-green-100 text-green-800 border-green-200";
+        return Car;
       case "BA-2":
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return UserCog;
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return UserCog;
     }
+  };
+
+  const handleAddPersonnel = () => {
+    // TODO: Implement add personnel logic
+    console.log("Adding personnel:", newPersonnel);
+    setIsDialogOpen(false);
+    setNewPersonnel({
+      nome: "",
+      email: "",
+      telefone: "",
+      funcao: "",
+      turno: "",
+      dataAdmissao: ""
+    });
   };
 
   // Estatísticas
@@ -176,68 +207,196 @@ const ControlePessoal = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Controle de Pessoal</h1>
-          <p className="text-muted-foreground">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between bg-gradient-to-r from-primary/5 to-primary/10 p-6 rounded-xl border border-primary/10">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Controle de Pessoal
+          </h1>
+          <p className="text-muted-foreground text-lg">
             Gestão completa da equipe da Seção Contraincêndio
           </p>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              {mockPersonnel.length} Colaboradores
+            </span>
+            <span className="flex items-center gap-1">
+              <UserCheck className="w-4 h-4 text-green-600" />
+              {totalAtivos} Ativos
+            </span>
+          </div>
         </div>
-        <Button className="glass bg-primary hover:bg-primary/90">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Colaborador
-        </Button>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 px-6 py-3 text-base font-medium">
+              <Plus className="w-5 h-5 mr-2" />
+              Adicionar Novo Bombeiro
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-primary">Adicionar Novo Bombeiro</DialogTitle>
+              <DialogDescription>
+                Preencha os dados do novo colaborador
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-6 py-4">
+              {/* Dados Pessoais */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  Dados Pessoais
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome">Nome Completo *</Label>
+                    <Input
+                      id="nome"
+                      placeholder="Digite o nome completo"
+                      value={newPersonnel.nome}
+                      onChange={(e) => setNewPersonnel({...newPersonnel, nome: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="telefone">Telefone *</Label>
+                    <Input
+                      id="telefone"
+                      placeholder="(11) 99999-9999"
+                      value={newPersonnel.telefone}
+                      onChange={(e) => setNewPersonnel({...newPersonnel, telefone: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="email@aeroporto.gov.br"
+                    value={newPersonnel.email}
+                    onChange={(e) => setNewPersonnel({...newPersonnel, email: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              {/* Dados Funcionais */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  Dados Funcionais
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="funcao">Função</Label>
+                    <Select value={newPersonnel.funcao} onValueChange={(value) => setNewPersonnel({...newPersonnel, funcao: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="BA-GS" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="GS">BA-GS</SelectItem>
+                        <SelectItem value="BA-CE">BA-CE</SelectItem>
+                        <SelectItem value="BA-LR">BA-LR</SelectItem>
+                        <SelectItem value="BA-MC">BA-MC</SelectItem>
+                        <SelectItem value="BA-2">BA-2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="turno">Turno</Label>
+                    <Select value={newPersonnel.turno} onValueChange={(value) => setNewPersonnel({...newPersonnel, turno: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Ativo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Diurno">Diurno</SelectItem>
+                        <SelectItem value="Noturno">Noturno</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dataAdmissao">Data de Admissão</Label>
+                  <Input
+                    id="dataAdmissao"
+                    type="date"
+                    value={newPersonnel.dataAdmissao}
+                    onChange={(e) => setNewPersonnel({...newPersonnel, dataAdmissao: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAddPersonnel} className="bg-primary hover:bg-primary/90">
+                Adicionar Colaborador
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Pessoal</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="glass-card hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Efetivo</CardTitle>
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockPersonnel.length}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold text-foreground">{mockPersonnel.length}</div>
+            <p className="text-sm text-muted-foreground mt-1">
               Colaboradores registrados
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ativos</CardTitle>
-            <UserCheck className="h-4 w-4 text-green-600" />
+        <Card className="glass-card hover:shadow-lg transition-all duration-300 border-l-4 border-l-green-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Ativos</CardTitle>
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+              <UserCheck className="h-6 w-6 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{totalAtivos}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold text-green-600">{totalAtivos}</div>
+            <p className="text-sm text-muted-foreground mt-1">
               Em atividade
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Férias</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-600" />
+        <Card className="glass-card hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Férias</CardTitle>
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+              <Calendar className="h-6 w-6 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{totalFerias}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold text-blue-600">{totalFerias}</div>
+            <p className="text-sm text-muted-foreground mt-1">
               Em período de férias
             </p>
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Afastados</CardTitle>
-            <UserX className="h-4 w-4 text-yellow-600" />
+        <Card className="glass-card hover:shadow-lg transition-all duration-300 border-l-4 border-l-yellow-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Afastados</CardTitle>
+            <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+              <UserX className="h-6 w-6 text-yellow-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{totalAfastados}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold text-yellow-600">{totalAfastados}</div>
+            <p className="text-sm text-muted-foreground mt-1">
               Afastamentos médicos
             </p>
           </CardContent>
@@ -247,7 +406,7 @@ const ControlePessoal = () => {
       {/* Filtros e Busca */}
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle>Lista de Pessoal</CardTitle>
+          <CardTitle className="text-xl font-semibold">Controle de Efetivo</CardTitle>
           <CardDescription>
             Gerencie informações da equipe da seção contraincêndio
           </CardDescription>
@@ -331,9 +490,15 @@ const ControlePessoal = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getFuncaoColor(person.funcao)}>
-                      {person.funcao}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const IconComponent = getFuncaoIcon(person.funcao);
+                        return <IconComponent className="w-4 h-4 text-foreground" />;
+                      })()}
+                      <Badge variant="outline" className="bg-background text-foreground border-border">
+                        {person.funcao}
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(person.status)}>

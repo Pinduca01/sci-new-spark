@@ -97,11 +97,14 @@ const adminItems = [
 
 export function AppSidebar({ userRole }: { userRole?: string }) {
   const { state } = useSidebar();
+  const [isHovered, setIsHovered] = useState(false);
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const currentPath = location.pathname;
+  
+  const showFull = !collapsed || isHovered;
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -135,15 +138,21 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
   };
 
   return (
-    <Sidebar className={`border-r border-border/50 bg-background/50 backdrop-blur-sm ${collapsed ? "w-16" : "w-64"}`}>
+    <Sidebar 
+      className={`border-r border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-300 ${
+        showFull ? "w-64" : "w-16"
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Header */}
       <SidebarHeader className="p-4 border-b border-border/50">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
             <Shield className="w-5 h-5 text-primary-foreground" />
           </div>
-          {!collapsed && (
-            <div>
+          {showFull && (
+            <div className="transition-opacity duration-200">
               <h2 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                 SCI-Core
               </h2>
@@ -158,7 +167,7 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
       <SidebarContent className="p-2">
         {/* Navegação Principal */}
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+          <SidebarGroupLabel className={showFull ? "" : "sr-only"}>
             Navegação Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -169,11 +178,11 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
                     <NavLink 
                       to={item.url} 
                       className={getNavCls}
-                      title={collapsed ? item.description : undefined}
+                      title={showFull ? undefined : item.description}
                     >
-                      <item.icon className="w-5 h-5" />
-                      {!collapsed && (
-                        <span className="font-medium">{item.title}</span>
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {showFull && (
+                        <span className="font-medium transition-opacity duration-200">{item.title}</span>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -185,7 +194,7 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
 
         {/* Gestão e Relatórios */}
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+          <SidebarGroupLabel className={showFull ? "" : "sr-only"}>
             Gestão & Relatórios
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -196,11 +205,11 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
                     <NavLink 
                       to={item.url} 
                       className={getNavCls}
-                      title={collapsed ? item.description : undefined}
+                      title={showFull ? undefined : item.description}
                     >
-                      <item.icon className="w-5 h-5" />
-                      {!collapsed && (
-                        <span className="font-medium">{item.title}</span>
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {showFull && (
+                        <span className="font-medium transition-opacity duration-200">{item.title}</span>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -213,7 +222,7 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
         {/* Administração - apenas para admin */}
         {userRole === 'admin' && (
           <SidebarGroup>
-            <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+            <SidebarGroupLabel className={showFull ? "" : "sr-only"}>
               Administração
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -224,11 +233,11 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
                       <NavLink 
                         to={item.url} 
                         className={getNavCls}
-                        title={collapsed ? item.description : undefined}
+                        title={showFull ? undefined : item.description}
                       >
-                        <item.icon className="w-5 h-5" />
-                        {!collapsed && (
-                          <span className="font-medium">{item.title}</span>
+                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                        {showFull && (
+                          <span className="font-medium transition-opacity duration-200">{item.title}</span>
                         )}
                       </NavLink>
                     </SidebarMenuButton>
@@ -244,13 +253,13 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
       <SidebarFooter className="p-2 border-t border-border/50">
         <Button
           variant="ghost"
-          size={collapsed ? "icon" : "sm"}
+          size={showFull ? "sm" : "icon"}
           onClick={handleLogout}
           className="w-full justify-start hover:bg-destructive/10 hover:text-destructive"
-          title={collapsed ? "Sair do sistema" : undefined}
+          title={showFull ? undefined : "Sair do sistema"}
         >
-          <LogOut className="w-5 h-5" />
-          {!collapsed && <span className="ml-2">Sair</span>}
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {showFull && <span className="ml-2 transition-opacity duration-200">Sair</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
