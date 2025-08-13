@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      bombeiros: {
+        Row: {
+          avatar: string
+          created_at: string
+          data_admissao: string
+          email: string
+          funcao: string
+          funcao_completa: string
+          id: string
+          nome: string
+          status: string
+          telefone: string
+          turno: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar: string
+          created_at?: string
+          data_admissao: string
+          email: string
+          funcao: string
+          funcao_completa: string
+          id?: string
+          nome: string
+          status?: string
+          telefone: string
+          turno: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar?: string
+          created_at?: string
+          data_admissao?: string
+          email?: string
+          funcao?: string
+          funcao_completa?: string
+          id?: string
+          nome?: string
+          status?: string
+          telefone?: string
+          turno?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

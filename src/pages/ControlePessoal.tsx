@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -40,86 +42,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Dados mockados para demonstração
-const mockPersonnel = [
-  {
-    id: 1,
-    nome: "João Silva Santos",
-    funcao: "GS",
-    funcaoCompleta: "Gerente de Seção",
-    status: "ativo",
-    email: "joao.santos@aeroporto.gov.br",
-    telefone: "(11) 99999-0001",
-    dataAdmissao: "2020-01-15",
-    turno: "Diurno",
-    avatar: "JS"
-  },
-  {
-    id: 2,
-    nome: "Maria Oliveira Costa",
-    funcao: "BA-CE",
-    funcaoCompleta: "Chefe de Equipe",
-    status: "ativo",
-    email: "maria.costa@aeroporto.gov.br",
-    telefone: "(11) 99999-0002",
-    dataAdmissao: "2021-03-10",
-    turno: "Noturno",
-    avatar: "MC"
-  },
-  {
-    id: 3,
-    nome: "Carlos Roberto Lima",
-    funcao: "BA-LR",
-    funcaoCompleta: "Líder de Resgate",
-    status: "ativo",
-    email: "carlos.lima@aeroporto.gov.br",
-    telefone: "(11) 99999-0003",
-    dataAdmissao: "2019-07-22",
-    turno: "Diurno",
-    avatar: "CL"
-  },
-  {
-    id: 4,
-    nome: "Ana Paula Ferreira",
-    funcao: "BA-MC",
-    funcaoCompleta: "Motorista Condutor",
-    status: "ativo",
-    email: "ana.ferreira@aeroporto.gov.br",
-    telefone: "(11) 99999-0004",
-    dataAdmissao: "2022-05-08",
-    turno: "Diurno",
-    avatar: "AF"
-  },
-  {
-    id: 5,
-    nome: "Pedro Henrique Souza",
-    funcao: "BA-2",
-    funcaoCompleta: "Bombeiro de Aeródromo",
-    status: "ativo",
-    email: "pedro.souza@aeroporto.gov.br",
-    telefone: "(11) 99999-0005",
-    dataAdmissao: "2023-01-20",
-    turno: "Noturno",
-    avatar: "PS"
-  },
-  {
-    id: 6,
-    nome: "Luciana Santos Rocha",
-    funcao: "BA-2",
-    funcaoCompleta: "Bombeiro de Aeródromo",
-    status: "ferias",
-    email: "luciana.rocha@aeroporto.gov.br",
-    telefone: "(11) 99999-0006",
-    dataAdmissao: "2023-08-15",
-    turno: "Diurno",
-    avatar: "LR"
-  }
-];
+type Bombeiro = {
+  id: string;
+  nome: string;
+  funcao: string;
+  funcao_completa: string;
+  status: string;
+  email: string;
+  telefone: string;
+  data_admissao: string;
+  turno: string;
+  avatar: string;
+};
 
 const ControlePessoal = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [bombeiros, setBombeiros] = useState<Bombeiro[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
   const [newPersonnel, setNewPersonnel] = useState({
     nome: "",
     email: "",
@@ -129,7 +71,33 @@ const ControlePessoal = () => {
     dataAdmissao: ""
   });
 
-  const filteredPersonnel = mockPersonnel.filter(person => {
+  // Buscar bombeiros do Supabase
+  useEffect(() => {
+    fetchBombeiros();
+  }, []);
+
+  const fetchBombeiros = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bombeiros')
+        .select('*')
+        .order('nome');
+
+      if (error) throw error;
+      setBombeiros(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar bombeiros:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os dados dos bombeiros.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredPersonnel = bombeiros.filter(person => {
     const matchesSearch = person.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          person.funcao.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -185,24 +153,70 @@ const ControlePessoal = () => {
     }
   };
 
-  const handleAddPersonnel = () => {
-    // TODO: Implement add personnel logic
-    console.log("Adding personnel:", newPersonnel);
-    setIsDialogOpen(false);
-    setNewPersonnel({
-      nome: "",
-      email: "",
-      telefone: "",
-      funcao: "",
-      turno: "",
-      dataAdmissao: ""
-    });
+  const handleAddPersonnel = async () => {
+    try {
+      // Gerar iniciais do avatar a partir do nome
+      const names = newPersonnel.nome.split(' ');
+      const avatar = names.length >= 2 
+        ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+        : newPersonnel.nome.substring(0, 2).toUpperCase();
+
+      // Mapear função para função completa
+      const funcaoCompletaMap: Record<string, string> = {
+        'GS': 'Gerente de Seção',
+        'BA-CE': 'Chefe de Equipe',
+        'BA-LR': 'Líder de Resgate',
+        'BA-MC': 'Motorista Condutor',
+        'BA-2': 'Bombeiro de Aeródromo'
+      };
+
+      const { error } = await supabase
+        .from('bombeiros')
+        .insert({
+          user_id: crypto.randomUUID(),
+          nome: newPersonnel.nome,
+          email: newPersonnel.email,
+          telefone: newPersonnel.telefone,
+          funcao: newPersonnel.funcao,
+          funcao_completa: funcaoCompletaMap[newPersonnel.funcao] || newPersonnel.funcao,
+          turno: newPersonnel.turno,
+          data_admissao: newPersonnel.dataAdmissao,
+          avatar,
+          status: 'ativo'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Bombeiro adicionado com sucesso!",
+      });
+
+      // Recarregar lista
+      fetchBombeiros();
+      setIsDialogOpen(false);
+      setNewPersonnel({
+        nome: "",
+        email: "",
+        telefone: "",
+        funcao: "",
+        turno: "",
+        dataAdmissao: ""
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar bombeiro:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o bombeiro.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Estatísticas
-  const totalAtivos = mockPersonnel.filter(p => p.status === "ativo").length;
-  const totalFerias = mockPersonnel.filter(p => p.status === "ferias").length;
-  const totalAfastados = mockPersonnel.filter(p => p.status === "afastado").length;
+  const totalAtivos = bombeiros.filter(p => p.status === "ativo").length;
+  const totalFerias = bombeiros.filter(p => p.status === "ferias").length;
+  const totalAfastados = bombeiros.filter(p => p.status === "afastado").length;
 
   return (
     <div className="space-y-6">
@@ -218,7 +232,7 @@ const ControlePessoal = () => {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Users className="w-4 h-4" />
-              {mockPersonnel.length} Colaboradores
+              {bombeiros.length} Colaboradores
             </span>
             <span className="flex items-center gap-1">
               <UserCheck className="w-4 h-4 text-green-600" />
@@ -350,7 +364,7 @@ const ControlePessoal = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-foreground">{mockPersonnel.length}</div>
+            <div className="text-3xl font-bold text-foreground">{bombeiros.length}</div>
             <p className="text-sm text-muted-foreground mt-1">
               Colaboradores registrados
             </p>
@@ -484,7 +498,7 @@ const ControlePessoal = () => {
                       <div>
                         <div className="font-medium">{person.nome}</div>
                         <div className="text-sm text-muted-foreground">
-                          {person.funcaoCompleta}
+                          {person.funcao_completa}
                         </div>
                       </div>
                     </div>
@@ -519,7 +533,7 @@ const ControlePessoal = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {new Date(person.dataAdmissao).toLocaleDateString('pt-BR')}
+                    {new Date(person.data_admissao).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
