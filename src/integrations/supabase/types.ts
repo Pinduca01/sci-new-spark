@@ -95,6 +95,84 @@ export type Database = {
         }
         Relationships: []
       }
+      ocorrencias: {
+        Row: {
+          bombeiros_envolvidos: string[] | null
+          created_at: string
+          data_ocorrencia: string
+          descricao_detalhada: string | null
+          descricao_inicial: string | null
+          equipamentos: string | null
+          equipe: string
+          hora_acionamento: string
+          hora_chegada_local: string | null
+          hora_termino: string | null
+          id: string
+          latitude: number | null
+          local_mapa_grade: string | null
+          longitude: number | null
+          quantidade_bombeiros: number | null
+          quantidade_obitos: number | null
+          quantidade_vitimas: number | null
+          status: string | null
+          tempo_gasto_minutos: number | null
+          tipo_ocorrencia: string
+          updated_at: string
+          user_id: string
+          viaturas: string | null
+        }
+        Insert: {
+          bombeiros_envolvidos?: string[] | null
+          created_at?: string
+          data_ocorrencia: string
+          descricao_detalhada?: string | null
+          descricao_inicial?: string | null
+          equipamentos?: string | null
+          equipe: string
+          hora_acionamento: string
+          hora_chegada_local?: string | null
+          hora_termino?: string | null
+          id?: string
+          latitude?: number | null
+          local_mapa_grade?: string | null
+          longitude?: number | null
+          quantidade_bombeiros?: number | null
+          quantidade_obitos?: number | null
+          quantidade_vitimas?: number | null
+          status?: string | null
+          tempo_gasto_minutos?: number | null
+          tipo_ocorrencia: string
+          updated_at?: string
+          user_id: string
+          viaturas?: string | null
+        }
+        Update: {
+          bombeiros_envolvidos?: string[] | null
+          created_at?: string
+          data_ocorrencia?: string
+          descricao_detalhada?: string | null
+          descricao_inicial?: string | null
+          equipamentos?: string | null
+          equipe?: string
+          hora_acionamento?: string
+          hora_chegada_local?: string | null
+          hora_termino?: string | null
+          id?: string
+          latitude?: number | null
+          local_mapa_grade?: string | null
+          longitude?: number | null
+          quantidade_bombeiros?: number | null
+          quantidade_obitos?: number | null
+          quantidade_vitimas?: number | null
+          status?: string | null
+          tempo_gasto_minutos?: number | null
+          tipo_ocorrencia?: string
+          updated_at?: string
+          user_id?: string
+          viaturas?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
