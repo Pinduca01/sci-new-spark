@@ -143,10 +143,10 @@ const ControlePessoal: React.FC = () => {
 
     try {
       // Generate avatar from name
-      const names = formData.nome.split(' ');
+      const names = formData.nome.trim().split(' ').filter(name => name.length > 0);
       const avatar = names.length >= 2 
         ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
-        : formData.nome.substring(0, 2).toUpperCase();
+        : formData.nome.trim().substring(0, 2).toUpperCase();
 
       const bombeiroData = {
         ...formData,
