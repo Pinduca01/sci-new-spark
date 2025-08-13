@@ -38,7 +38,7 @@ interface Bombeiro {
   data_vencimento_credenciamento?: string;
   proxima_atualizacao?: string;
   data_aso?: string;
-  data_curso_cve?: string;
+  data_vencimento_cve?: string;
   documentos_certificados?: string[];
   created_at: string;
   updated_at: string;
@@ -76,7 +76,7 @@ const ControlePessoal: React.FC = () => {
     data_vencimento_credenciamento: '',
     proxima_atualizacao: '',
     data_aso: '',
-    data_curso_cve: '',
+        data_vencimento_cve: '',
     documentos_certificados: [] as string[],
   });
 
@@ -183,7 +183,7 @@ const ControlePessoal: React.FC = () => {
         data_vencimento_credenciamento: '',
         proxima_atualizacao: '',
         data_aso: '',
-        data_curso_cve: '',
+        data_vencimento_cve: '',
         documentos_certificados: [],
       });
       fetchBombeiros();
@@ -396,12 +396,12 @@ const ControlePessoal: React.FC = () => {
                   </div>
                   {formData.funcao === 'BA-MC' && (
                     <div>
-                      <Label htmlFor="data_curso_cve">Data do Curso CVE</Label>
+                      <Label htmlFor="data_vencimento_cve">Data Vencimento CVE</Label>
                       <Input
-                        id="data_curso_cve"
+                        id="data_vencimento_cve"
                         type="date"
-                        value={formData.data_curso_cve}
-                        onChange={(e) => handleInputChange('data_curso_cve', e.target.value)}
+                        value={formData.data_vencimento_cve}
+                        onChange={(e) => handleInputChange('data_vencimento_cve', e.target.value)}
                       />
                     </div>
                   )}
