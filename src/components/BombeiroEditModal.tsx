@@ -26,10 +26,10 @@ interface Bombeiro {
   data_admissao: string;
   data_curso_habilitacao?: string;
   data_vencimento_credenciamento?: string;
-  data_vencimento_cve?: string;
+  
   proxima_atualizacao?: string;
   data_aso?: string;
-  cve?: string;
+  data_curso_cve?: string;
   documentos_certificados?: string[];
 }
 
@@ -165,12 +165,11 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                   value={formData.funcao || ''}
                   onValueChange={(value) => {
                     handleInputChange('funcao', value);
-                    const funcaoCompleta = value === 'GS' ? 'Guarda-Vida Supervisor' :
-                                          value === 'BA-CE' ? 'Bombeiro Aquático - Condutor Embarcação' :
-                                          value === 'BA-LR' ? 'Bombeiro Aquático - Lifeguard de Resgate' :
-                                          value === 'BA-VS' ? 'Bombeiro Aquático - Vigilante de Surf' :
-                                          value === 'APH' ? 'Atendimento Pré-Hospitalar' :
-                                          value === 'MERGULHO' ? 'Mergulho Aquático' : value;
+                    const funcaoCompleta = value === 'GS' ? 'Gerente de Seção (GS)' :
+                                          value === 'BA-CE' ? 'Chefe de Equipe (BA-CE)' :
+                                          value === 'BA-LR' ? 'Líder de Resgate (BA-LR)' :
+                                          value === 'BA-MC' ? 'Motorista Condutor (BA-MC)' :
+                                          value === 'BA-2' ? 'Bombeiro de Aeródromo (BA-2)' : value;
                     handleInputChange('funcao_completa', funcaoCompleta);
                   }}
                 >
@@ -178,12 +177,11 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                     <SelectValue placeholder="Selecione a função" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="GS">GS - Guarda-Vida Supervisor</SelectItem>
-                    <SelectItem value="BA-CE">BA-CE - Bombeiro Aquático - Condutor Embarcação</SelectItem>
-                    <SelectItem value="BA-LR">BA-LR - Bombeiro Aquático - Lifeguard de Resgate</SelectItem>
-                    <SelectItem value="BA-VS">BA-VS - Bombeiro Aquático - Vigilante de Surf</SelectItem>
-                    <SelectItem value="APH">APH - Atendimento Pré-Hospitalar</SelectItem>
-                    <SelectItem value="MERGULHO">MERGULHO - Mergulho Aquático</SelectItem>
+                    <SelectItem value="GS">GS - Gerente de Seção</SelectItem>
+                    <SelectItem value="BA-CE">BA-CE - Chefe de Equipe</SelectItem>
+                    <SelectItem value="BA-LR">BA-LR - Líder de Resgate</SelectItem>
+                    <SelectItem value="BA-MC">BA-MC - Motorista Condutor</SelectItem>
+                    <SelectItem value="BA-2">BA-2 - Bombeiro de Aeródromo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -237,15 +235,17 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="cve">CVE</Label>
-                <Input
-                  id="cve"
-                  value={formData.cve || ''}
-                  onChange={(e) => handleInputChange('cve', e.target.value)}
-                  placeholder="Número do CVE"
-                />
-              </div>
+              {formData.funcao === 'BA-MC' && (
+                <div>
+                  <Label htmlFor="data_curso_cve">Data do Curso CVE</Label>
+                  <Input
+                    id="data_curso_cve"
+                    type="date"
+                    value={formData.data_curso_cve || ''}
+                    onChange={(e) => handleInputChange('data_curso_cve', e.target.value)}
+                  />
+                </div>
+              )}
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="ferista"
@@ -274,7 +274,7 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="data_curso_habilitacao">Data Curso Habilitação</Label>
+                <Label htmlFor="data_curso_habilitacao">Data do Curso de Habilitação - CBA-2</Label>
                 <Input
                   id="data_curso_habilitacao"
                   type="date"
@@ -289,15 +289,6 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                   type="date"
                   value={formData.data_vencimento_credenciamento || ''}
                   onChange={(e) => handleInputChange('data_vencimento_credenciamento', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="data_vencimento_cve">Vencimento CVE</Label>
-                <Input
-                  id="data_vencimento_cve"
-                  type="date"
-                  value={formData.data_vencimento_cve || ''}
-                  onChange={(e) => handleInputChange('data_vencimento_cve', e.target.value)}
                 />
               </div>
               <div>

@@ -35,10 +35,9 @@ interface Bombeiro {
   data_admissao: string;
   data_curso_habilitacao?: string;
   data_vencimento_credenciamento?: string;
-  data_vencimento_cve?: string;
   proxima_atualizacao?: string;
   data_aso?: string;
-  cve?: string;
+  data_curso_cve?: string;
   documentos_certificados?: string[];
   created_at: string;
   updated_at: string;
@@ -73,10 +72,9 @@ const ControlePessoal: React.FC = () => {
     data_admissao: '',
     data_curso_habilitacao: '',
     data_vencimento_credenciamento: '',
-    data_vencimento_cve: '',
     proxima_atualizacao: '',
     data_aso: '',
-    cve: '',
+    data_curso_cve: '',
     documentos_certificados: [] as string[],
   });
 
@@ -181,10 +179,9 @@ const ControlePessoal: React.FC = () => {
         data_admissao: '',
         data_curso_habilitacao: '',
         data_vencimento_credenciamento: '',
-        data_vencimento_cve: '',
         proxima_atualizacao: '',
         data_aso: '',
-        cve: '',
+        data_curso_cve: '',
         documentos_certificados: [],
       });
       fetchBombeiros();
@@ -231,12 +228,11 @@ const ControlePessoal: React.FC = () => {
       
       // Auto-complete funcao_completa based on funcao
       if (field === 'funcao') {
-        newData.funcao_completa = value === 'GS' ? 'Guarda-Vida Supervisor' :
-                                  value === 'BA-CE' ? 'Bombeiro Aquático - Condutor Embarcação' :
-                                  value === 'BA-LR' ? 'Bombeiro Aquático - Lifeguard de Resgate' :
-                                  value === 'BA-VS' ? 'Bombeiro Aquático - Vigilante de Surf' :
-                                  value === 'APH' ? 'Atendimento Pré-Hospitalar' :
-                                  value === 'MERGULHO' ? 'Mergulho Aquático' : value;
+        newData.funcao_completa = value === 'GS' ? 'Gerente de Seção (GS)' :
+                                  value === 'BA-CE' ? 'Chefe de Equipe (BA-CE)' :
+                                  value === 'BA-LR' ? 'Líder de Resgate (BA-LR)' :
+                                  value === 'BA-MC' ? 'Motorista Condutor (BA-MC)' :
+                                  value === 'BA-2' ? 'Bombeiro de Aeródromo (BA-2)' : value;
       }
       
       return newData;
@@ -338,12 +334,11 @@ const ControlePessoal: React.FC = () => {
                         <SelectValue placeholder="Selecione a função" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="GS">GS - Guarda-Vida Supervisor</SelectItem>
-                        <SelectItem value="BA-CE">BA-CE - Bombeiro Aquático - Condutor Embarcação</SelectItem>
-                        <SelectItem value="BA-LR">BA-LR - Bombeiro Aquático - Lifeguard de Resgate</SelectItem>
-                        <SelectItem value="BA-VS">BA-VS - Bombeiro Aquático - Vigilante de Surf</SelectItem>
-                        <SelectItem value="APH">APH - Atendimento Pré-Hospitalar</SelectItem>
-                        <SelectItem value="MERGULHO">MERGULHO - Mergulho Aquático</SelectItem>
+                        <SelectItem value="GS">GS - Gerente de Seção</SelectItem>
+                        <SelectItem value="BA-CE">BA-CE - Chefe de Equipe</SelectItem>
+                        <SelectItem value="BA-LR">BA-LR - Líder de Resgate</SelectItem>
+                        <SelectItem value="BA-MC">BA-MC - Motorista Condutor</SelectItem>
+                        <SelectItem value="BA-2">BA-2 - Bombeiro de Aeródromo</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -397,15 +392,17 @@ const ControlePessoal: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="cve">CVE (Condutor de Veículos de Emergência)</Label>
-                    <Input
-                      id="cve"
-                      value={formData.cve}
-                      onChange={(e) => handleInputChange('cve', e.target.value)}
-                      placeholder="Número do CVE"
-                    />
-                  </div>
+                  {formData.funcao === 'BA-MC' && (
+                    <div>
+                      <Label htmlFor="data_curso_cve">Data do Curso CVE</Label>
+                      <Input
+                        id="data_curso_cve"
+                        type="date"
+                        value={formData.data_curso_cve}
+                        onChange={(e) => handleInputChange('data_curso_cve', e.target.value)}
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="ferista"
@@ -432,7 +429,7 @@ const ControlePessoal: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="data_curso_habilitacao">Data Curso Habilitação</Label>
+                    <Label htmlFor="data_curso_habilitacao">Data do Curso de Habilitação - CBA-2</Label>
                     <Input
                       id="data_curso_habilitacao"
                       type="date"
@@ -447,15 +444,6 @@ const ControlePessoal: React.FC = () => {
                       type="date"
                       value={formData.data_vencimento_credenciamento}
                       onChange={(e) => handleInputChange('data_vencimento_credenciamento', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="data_vencimento_cve">Vencimento CVE</Label>
-                    <Input
-                      id="data_vencimento_cve"
-                      type="date"
-                      value={formData.data_vencimento_cve}
-                      onChange={(e) => handleInputChange('data_vencimento_cve', e.target.value)}
                     />
                   </div>
                   <div>
@@ -587,9 +575,8 @@ const ControlePessoal: React.FC = () => {
                   <SelectItem value="GS">GS</SelectItem>
                   <SelectItem value="BA-CE">BA-CE</SelectItem>
                   <SelectItem value="BA-LR">BA-LR</SelectItem>
-                  <SelectItem value="BA-VS">BA-VS</SelectItem>
-                  <SelectItem value="APH">APH</SelectItem>
-                  <SelectItem value="MERGULHO">MERGULHO</SelectItem>
+                  <SelectItem value="BA-MC">BA-MC</SelectItem>
+                  <SelectItem value="BA-2">BA-2</SelectItem>
                 </SelectContent>
               </Select>
 
