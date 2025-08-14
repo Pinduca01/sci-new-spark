@@ -365,22 +365,24 @@ const GerenciadorFerias = ({ mes, ano, onFeriasChange }: GerenciadorFeriasProps)
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Ferista Disponível (Função: Ferista)</Label>
-              <Select value={novoFeristaBombeiro} onValueChange={setNovoFeristaBombeiro}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione ferista (função ferista)" />
+              <Select 
+                value={novoFeristaBombeiro} 
+                onValueChange={setNovoFeristaBombeiro}
+                disabled={feristas.length === 0}
+              >
+                <SelectTrigger className={feristas.length === 0 ? "opacity-50" : ""}>
+                  <SelectValue placeholder={
+                    feristas.length === 0 
+                      ? "Nenhum ferista disponível" 
+                      : "Selecione ferista (função ferista)"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {feristas.length > 0 ? (
-                    feristas.map((ferista) => (
-                      <SelectItem key={ferista.id} value={ferista.id}>
-                        {ferista.nome} - {ferista.equipes?.nome_equipe} (Ferista)
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="" disabled>
-                      Nenhum ferista encontrado
+                  {feristas.map((ferista) => (
+                    <SelectItem key={ferista.id} value={ferista.id}>
+                      {ferista.nome} - {ferista.equipes?.nome_equipe} (Ferista)
                     </SelectItem>
-                  )}
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -402,7 +404,11 @@ const GerenciadorFerias = ({ mes, ano, onFeriasChange }: GerenciadorFeriasProps)
             </div>
           </div>
 
-          <Button onClick={adicionarFeristaSubstituto} className="w-full bg-green-600 hover:bg-green-700">
+          <Button 
+            onClick={adicionarFeristaSubstituto} 
+            className="w-full bg-green-600 hover:bg-green-700"
+            disabled={feristas.length === 0 || periodosFerias.length === 0}
+          >
             <UserCheck className="h-4 w-4 mr-2" />
             Adicionar Ferista Substituto
           </Button>
@@ -425,12 +431,20 @@ const GerenciadorFerias = ({ mes, ano, onFeriasChange }: GerenciadorFeriasProps)
             </div>
           )}
 
-          {/* Aviso se não há feristas disponíveis */}
+          {/* Avisos informativos */}
           {feristas.length === 0 && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
                 <strong>Aviso:</strong> Não há bombeiros cadastrados com a função "ferista". 
                 Para adicionar feristas, vá ao módulo de Controle de Pessoal e cadastre bombeiros com a função "ferista".
+              </p>
+            </div>
+          )}
+
+          {periodosFerias.length === 0 && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Informação:</strong> Cadastre primeiro os períodos de férias acima para poder atribuir feristas substitutos.
               </p>
             </div>
           )}
