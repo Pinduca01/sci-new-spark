@@ -95,6 +95,56 @@ export type Database = {
         }
         Relationships: []
       }
+      checklists_viaturas: {
+        Row: {
+          bombeiro_responsavel: string
+          created_at: string
+          data_checklist: string
+          hora_checklist: string
+          id: string
+          itens_checklist: Json
+          observacoes_gerais: string | null
+          status_geral: string
+          tipo_checklist: string
+          updated_at: string
+          viatura_id: string
+        }
+        Insert: {
+          bombeiro_responsavel: string
+          created_at?: string
+          data_checklist?: string
+          hora_checklist?: string
+          id?: string
+          itens_checklist?: Json
+          observacoes_gerais?: string | null
+          status_geral?: string
+          tipo_checklist: string
+          updated_at?: string
+          viatura_id: string
+        }
+        Update: {
+          bombeiro_responsavel?: string
+          created_at?: string
+          data_checklist?: string
+          hora_checklist?: string
+          id?: string
+          itens_checklist?: Json
+          observacoes_gerais?: string | null
+          status_geral?: string
+          tipo_checklist?: string
+          updated_at?: string
+          viatura_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklists_viaturas_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ocorrencias: {
         Row: {
           bombeiros_envolvidos: string[] | null
@@ -173,6 +223,71 @@ export type Database = {
         }
         Relationships: []
       }
+      ordens_servico: {
+        Row: {
+          bombeiro_solicitante: string
+          created_at: string
+          custo_total: number | null
+          data_abertura: string
+          data_conclusao: string | null
+          descricao_problema: string
+          id: string
+          materiais_utilizados: string | null
+          numero_os: string
+          observacoes: string | null
+          prioridade: string
+          responsavel_manutencao: string | null
+          status: string
+          tipo_servico: string
+          updated_at: string
+          viatura_id: string
+        }
+        Insert: {
+          bombeiro_solicitante: string
+          created_at?: string
+          custo_total?: number | null
+          data_abertura?: string
+          data_conclusao?: string | null
+          descricao_problema: string
+          id?: string
+          materiais_utilizados?: string | null
+          numero_os: string
+          observacoes?: string | null
+          prioridade?: string
+          responsavel_manutencao?: string | null
+          status?: string
+          tipo_servico: string
+          updated_at?: string
+          viatura_id: string
+        }
+        Update: {
+          bombeiro_solicitante?: string
+          created_at?: string
+          custo_total?: number | null
+          data_abertura?: string
+          data_conclusao?: string | null
+          descricao_problema?: string
+          id?: string
+          materiais_utilizados?: string | null
+          numero_os?: string
+          observacoes?: string | null
+          prioridade?: string
+          responsavel_manutencao?: string | null
+          status?: string
+          tipo_servico?: string
+          updated_at?: string
+          viatura_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_servico_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -203,6 +318,54 @@ export type Database = {
           role?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      viaturas: {
+        Row: {
+          ano: number
+          created_at: string
+          data_ultima_revisao: string | null
+          id: string
+          km_atual: number | null
+          modelo: string
+          observacoes: string | null
+          placa: string
+          prefixo: string
+          proxima_revisao: string | null
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          data_ultima_revisao?: string | null
+          id?: string
+          km_atual?: number | null
+          modelo: string
+          observacoes?: string | null
+          placa: string
+          prefixo: string
+          proxima_revisao?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          data_ultima_revisao?: string | null
+          id?: string
+          km_atual?: number | null
+          modelo?: string
+          observacoes?: string | null
+          placa?: string
+          prefixo?: string
+          proxima_revisao?: string | null
+          status?: string
+          tipo?: string
+          updated_at?: string
         }
         Relationships: []
       }
