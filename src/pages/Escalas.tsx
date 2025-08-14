@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Calendar, Users, FileText } from "lucide-react";
+import { Calendar, Users, FileText, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import EscalaCalendario from "@/components/EscalaCalendario";
 import EscalaIndividual from "@/components/EscalaIndividual";
+import GerenciadorFerias from "@/components/GerenciadorFerias";
 
 const Escalas = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
@@ -15,7 +16,7 @@ const Escalas = () => {
   const [selectedRegime, setSelectedRegime] = useState<string>("");
   const [selectedEquipeInicial, setSelectedEquipeInicial] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [viewMode, setViewMode] = useState<"generator" | "calendar" | "individual">("generator");
+  const [viewMode, setViewMode] = useState<"generator" | "calendar" | "individual" | "ferias">("generator");
   const [escalas, setEscalas] = useState<any[]>([]);
   const [equipes, setEquipes] = useState<any[]>([]);
 
@@ -82,27 +83,64 @@ const Escalas = () => {
         throw new Error("Nenhuma equipe encontrada");
       }
 
+      // Buscar períodos de férias e feristas para o mês
+      const { data: periodosFerias } = await supabase
+        .from('periodos_ferias')
+        .select(`
+          *,
+          bombeiros(id, nome, equipe_id)
+        `)
+        .eq('mes_referencia', selectedMonth)
+        .eq('ano_referencia', selectedYear);
+
+      const { data: feristaEscalas } = await supabase
+        .from('feristas_escalas')
+        .select(`
+          *,
+          bombeiro_ferista:bombeiros!bombeiro_ferista_id(id, nome, equipe_id),
+          bombeiro_substituido:bombeiros!bombeiro_substituido_id(id, nome, equipe_id)
+        `)
+        .eq('mes_referencia', selectedMonth)
+        .eq('ano_referencia', selectedYear);
+
       // Encontrar índice da equipe inicial
       const equipeInicialIndex = equipesData.findIndex(e => e.id === selectedEquipeInicial);
       if (equipeInicialIndex === -1) {
         throw new Error("Equipe inicial não encontrada");
       }
 
-      // Gerar escala
+      // Gerar escala considerando férias e feristas
       const diasNoMes = new Date(selectedYear, selectedMonth, 0).getDate();
       const escalasToInsert = [];
 
       for (let dia = 1; dia <= diasNoMes; dia++) {
-        // Corrigido: começar com a equipe selecionada no dia 1
-        const equipeIndex = (equipeInicialIndex + (dia - 1)) % equipesData.length;
-        const equipe = equipesData[equipeIndex];
+        const dataAtual = new Date(selectedYear, selectedMonth - 1, dia);
+        const dataString = dataAtual.toISOString().split('T')[0];
         
+        // Verificar se há bombeiros de férias neste dia
+        const bombeirosDeFerias = periodosFerias?.filter(periodo => {
+          const inicioFerias = new Date(periodo.data_inicio);
+          const fimFerias = new Date(periodo.data_fim);
+          return dataAtual >= inicioFerias && dataAtual <= fimFerias;
+        }) || [];
+
+        // Determinar qual equipe está de plantão (rotação normal)
+        const equipeIndex = (equipeInicialIndex + (dia - 1)) % equipesData.length;
+        let equipeDoPlantao = equipesData[equipeIndex];
+
+        // Verificar se há feristas substituindo membros desta equipe
+        const feristasSubstituindo = feristaEscalas?.filter(ferista => 
+          ferista.equipe_atual_id === equipeDoPlantao.id
+        ) || [];
         escalasToInsert.push({
-          data: new Date(selectedYear, selectedMonth - 1, dia).toISOString().split('T')[0],
-          equipe_id: equipe.id,
+          data: dataString,
+          equipe_id: equipeDoPlantao.id,
           mes_referencia: selectedMonth,
           ano_referencia: selectedYear,
           regime_plantao: selectedRegime,
+          observacoes: feristasSubstituindo.length > 0 ? 
+            `Feristas: ${feristasSubstituindo.map(f => f.bombeiro_ferista?.nome).join(', ')}` : 
+            null
         });
       }
 
@@ -159,6 +197,29 @@ const Escalas = () => {
   useEffect(() => {
     loadEquipes();
   }, []);
+
+  if (viewMode === "ferias") {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Button variant="outline" onClick={() => setViewMode("generator")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar ao Gerador
+          </Button>
+          <Calendar className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold">Gerenciar Férias e Feristas</h1>
+        </div>
+        <GerenciadorFerias 
+          mes={selectedMonth} 
+          ano={selectedYear}
+          onFeriasChange={() => {
+            // Callback para atualizar quando houver mudanças
+            console.log("Férias alteradas");
+          }}
+        />
+      </div>
+    );
+  }
 
   if (viewMode === "calendar") {
     return (
@@ -263,6 +324,17 @@ const Escalas = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setViewMode("ferias")}
+              className="hover-scale"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Gerenciar Férias
+            </Button>
           </div>
 
           <Button 

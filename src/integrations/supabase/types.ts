@@ -24,7 +24,9 @@ export type Database = {
           data_curso_habilitacao: string | null
           data_vencimento_credenciamento: string | null
           data_vencimento_cve: string | null
+          disponivel_para_substituicao: boolean | null
           documentos_certificados: string[] | null
+          eh_ferista: boolean | null
           email: string
           equipe: string | null
           equipe_id: string | null
@@ -51,7 +53,9 @@ export type Database = {
           data_curso_habilitacao?: string | null
           data_vencimento_credenciamento?: string | null
           data_vencimento_cve?: string | null
+          disponivel_para_substituicao?: boolean | null
           documentos_certificados?: string[] | null
+          eh_ferista?: boolean | null
           email: string
           equipe?: string | null
           equipe_id?: string | null
@@ -78,7 +82,9 @@ export type Database = {
           data_curso_habilitacao?: string | null
           data_vencimento_credenciamento?: string | null
           data_vencimento_cve?: string | null
+          disponivel_para_substituicao?: boolean | null
           documentos_certificados?: string[] | null
+          eh_ferista?: boolean | null
           email?: string
           equipe?: string | null
           equipe_id?: string | null
@@ -224,6 +230,74 @@ export type Database = {
           },
         ]
       }
+      feristas_escalas: {
+        Row: {
+          ano_referencia: number
+          bombeiro_ferista_id: string
+          bombeiro_substituido_id: string
+          created_at: string
+          equipe_anterior_id: string | null
+          equipe_atual_id: string
+          id: string
+          mes_referencia: number
+          periodo_descanso_ate: string | null
+          updated_at: string
+        }
+        Insert: {
+          ano_referencia: number
+          bombeiro_ferista_id: string
+          bombeiro_substituido_id: string
+          created_at?: string
+          equipe_anterior_id?: string | null
+          equipe_atual_id: string
+          id?: string
+          mes_referencia: number
+          periodo_descanso_ate?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ano_referencia?: number
+          bombeiro_ferista_id?: string
+          bombeiro_substituido_id?: string
+          created_at?: string
+          equipe_anterior_id?: string | null
+          equipe_atual_id?: string
+          id?: string
+          mes_referencia?: number
+          periodo_descanso_ate?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feristas_escalas_bombeiro_ferista_id_fkey"
+            columns: ["bombeiro_ferista_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feristas_escalas_bombeiro_substituido_id_fkey"
+            columns: ["bombeiro_substituido_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feristas_escalas_equipe_anterior_id_fkey"
+            columns: ["equipe_anterior_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feristas_escalas_equipe_atual_id_fkey"
+            columns: ["equipe_atual_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ocorrencias: {
         Row: {
           bombeiros_envolvidos: string[] | null
@@ -363,6 +437,47 @@ export type Database = {
             columns: ["viatura_id"]
             isOneToOne: false
             referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      periodos_ferias: {
+        Row: {
+          ano_referencia: number
+          bombeiro_id: string
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          id: string
+          mes_referencia: number
+          updated_at: string
+        }
+        Insert: {
+          ano_referencia: number
+          bombeiro_id: string
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          id?: string
+          mes_referencia: number
+          updated_at?: string
+        }
+        Update: {
+          ano_referencia?: number
+          bombeiro_id?: string
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          id?: string
+          mes_referencia?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodos_ferias_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
             referencedColumns: ["id"]
           },
         ]
