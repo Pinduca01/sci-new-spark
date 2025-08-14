@@ -16,6 +16,8 @@ interface EscalaIndividualProps {
 
 const EscalaIndividual = ({ escalas, mes, ano, onBack }: EscalaIndividualProps) => {
   const [bombeiros, setBombeiros] = useState<any[]>([]);
+  const [feristaEscalas, setFeristaEscalas] = useState<any[]>([]);
+  const [periodosFerias, setPeriodosFerias] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const meses = [
@@ -49,15 +51,70 @@ const EscalaIndividual = ({ escalas, mes, ano, onBack }: EscalaIndividualProps) 
     }
   };
 
+  const loadFeristaEscalas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('feristas_escalas')
+        .select(`
+          *,
+          bombeiro_ferista:bombeiros!bombeiro_ferista_id(id, nome, funcao, equipes(nome_equipe, cor_identificacao)),
+          bombeiro_substituido:bombeiros!bombeiro_substituido_id(id, nome, equipes(nome_equipe, cor_identificacao))
+        `)
+        .eq('mes_referencia', mes)
+        .eq('ano_referencia', ano);
+
+      if (error) throw error;
+
+      setFeristaEscalas(data || []);
+    } catch (error: any) {
+      console.error('Erro ao carregar ferista escalas:', error);
+    }
+  };
+
+  const loadPeriodosFerias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('periodos_ferias')
+        .select(`
+          *,
+          bombeiros(id, nome, equipe_id)
+        `)
+        .eq('mes_referencia', mes)
+        .eq('ano_referencia', ano);
+
+      if (error) throw error;
+
+      setPeriodosFerias(data || []);
+    } catch (error: any) {
+      console.error('Erro ao carregar períodos de férias:', error);
+    }
+  };
+
   useEffect(() => {
     loadBombeiros();
-  }, []);
+    loadFeristaEscalas();
+    loadPeriodosFerias();
+  }, [mes, ano]);
 
   const diasNoMes = new Date(ano, mes, 0).getDate();
   const diasArray = Array.from({ length: diasNoMes }, (_, i) => i + 1);
 
+  // Incluir feristas na lista de bombeiros para visualização
+  const bombeirosPorEquipeCompleta = [...bombeiros];
+  
+  // Adicionar feristas às suas equipes de destino
+  feristaEscalas.forEach(feristaEscala => {
+    if (feristaEscala.bombeiro_ferista && !bombeirosPorEquipeCompleta.find(b => b.id === feristaEscala.bombeiro_ferista.id)) {
+      bombeirosPorEquipeCompleta.push({
+        ...feristaEscala.bombeiro_ferista,
+        equipe_id: feristaEscala.equipe_atual_id,
+        equipes: feristaEscala.bombeiro_ferista.equipes
+      });
+    }
+  });
+
   // Agrupar bombeiros por equipe
-  const bombeirosPorEquipe = bombeiros.reduce((grupos, bombeiro) => {
+  const bombeirosPorEquipe = bombeirosPorEquipeCompleta.reduce((grupos, bombeiro) => {
     const nomeEquipe = bombeiro.equipes?.nome_equipe || 'Sem Equipe';
     if (!grupos[nomeEquipe]) {
       grupos[nomeEquipe] = [];
@@ -66,12 +123,69 @@ const EscalaIndividual = ({ escalas, mes, ano, onBack }: EscalaIndividualProps) 
     return grupos;
   }, {} as Record<string, any[]>);
 
-  const verificarPlantao = (bombeiroEquipeId: string, dia: number) => {
+  const verificarPlantao = (bombeiroId: string, bombeiroEquipeId: string, dia: number) => {
+    const dataAtual = new Date(ano, mes - 1, dia);
+    
+    // Verificar se o bombeiro está de férias neste dia
+    const estaDeFerias = periodosFerias.some(periodo => {
+      const inicioFerias = new Date(periodo.data_inicio);
+      const fimFerias = new Date(periodo.data_fim);
+      return periodo.bombeiro_id === bombeiroId && 
+             dataAtual >= inicioFerias && 
+             dataAtual <= fimFerias;
+    });
+    
+    // Se está de férias, não marca plantão para ele
+    if (estaDeFerias) {
+      return null;
+    }
+    
+    // Verificar se há escala para esta equipe neste dia
     const escalaData = escalas.find(e => {
       const dataEscala = new Date(e.data);
       return dataEscala.getDate() === dia && e.equipe_id === bombeiroEquipeId;
     });
+    
     return escalaData;
+  };
+
+  const verificarFeristaSubstituto = (bombeiroEquipeId: string, dia: number) => {
+    const dataAtual = new Date(ano, mes - 1, dia);
+    
+    // Verificar se há ferista atuando nesta equipe neste dia
+    const feristaAtivo = feristaEscalas.find(ferista => {
+      // Verificar se o ferista está substituindo alguém desta equipe
+      if (ferista.equipe_atual_id !== bombeiroEquipeId) return false;
+      
+      // Verificar se a pessoa que ele está substituindo está realmente de férias neste dia
+      const pessoaSubstituida = periodosFerias.find(periodo => {
+        const inicioFerias = new Date(periodo.data_inicio);
+        const fimFerias = new Date(periodo.data_fim);
+        return periodo.bombeiro_id === ferista.bombeiro_substituido_id &&
+               dataAtual >= inicioFerias && 
+               dataAtual <= fimFerias;
+      });
+      
+      return !!pessoaSubstituida;
+    });
+    
+    if (feristaAtivo) {
+      // Verificar se há escala para esta equipe neste dia
+      const escalaData = escalas.find(e => {
+        const dataEscala = new Date(e.data);
+        return dataEscala.getDate() === dia && e.equipe_id === bombeiroEquipeId;
+      });
+      
+      if (escalaData) {
+        return {
+          escala: escalaData,
+          ferista: feristaAtivo.bombeiro_ferista,
+          substituindo: feristaAtivo.bombeiro_substituido?.nome
+        };
+      }
+    }
+    
+    return null;
   };
 
   const exportarRelatorio = async () => {
@@ -198,7 +312,9 @@ const EscalaIndividual = ({ escalas, mes, ano, onBack }: EscalaIndividualProps) 
                           </div>
                         </td>
                         {diasArray.map(dia => {
-                          const temPlantao = verificarPlantao(bombeiro.equipe_id, dia);
+                          const temPlantao = verificarPlantao(bombeiro.id, bombeiro.equipe_id, dia);
+                          const feristaSubstituto = verificarFeristaSubstituto(bombeiro.equipe_id, dia);
+                          
                           return (
                             <td key={dia} className="text-center p-2 border-r last:border-r-0">
                               {temPlantao && (
@@ -211,6 +327,22 @@ const EscalaIndividual = ({ escalas, mes, ano, onBack }: EscalaIndividualProps) 
                                     }}
                                   >
                                     ●
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Mostrar ferista se estiver substituindo alguém desta equipe */}
+                              {feristaSubstituto && bombeiro.id === feristaSubstituto.ferista?.id && (
+                                <div className="flex justify-center">
+                                  <div
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md hover:scale-110 transition-transform border-2 border-yellow-400"
+                                    style={{ 
+                                      backgroundColor: '#f59e0b',
+                                      boxShadow: `0 2px 6px #f59e0b40`
+                                    }}
+                                    title={`Ferista substituindo ${feristaSubstituto.substituindo}`}
+                                  >
+                                    F
                                   </div>
                                 </div>
                               )}
@@ -238,20 +370,20 @@ const EscalaIndividual = ({ escalas, mes, ano, onBack }: EscalaIndividualProps) 
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 rounded-lg bg-primary/10">
-              <p className="text-2xl font-bold text-primary">{bombeiros.length}</p>
-              <p className="text-sm text-muted-foreground">Total de Bombeiros</p>
+              <p className="text-2xl font-bold text-primary">{bombeirosPorEquipeCompleta.filter(b => !b.ferista && !b.eh_ferista).length}</p>
+              <p className="text-sm text-muted-foreground">Bombeiros Efetivos</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-green-500/10">
-              <p className="text-2xl font-bold text-green-600">{Object.keys(bombeirosPorEquipe).length}</p>
-              <p className="text-sm text-muted-foreground">Equipes Ativas</p>
+            <div className="text-center p-4 rounded-lg bg-yellow-500/10">
+              <p className="text-2xl font-bold text-yellow-600">{feristaEscalas.length}</p>
+              <p className="text-sm text-muted-foreground">Feristas Ativos</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-blue-500/10">
               <p className="text-2xl font-bold text-blue-600">{diasNoMes}</p>
               <p className="text-sm text-muted-foreground">Dias no Mês</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-purple-500/10">
-              <p className="text-2xl font-bold text-purple-600">{escalas.length}</p>
-              <p className="text-sm text-muted-foreground">Plantões Distribuídos</p>
+            <div className="text-center p-4 rounded-lg bg-red-500/10">
+              <p className="text-2xl font-bold text-red-600">{periodosFerias.length}</p>
+              <p className="text-sm text-muted-foreground">Pessoas de Férias</p>
             </div>
           </div>
         </CardContent>
