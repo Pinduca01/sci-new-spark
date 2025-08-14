@@ -27,6 +27,7 @@ export type Database = {
           documentos_certificados: string[] | null
           email: string
           equipe: string | null
+          equipe_id: string | null
           ferista: boolean | null
           funcao: string
           funcao_completa: string
@@ -53,6 +54,7 @@ export type Database = {
           documentos_certificados?: string[] | null
           email: string
           equipe?: string | null
+          equipe_id?: string | null
           ferista?: boolean | null
           funcao: string
           funcao_completa: string
@@ -79,6 +81,7 @@ export type Database = {
           documentos_certificados?: string[] | null
           email?: string
           equipe?: string | null
+          equipe_id?: string | null
           ferista?: boolean | null
           funcao?: string
           funcao_completa?: string
@@ -93,7 +96,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bombeiros_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checklists_viaturas: {
         Row: {
@@ -141,6 +152,74 @@ export type Database = {
             columns: ["viatura_id"]
             isOneToOne: false
             referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipes: {
+        Row: {
+          ativa: boolean
+          cor_identificacao: string
+          created_at: string
+          id: string
+          nome_equipe: string
+          updated_at: string
+        }
+        Insert: {
+          ativa?: boolean
+          cor_identificacao: string
+          created_at?: string
+          id?: string
+          nome_equipe: string
+          updated_at?: string
+        }
+        Update: {
+          ativa?: boolean
+          cor_identificacao?: string
+          created_at?: string
+          id?: string
+          nome_equipe?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      escalas_geradas: {
+        Row: {
+          ano_referencia: number
+          created_at: string
+          data: string
+          equipe_id: string
+          id: string
+          mes_referencia: number
+          regime_plantao: string
+          updated_at: string
+        }
+        Insert: {
+          ano_referencia: number
+          created_at?: string
+          data: string
+          equipe_id: string
+          id?: string
+          mes_referencia: number
+          regime_plantao: string
+          updated_at?: string
+        }
+        Update: {
+          ano_referencia?: number
+          created_at?: string
+          data?: string
+          equipe_id?: string
+          id?: string
+          mes_referencia?: number
+          regime_plantao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalas_geradas_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
             referencedColumns: ["id"]
           },
         ]
