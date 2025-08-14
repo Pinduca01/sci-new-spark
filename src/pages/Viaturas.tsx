@@ -34,6 +34,7 @@ const Viaturas = () => {
   }, []);
 
   const fetchViaturas = async () => {
+    console.log('Fetching viaturas...');
     try {
       const { data, error } = await supabase
         .from('viaturas')
@@ -41,6 +42,7 @@ const Viaturas = () => {
         .order('prefixo');
 
       if (error) throw error;
+      console.log('Viaturas loaded:', data);
       setViaturas(data || []);
     } catch (error) {
       console.error('Erro ao buscar viaturas:', error);

@@ -81,10 +81,12 @@ const ControlePessoal: React.FC = () => {
   });
 
   useEffect(() => {
+    console.log('ControlePessoal useEffect running...');
     fetchBombeiros();
   }, []);
 
   const fetchBombeiros = async () => {
+    console.log('Fetching bombeiros...');
     try {
       const { data, error } = await supabase
         .from('bombeiros')
@@ -92,6 +94,7 @@ const ControlePessoal: React.FC = () => {
         .order('nome');
 
       if (error) throw error;
+      console.log('Bombeiros loaded:', data);
       setBombeiros(data || []);
     } catch (error) {
       console.error('Erro ao buscar bombeiros:', error);

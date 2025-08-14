@@ -34,6 +34,7 @@ const Escalas = () => {
   ];
 
   const loadEquipes = async () => {
+    console.log('Loading equipes...');
     const { data, error } = await supabase
       .from('equipes')
       .select('*')
@@ -41,6 +42,7 @@ const Escalas = () => {
       .order('nome_equipe');
 
     if (error) {
+      console.error('Error loading equipes:', error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar as equipes",
@@ -49,6 +51,7 @@ const Escalas = () => {
       return;
     }
 
+    console.log('Equipes loaded:', data);
     setEquipes(data || []);
   };
 
@@ -195,6 +198,7 @@ const Escalas = () => {
 
   // Carregar equipes ao montar o componente
   useEffect(() => {
+    console.log('Escalas useEffect running...');
     loadEquipes();
   }, []);
 

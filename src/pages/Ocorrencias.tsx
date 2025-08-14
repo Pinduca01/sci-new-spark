@@ -107,11 +107,13 @@ const Ocorrencias = () => {
   const horaTermino = form.watch("hora_termino");
 
   useEffect(() => {
+    console.log('Ocorrencias useEffect running...');
     fetchOcorrencias();
     fetchBombeiros();
   }, []);
 
   const fetchOcorrencias = async () => {
+    console.log('Fetching ocorrencias...');
     try {
       const { data, error } = await supabase
         .from("ocorrencias")
@@ -119,6 +121,7 @@ const Ocorrencias = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      console.log('Ocorrencias loaded:', data);
       setOcorrencias(data || []);
     } catch (error) {
       console.error("Erro ao carregar ocorrências:", error);
