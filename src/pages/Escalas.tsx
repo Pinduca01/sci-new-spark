@@ -250,7 +250,7 @@ const Escalas = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 relative z-30">
       <div className="flex items-center gap-3">
         <Calendar className="h-8 w-8 text-primary" />
         <div>

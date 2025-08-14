@@ -92,9 +92,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       <div className="min-h-screen flex w-full abstract-bg">
         <AppSidebar userRole={profile?.role} />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col relative z-20">
           {/* Header */}
-          <header className="border-b border-border/50 backdrop-blur-sm bg-background/50 p-4">
+          <header className="border-b border-border/50 backdrop-blur-sm bg-background/50 p-4 relative z-30">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger className="lg:hidden" />
@@ -112,7 +112,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1">
+          <main className="flex-1 relative z-20">
             {children}
           </main>
         </div>
