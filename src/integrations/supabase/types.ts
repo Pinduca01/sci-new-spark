@@ -378,6 +378,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      nextval: {
+        Args: { sequence_name: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

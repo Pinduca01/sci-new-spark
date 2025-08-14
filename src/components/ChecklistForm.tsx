@@ -124,14 +124,14 @@ export const ChecklistForm = ({ tipo, viaturaId, viaturaPrefixo, onClose, onSave
     try {
       const { error } = await supabase
         .from('checklists_viaturas')
-        .insert([{
+        .insert({
           viatura_id: viaturaId,
           tipo_checklist: tipo,
           bombeiro_responsavel: bombeiro,
           status_geral: calculateStatusGeral(),
-          itens_checklist: itens,
+          itens_checklist: itens as any,
           observacoes_gerais: observacoes || null,
-        }]);
+        });
 
       if (error) throw error;
 

@@ -35,9 +35,17 @@ export const OrdemServicoForm = ({ viaturaId, viaturaPrefixo, onClose, onSave }:
   };
 
   const generateNumeroOS = async () => {
-    const { data, error } = await supabase.rpc('nextval', { sequence_name: 'os_sequence' });
-    if (error) throw error;
-    return `OS-${String(data).padStart(6, '0')}`;
+    try {
+      const { data, error } = await supabase.rpc('nextval', { 
+        sequence_name: 'public.os_sequence' 
+      });
+      if (error) throw error;
+      return `OS-${String(data).padStart(6, '0')}`;
+    } catch (error) {
+      console.error('Erro ao gerar número da OS:', error);
+      const timestamp = Date.now();
+      return `OS-${String(timestamp).slice(-6)}`;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,13 +67,13 @@ export const OrdemServicoForm = ({ viaturaId, viaturaPrefixo, onClose, onSave }:
 
       const { error } = await supabase
         .from('ordens_servico')
-        .insert([{
+        .insert({
           viatura_id: viaturaId,
           numero_os: numeroOS,
           ...formData,
           responsavel_manutencao: formData.responsavel_manutencao || null,
           observacoes: formData.observacoes || null,
-        }]);
+        });
 
       if (error) throw error;
 
