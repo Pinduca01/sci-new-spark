@@ -197,6 +197,7 @@ export type Database = {
           equipe_id: string
           id: string
           mes_referencia: number
+          observacoes: string | null
           regime_plantao: string
           updated_at: string
         }
@@ -207,6 +208,7 @@ export type Database = {
           equipe_id: string
           id?: string
           mes_referencia: number
+          observacoes?: string | null
           regime_plantao: string
           updated_at?: string
         }
@@ -217,6 +219,7 @@ export type Database = {
           equipe_id?: string
           id?: string
           mes_referencia?: number
+          observacoes?: string | null
           regime_plantao?: string
           updated_at?: string
         }
