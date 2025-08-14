@@ -1,177 +1,46 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
   Users, 
   AlertTriangle, 
-  BarChart3, 
   Truck,
   Radio,
   FileText,
-  TrendingUp,
   Clock,
   CheckCircle
 } from "lucide-react";
-import { User, Session } from '@supabase/supabase-js';
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
 
 const Dashboard = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (!session?.user) {
-          navigate('/login');
-        } else {
-          // Fetch user profile when authenticated
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (!session?.user) {
-        navigate('/login');
-      } else {
-        fetchUserProfile(session.user.id);
-      }
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        toast({
-          title: "Erro ao sair",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Logout realizado com sucesso",
-          description: "Até a próxima!",
-        });
-        navigate('/login');
-      }
-    } catch (error) {
-      toast({
-        title: "Erro inesperado",
-        description: "Ocorreu um erro durante o logout.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen abstract-bg flex items-center justify-center">
-        <Card className="glass-card">
-          <CardContent className="p-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Carregando...</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full abstract-bg">
-        <AppSidebar userRole={profile?.role} />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="border-b border-border/50 backdrop-blur-sm bg-background/50 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger className="lg:hidden" />
-                <div>
-                  <h1 className="text-2xl font-bold">Dashboard</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Visão geral da Seção Contraincêndio
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user?.email}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {profile?.role === 'admin' ? 'Administrador' : 'Usuário'}
-                  </p>
-                </div>
-              </div>
+    <div className="p-6">
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Visão geral da Seção Contraincêndio
+          </p>
+        </div>
+
+        {/* Welcome Section */}
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+              <Shield className="w-7 h-7 text-primary-foreground" />
             </div>
-          </header>
+            <div>
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                SCI-Core
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Sistema de Gestão para Seção Contraincêndio
+              </p>
+            </div>
+          </div>
+        </div>
 
-          {/* Main Content */}
-          <main className="flex-1 p-6">
-            <div className="space-y-6">
-              {/* Welcome Section */}
-              <div className="text-center space-y-4">
-                <div className="flex items-center justify-center space-x-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-                    <Shield className="w-7 h-7 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <h2 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                      SCI-Core
-                    </h2>
-                    <p className="text-lg text-muted-foreground">
-                      Sistema de Gestão para Seção Contraincêndio
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="glass-card">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Pessoal Ativo</CardTitle>
@@ -223,10 +92,10 @@ const Dashboard = () => {
                     </p>
                   </CardContent>
                 </Card>
-              </div>
+        </div>
 
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="glass-card hover:scale-105 transition-all duration-300 cursor-pointer">
                   <CardHeader className="text-center">
                     <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mb-4">
@@ -262,10 +131,10 @@ const Dashboard = () => {
                     </CardDescription>
                   </CardHeader>
                 </Card>
-              </div>
+        </div>
 
-              {/* Status Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Status Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="glass-card">
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
@@ -326,12 +195,9 @@ const Dashboard = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </div>
-          </main>
         </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 

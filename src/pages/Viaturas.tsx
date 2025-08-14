@@ -1,13 +1,9 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Truck, Wrench, FileText, Clock, AlertTriangle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Plus, Truck } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { ViaturasGrid } from "@/components/ViaturasGrid";
 import { ViaturasDetails } from "@/components/ViaturasDetails";
 import { AddViatura } from "@/components/AddViatura";
@@ -27,41 +23,15 @@ interface Viatura {
 }
 
 const Viaturas = () => {
-  const [userRole, setUserRole] = useState<string>("");
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddViatura, setShowAddViatura] = useState(false);
   const [selectedViatura, setSelectedViatura] = useState<Viatura | null>(null);
-  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate('/login');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .single();
-      
-      if (profile) {
-        setUserRole(profile.role);
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
-
-  useEffect(() => {
-    if (userRole) {
-      fetchViaturas();
-    }
-  }, [userRole]);
+    fetchViaturas();
+  }, []);
 
   const fetchViaturas = async () => {
     try {
@@ -104,76 +74,48 @@ const Viaturas = () => {
 
   if (selectedViatura) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gradient-to-br from-background to-muted/20">
-          <AppSidebar userRole={userRole} />
-          <div className="flex-1 flex flex-col">
-            <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-6">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger />
-                <div className="flex items-center gap-2">
-                  <Truck className="h-6 w-6 text-primary" />
-                  <h1 className="text-xl font-semibold">Controle de Viaturas</h1>
-                </div>
-              </div>
-            </header>
-            <main className="flex-1 overflow-auto">
-              <ViaturasDetails 
-                viatura={selectedViatura} 
-                onBack={() => setSelectedViatura(null)}
-                onUpdate={fetchViaturas}
-              />
-            </main>
-          </div>
-        </div>
-      </SidebarProvider>
+      <ViaturasDetails 
+        viatura={selectedViatura} 
+        onBack={() => setSelectedViatura(null)}
+        onUpdate={fetchViaturas}
+      />
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background to-muted/20">
-        <AppSidebar userRole={userRole} />
-        <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-6">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger />
-              <div className="flex items-center gap-2">
-                <Truck className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-semibold">Controle de Viaturas</h1>
-              </div>
-            </div>
-            <Button 
-              onClick={() => setShowAddViatura(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Adicionar Nova Viatura
-            </Button>
-          </header>
-
-          <main className="flex-1 p-6 overflow-auto">
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <ViaturasGrid 
-                viaturas={viaturas} 
-                onSelectViatura={setSelectedViatura}
-              />
-            )}
-          </main>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Truck className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Controle de Viaturas</h1>
         </div>
-
-        {showAddViatura && (
-          <AddViatura 
-            onClose={() => setShowAddViatura(false)}
-            onSave={handleViaturaSaved}
-          />
-        )}
+        <Button 
+          onClick={() => setShowAddViatura(true)}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Adicionar Nova Viatura
+        </Button>
       </div>
-    </SidebarProvider>
+
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <ViaturasGrid 
+          viaturas={viaturas} 
+          onSelectViatura={setSelectedViatura}
+        />
+      )}
+
+      {showAddViatura && (
+        <AddViatura 
+          onClose={() => setShowAddViatura(false)}
+          onSave={handleViaturaSaved}
+        />
+      )}
+    </div>
   );
 };
 

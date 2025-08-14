@@ -249,7 +249,12 @@ const Escalas = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3">
         <Calendar className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold">Gerenciamento de Escalas</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Gerenciamento de Escalas</h1>
+          <p className="text-sm text-muted-foreground">
+            Geração e visualização de escalas de plantão
+          </p>
+        </div>
       </div>
 
       <Card className="max-w-2xl mx-auto">

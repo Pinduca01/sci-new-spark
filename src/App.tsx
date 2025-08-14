@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login";
+import MainLayout from "./components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import ControlePessoal from "./pages/ControlePessoal";
 import Ocorrencias from "./pages/Ocorrencias";
@@ -23,11 +24,12 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/pessoal" element={<ControlePessoal />} />
-          <Route path="/ocorrencias" element={<Ocorrencias />} />
-          <Route path="/viaturas" element={<Viaturas />} />
-          <Route path="/escalas" element={<Escalas />} />
+          <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
+          <Route path="/pessoal" element={<MainLayout><ControlePessoal /></MainLayout>} />
+          <Route path="/ocorrencias" element={<MainLayout><Ocorrencias /></MainLayout>} />
+          <Route path="/viaturas" element={<MainLayout><Viaturas /></MainLayout>} />
+          <Route path="/veiculos" element={<MainLayout><Viaturas /></MainLayout>} />
+          <Route path="/escalas" element={<MainLayout><Escalas /></MainLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

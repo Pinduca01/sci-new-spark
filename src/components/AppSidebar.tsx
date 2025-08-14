@@ -53,7 +53,7 @@ const mainNavItems = [
   },
   { 
     title: "Veículos", 
-    url: "/veiculos", 
+    url: "/viaturas", 
     icon: Truck,
     description: "Gestão da frota"
   },

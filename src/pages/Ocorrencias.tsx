@@ -293,7 +293,10 @@ const Ocorrencias = () => {
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Ocorrências</h1>
+          <h1 className="text-2xl font-bold">Ocorrências</h1>
+          <p className="text-sm text-muted-foreground">
+            Registro e acompanhamento de emergências
+          </p>
           <p className="text-muted-foreground">
             Gerencie relatórios pós-ocorrência e acompanhe indicadores
           </p>
