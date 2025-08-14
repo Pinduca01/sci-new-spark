@@ -12,7 +12,7 @@ import { Plus, Search, Clock, Users, AlertTriangle, Grid, List, MapPin, Filter, 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -125,7 +125,11 @@ const Ocorrencias = () => {
       setOcorrencias(data || []);
     } catch (error) {
       console.error("Erro ao carregar ocorrências:", error);
-      toast.error("Erro ao carregar ocorrências");
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar ocorrências",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -189,14 +193,21 @@ const Ocorrencias = () => {
         .insert([ocorrenciaData]);
 
       if (error) throw error;
-
-      toast.success("Ocorrência registrada com sucesso!");
+      
+      toast({
+        title: "Sucesso",
+        description: "Ocorrência registrada com sucesso!",
+      });
       setIsModalOpen(false);
       form.reset();
       fetchOcorrencias();
     } catch (error) {
       console.error("Erro ao registrar ocorrência:", error);
-      toast.error("Erro ao registrar ocorrência");
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar ocorrência",
+        variant: "destructive",
+      });
     }
   };
 
@@ -260,15 +271,22 @@ const Ocorrencias = () => {
         .eq("id", selectedOcorrencia.id);
 
       if (error) throw error;
-
-      toast.success("Ocorrência atualizada com sucesso!");
+      
+      toast({
+        title: "Sucesso", 
+        description: "Ocorrência atualizada com sucesso!",
+      });
       setIsEditModalOpen(false);
       setSelectedOcorrencia(null);
       form.reset();
       fetchOcorrencias();
     } catch (error) {
       console.error("Erro ao atualizar ocorrência:", error);
-      toast.error("Erro ao atualizar ocorrência");
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar ocorrência",
+        variant: "destructive",
+      });
     }
   };
 
