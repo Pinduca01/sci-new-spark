@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -93,6 +93,7 @@ const Escalas = () => {
       const escalasToInsert = [];
 
       for (let dia = 1; dia <= diasNoMes; dia++) {
+        // Corrigido: começar com a equipe selecionada no dia 1
         const equipeIndex = (equipeInicialIndex + (dia - 1)) % equipesData.length;
         const equipe = equipesData[equipeIndex];
         
@@ -155,9 +156,9 @@ const Escalas = () => {
   };
 
   // Carregar equipes ao montar o componente
-  useState(() => {
+  useEffect(() => {
     loadEquipes();
-  });
+  }, []);
 
   if (viewMode === "calendar") {
     return (
