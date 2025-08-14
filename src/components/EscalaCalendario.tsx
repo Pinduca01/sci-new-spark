@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, Users, FileText, Download } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Download } from "lucide-react";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
