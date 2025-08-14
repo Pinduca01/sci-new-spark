@@ -47,7 +47,7 @@ const GerenciadorFerias = ({ mes, ano, onFeriasChange }: GerenciadorFeriasProps)
         equipes(nome_equipe, cor_identificacao)
       `)
       .eq('status', 'ativo')
-      .eq('eh_ferista', false)
+      .neq('funcao', 'ferista')
       .order('nome');
 
     if (error) {
@@ -70,8 +70,7 @@ const GerenciadorFerias = ({ mes, ano, onFeriasChange }: GerenciadorFeriasProps)
         equipes(nome_equipe, cor_identificacao)
       `)
       .eq('status', 'ativo')
-      .eq('eh_ferista', true)
-      .eq('disponivel_para_substituicao', true)
+      .eq('funcao', 'ferista')
       .order('nome');
 
     if (error) {
@@ -365,17 +364,23 @@ const GerenciadorFerias = ({ mes, ano, onFeriasChange }: GerenciadorFeriasProps)
         <CardContent className="space-y-4 p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Ferista Disponível</Label>
+              <Label>Ferista Disponível (Função: Ferista)</Label>
               <Select value={novoFeristaBombeiro} onValueChange={setNovoFeristaBombeiro}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o ferista" />
+                  <SelectValue placeholder="Selecione ferista (função ferista)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {feristas.map((ferista) => (
-                    <SelectItem key={ferista.id} value={ferista.id}>
-                      {ferista.nome} - {ferista.equipes?.nome_equipe}
+                  {feristas.length > 0 ? (
+                    feristas.map((ferista) => (
+                      <SelectItem key={ferista.id} value={ferista.id}>
+                        {ferista.nome} - {ferista.equipes?.nome_equipe} (Ferista)
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>
+                      Nenhum ferista encontrado
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -405,18 +410,28 @@ const GerenciadorFerias = ({ mes, ano, onFeriasChange }: GerenciadorFeriasProps)
           {/* Lista de feristas selecionados */}
           {feristasSelecionados.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Feristas Selecionados:</h4>
+              <h4 className="font-semibold text-sm">Feristas Selecionados para Substituição:</h4>
               {feristasSelecionados.map((item, index) => (
                 <div key={index} className="p-3 bg-muted/30 rounded-lg">
                   <span className="text-sm">
-                    <strong>{item.ferista.nome}</strong> substituindo <strong>{item.substituindo.nome}</strong>
+                    <strong>{item.ferista.nome}</strong> (Ferista) substituindo <strong>{item.substituindo.nome}</strong>
                     <br />
                     <span className="text-muted-foreground">
-                      Equipe: {item.substituindo.equipes?.nome_equipe}
+                      Equipe de destino: {item.substituindo.equipes?.nome_equipe}
                     </span>
                   </span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Aviso se não há feristas disponíveis */}
+          {feristas.length === 0 && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Aviso:</strong> Não há bombeiros cadastrados com a função "ferista". 
+                Para adicionar feristas, vá ao módulo de Controle de Pessoal e cadastre bombeiros com a função "ferista".
+              </p>
             </div>
           )}
         </CardContent>
