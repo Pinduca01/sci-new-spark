@@ -140,6 +140,7 @@ export const ViaturasGrid = ({ viaturas, onSelectViatura }: ViaturasGridProps) =
                 size="sm" 
                 className="w-full"
                 onClick={(e) => {
+                  console.log('Ver Detalhes clicked for viatura:', viatura.prefixo);
                   e.stopPropagation();
                   onSelectViatura(viatura);
                 }}

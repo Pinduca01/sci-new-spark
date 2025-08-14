@@ -292,7 +292,7 @@ const ControlePessoal: React.FC = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => console.log('Novo Bombeiro button clicked')}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Bombeiro
             </Button>

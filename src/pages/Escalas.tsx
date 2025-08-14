@@ -338,7 +338,10 @@ const Escalas = () => {
           <div className="flex gap-2">
             <Button 
               variant="outline" 
-              onClick={() => setViewMode("ferias")}
+              onClick={() => {
+                console.log('Gerenciar Férias button clicked');
+                setViewMode("ferias");
+              }}
               className="hover-scale"
             >
               <Users className="h-4 w-4 mr-2" />
@@ -347,7 +350,10 @@ const Escalas = () => {
           </div>
 
           <Button 
-            onClick={generateEscala} 
+            onClick={() => {
+              console.log('Generate Escala button clicked');
+              generateEscala();
+            }} 
             className="w-full" 
             disabled={isGenerating}
             size="lg"

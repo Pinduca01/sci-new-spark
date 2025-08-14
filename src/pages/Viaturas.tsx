@@ -92,7 +92,10 @@ const Viaturas = () => {
           <h1 className="text-2xl font-bold">Controle de Viaturas</h1>
         </div>
         <Button 
-          onClick={() => setShowAddViatura(true)}
+          onClick={() => {
+            console.log('Button clicked: Add Nova Viatura');
+            setShowAddViatura(true);
+          }}
           className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
