@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,15 +59,20 @@ const TAFForm = () => {
     return () => clearInterval(interval);
   }, [timerAtivo, timerPausado, tempoLimite, toast]);
 
-  // Calcular idade automaticamente
+  // Calcular idade automaticamente baseada na data de admissão
   useEffect(() => {
     if (bombeiroSelecionado) {
       const bombeiro = bombeiros.find(b => b.id === bombeiroSelecionado);
       if (bombeiro?.data_admissao) {
         const hoje = new Date();
-        const nascimento = new Date(bombeiro.data_admissao);
-        const idade = hoje.getFullYear() - nascimento.getFullYear();
-        setIdadeBombeiro(idade > 0 ? idade : 25); // Fallback para 25 anos
+        const admissao = new Date(bombeiro.data_admissao);
+        // Calcular uma idade estimada baseada na admissão (assumindo admissão aos 25 anos)
+        const anosServico = hoje.getFullYear() - admissao.getFullYear();
+        const idadeEstimada = 25 + anosServico;
+        setIdadeBombeiro(idadeEstimada > 0 ? idadeEstimada : 25);
+      } else {
+        // Fallback para idade padrão
+        setIdadeBombeiro(30);
       }
     }
   }, [bombeiroSelecionado, bombeiros]);
