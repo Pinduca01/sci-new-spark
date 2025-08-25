@@ -10,10 +10,11 @@ export interface Bombeiro {
   email: string;
   telefone: string;
   equipe: string;
+  equipe_id?: string | null; // Adicionando esta propriedade que estava faltando
   turno: string;
   status: string;
   matricula?: string;
-  data_admissao: string; // Adicionado este campo que estava faltando
+  data_admissao: string;
 }
 
 export const useBombeiros = () => {

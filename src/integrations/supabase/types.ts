@@ -300,6 +300,85 @@ export type Database = {
           },
         ]
       }
+      epis_uniformes_distribuicao: {
+        Row: {
+          ano_referencia: number
+          bombeiro_id: string | null
+          bombeiro_nome: string
+          created_at: string | null
+          data_entrega: string | null
+          equipe_id: string | null
+          id: string
+          item_descricao: string
+          mes_referencia: number
+          observacoes: string | null
+          quantidade_entregue: number
+          quantidade_prevista: number
+          responsavel_entrega_id: string | null
+          responsavel_entrega_nome: string | null
+          tipo_item: string
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          bombeiro_id?: string | null
+          bombeiro_nome: string
+          created_at?: string | null
+          data_entrega?: string | null
+          equipe_id?: string | null
+          id?: string
+          item_descricao: string
+          mes_referencia: number
+          observacoes?: string | null
+          quantidade_entregue?: number
+          quantidade_prevista?: number
+          responsavel_entrega_id?: string | null
+          responsavel_entrega_nome?: string | null
+          tipo_item: string
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          bombeiro_id?: string | null
+          bombeiro_nome?: string
+          created_at?: string | null
+          data_entrega?: string | null
+          equipe_id?: string | null
+          id?: string
+          item_descricao?: string
+          mes_referencia?: number
+          observacoes?: string | null
+          quantidade_entregue?: number
+          quantidade_prevista?: number
+          responsavel_entrega_id?: string | null
+          responsavel_entrega_nome?: string | null
+          tipo_item?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epis_uniformes_distribuicao_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epis_uniformes_distribuicao_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epis_uniformes_distribuicao_responsavel_entrega_id_fkey"
+            columns: ["responsavel_entrega_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipes: {
         Row: {
           ativa: boolean
@@ -417,6 +496,80 @@ export type Database = {
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      extintores_aeroporto: {
+        Row: {
+          capacidade: number
+          codigo_extintor: string
+          created_at: string
+          data_fabricacao: string | null
+          data_instalacao: string
+          fabricante: string | null
+          id: string
+          localizacao_detalhada: string
+          observacoes: string | null
+          proxima_recarga: string | null
+          proximo_teste_hidrostatico: string | null
+          qr_code: string | null
+          quadrante_id: string
+          status: string
+          tipo_extintor: string
+          ultima_recarga: string | null
+          ultimo_teste_hidrostatico: string | null
+          unidade_capacidade: string
+          updated_at: string
+        }
+        Insert: {
+          capacidade: number
+          codigo_extintor: string
+          created_at?: string
+          data_fabricacao?: string | null
+          data_instalacao: string
+          fabricante?: string | null
+          id?: string
+          localizacao_detalhada: string
+          observacoes?: string | null
+          proxima_recarga?: string | null
+          proximo_teste_hidrostatico?: string | null
+          qr_code?: string | null
+          quadrante_id: string
+          status?: string
+          tipo_extintor: string
+          ultima_recarga?: string | null
+          ultimo_teste_hidrostatico?: string | null
+          unidade_capacidade?: string
+          updated_at?: string
+        }
+        Update: {
+          capacidade?: number
+          codigo_extintor?: string
+          created_at?: string
+          data_fabricacao?: string | null
+          data_instalacao?: string
+          fabricante?: string | null
+          id?: string
+          localizacao_detalhada?: string
+          observacoes?: string | null
+          proxima_recarga?: string | null
+          proximo_teste_hidrostatico?: string | null
+          qr_code?: string | null
+          quadrante_id?: string
+          status?: string
+          tipo_extintor?: string
+          ultima_recarga?: string | null
+          ultimo_teste_hidrostatico?: string | null
+          unidade_capacidade?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extintores_aeroporto_quadrante_id_fkey"
+            columns: ["quadrante_id"]
+            isOneToOne: false
+            referencedRelation: "quadrantes_aeroporto"
             referencedColumns: ["id"]
           },
         ]
@@ -555,6 +708,72 @@ export type Database = {
             columns: ["viatura_id"]
             isOneToOne: false
             referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspecoes_extintores: {
+        Row: {
+          assinatura_digital: string | null
+          bombeiro_inspetor_id: string
+          created_at: string
+          data_inspecao: string
+          extintor_id: string
+          fotos: Json | null
+          hora_inspecao: string
+          id: string
+          itens_verificados: Json
+          observacoes: string | null
+          proxima_inspecao: string | null
+          status_extintor: string
+          tipo_inspecao: string
+          updated_at: string
+        }
+        Insert: {
+          assinatura_digital?: string | null
+          bombeiro_inspetor_id: string
+          created_at?: string
+          data_inspecao?: string
+          extintor_id: string
+          fotos?: Json | null
+          hora_inspecao?: string
+          id?: string
+          itens_verificados?: Json
+          observacoes?: string | null
+          proxima_inspecao?: string | null
+          status_extintor?: string
+          tipo_inspecao?: string
+          updated_at?: string
+        }
+        Update: {
+          assinatura_digital?: string | null
+          bombeiro_inspetor_id?: string
+          created_at?: string
+          data_inspecao?: string
+          extintor_id?: string
+          fotos?: Json | null
+          hora_inspecao?: string
+          id?: string
+          itens_verificados?: Json
+          observacoes?: string | null
+          proxima_inspecao?: string | null
+          status_extintor?: string
+          tipo_inspecao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspecoes_extintores_bombeiro_inspetor_id_fkey"
+            columns: ["bombeiro_inspetor_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspecoes_extintores_extintor_id_fkey"
+            columns: ["extintor_id"]
+            isOneToOne: false
+            referencedRelation: "extintores_aeroporto"
             referencedColumns: ["id"]
           },
         ]
@@ -1148,6 +1367,388 @@ export type Database = {
           },
         ]
       }
+      quadrantes_aeroporto: {
+        Row: {
+          ativo: boolean
+          cor_identificacao: string
+          created_at: string
+          descricao: string | null
+          equipe_responsavel_id: string | null
+          id: string
+          nome_quadrante: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor_identificacao: string
+          created_at?: string
+          descricao?: string | null
+          equipe_responsavel_id?: string | null
+          id?: string
+          nome_quadrante: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cor_identificacao?: string
+          created_at?: string
+          descricao?: string | null
+          equipe_responsavel_id?: string | null
+          id?: string
+          nome_quadrante?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quadrantes_aeroporto_equipe_responsavel_id_fkey"
+            columns: ["equipe_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taf_avaliacoes: {
+        Row: {
+          abdominais_realizadas: number
+          aprovado: boolean
+          avaliador_nome: string
+          bombeiro_id: string
+          created_at: string | null
+          data_teste: string
+          faixa_etaria: string
+          flexoes_realizadas: number
+          id: string
+          idade_na_data: number
+          observacoes: string | null
+          polichinelos_realizados: number
+          tempo_limite_minutos: number
+          tempo_total_segundos: number
+          updated_at: string | null
+        }
+        Insert: {
+          abdominais_realizadas?: number
+          aprovado?: boolean
+          avaliador_nome: string
+          bombeiro_id: string
+          created_at?: string | null
+          data_teste?: string
+          faixa_etaria: string
+          flexoes_realizadas?: number
+          id?: string
+          idade_na_data: number
+          observacoes?: string | null
+          polichinelos_realizados?: number
+          tempo_limite_minutos: number
+          tempo_total_segundos: number
+          updated_at?: string | null
+        }
+        Update: {
+          abdominais_realizadas?: number
+          aprovado?: boolean
+          avaliador_nome?: string
+          bombeiro_id?: string
+          created_at?: string | null
+          data_teste?: string
+          faixa_etaria?: string
+          flexoes_realizadas?: number
+          id?: string
+          idade_na_data?: number
+          observacoes?: string | null
+          polichinelos_realizados?: number
+          tempo_limite_minutos?: number
+          tempo_total_segundos?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taf_avaliacoes_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taf_metas: {
+        Row: {
+          created_at: string | null
+          faixa_etaria: string
+          id: string
+          meta_abdominais: number
+          meta_flexoes: number
+          meta_polichinelos: number
+          tempo_limite_minutos: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          faixa_etaria: string
+          id?: string
+          meta_abdominais: number
+          meta_flexoes: number
+          meta_polichinelos: number
+          tempo_limite_minutos: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          faixa_etaria?: string
+          id?: string
+          meta_abdominais?: number
+          meta_flexoes?: number
+          meta_polichinelos?: number
+          tempo_limite_minutos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tp_configuracoes: {
+        Row: {
+          ano_referencia: number
+          base: string
+          created_at: string | null
+          equipe_id: string | null
+          id: string
+          mes_referencia: number
+          quantidade_tp_prevista: number
+          quantidade_uniforme_prevista: number
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          base: string
+          created_at?: string | null
+          equipe_id?: string | null
+          id?: string
+          mes_referencia: number
+          quantidade_tp_prevista?: number
+          quantidade_uniforme_prevista?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          base?: string
+          created_at?: string | null
+          equipe_id?: string | null
+          id?: string
+          mes_referencia?: number
+          quantidade_tp_prevista?: number
+          quantidade_uniforme_prevista?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tp_configuracoes_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tp_higienizacoes: {
+        Row: {
+          ano_referencia: number
+          base: string
+          created_at: string | null
+          data_higienizacao: string
+          id: string
+          mes_referencia: number
+          observacoes: string | null
+          quantidade_higienizada: number
+          quantidade_total: number
+          responsavel_id: string | null
+          responsavel_nome: string
+          tipo_higienizacao: string
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          base: string
+          created_at?: string | null
+          data_higienizacao?: string
+          id?: string
+          mes_referencia: number
+          observacoes?: string | null
+          quantidade_higienizada?: number
+          quantidade_total?: number
+          responsavel_id?: string | null
+          responsavel_nome: string
+          tipo_higienizacao?: string
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          base?: string
+          created_at?: string | null
+          data_higienizacao?: string
+          id?: string
+          mes_referencia?: number
+          observacoes?: string | null
+          quantidade_higienizada?: number
+          quantidade_total?: number
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          tipo_higienizacao?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tp_higienizacoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tp_verificacoes: {
+        Row: {
+          ano_referencia: number
+          base: string
+          created_at: string | null
+          data_verificacao: string
+          equipe_id: string | null
+          id: string
+          mes_referencia: number
+          observacoes: string | null
+          responsavel_id: string | null
+          responsavel_nome: string
+          total_verificados: number
+          tp_conformes: number
+          tp_nao_conformes: number
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          base: string
+          created_at?: string | null
+          data_verificacao?: string
+          equipe_id?: string | null
+          id?: string
+          mes_referencia: number
+          observacoes?: string | null
+          responsavel_id?: string | null
+          responsavel_nome: string
+          total_verificados?: number
+          tp_conformes?: number
+          tp_nao_conformes?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          base?: string
+          created_at?: string | null
+          data_verificacao?: string
+          equipe_id?: string | null
+          id?: string
+          mes_referencia?: number
+          observacoes?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          total_verificados?: number
+          tp_conformes?: number
+          tp_nao_conformes?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tp_verificacoes_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tp_verificacoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trocas_plantao: {
+        Row: {
+          ano_referencia: number
+          base: string
+          bombeiro_substituido_id: string
+          bombeiro_substituto_id: string
+          created_at: string
+          data_servico_pagamento: string
+          data_servico_trocado: string
+          equipe_id: string
+          id: string
+          mes_referencia: number
+          observacoes: string | null
+          solicitante_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ano_referencia: number
+          base?: string
+          bombeiro_substituido_id: string
+          bombeiro_substituto_id: string
+          created_at?: string
+          data_servico_pagamento: string
+          data_servico_trocado: string
+          equipe_id: string
+          id?: string
+          mes_referencia: number
+          observacoes?: string | null
+          solicitante_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ano_referencia?: number
+          base?: string
+          bombeiro_substituido_id?: string
+          bombeiro_substituto_id?: string
+          created_at?: string
+          data_servico_pagamento?: string
+          data_servico_trocado?: string
+          equipe_id?: string
+          id?: string
+          mes_referencia?: number
+          observacoes?: string | null
+          solicitante_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trocas_plantao_bombeiro_substituido_id_fkey"
+            columns: ["bombeiro_substituido_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trocas_plantao_bombeiro_substituto_id_fkey"
+            columns: ["bombeiro_substituto_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trocas_plantao_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trocas_plantao_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       viaturas: {
         Row: {
           ano: number
@@ -1223,6 +1824,17 @@ export type Database = {
           dias_para_vencimento: number
           lote: string
           quantidade_disponivel: number
+        }[]
+      }
+      get_taf_estatisticas: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bombeiros_pendentes: number
+          media_abdominais: number
+          media_flexoes: number
+          media_polichinelos: number
+          taxa_aprovacao: number
+          total_avaliacoes: number
         }[]
       }
       nextval: {
@@ -1356,143 +1968,8 @@ export type CompositeTypes<
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
-
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-nextval: {
-        Args: { sequence_name: string }
-        Returns: number
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
-
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -171,11 +172,34 @@ All colors MUST be HSL.
       radial-gradient(circle at 75% 75%, hsl(var(--radiant-orange) / 0.05) 0%, transparent 50%),
       radial-gradient(circle at 50% 50%, hsl(var(--radiant-orange) / 0.03) 0%, transparent 70%);
     animation: abstractFloat 20s ease-in-out infinite;
+    pointer-events: none; /* CRÍTICO: Permite cliques através do overlay */
+    z-index: -1; /* Garante que fica atrás do conteúdo */
   }
   
   @keyframes abstractFloat {
     0%, 100% { transform: rotate(0deg) scale(1); }
     33% { transform: rotate(1deg) scale(1.02); }
     66% { transform: rotate(-1deg) scale(0.98); }
+  }
+
+  /* Garante que todos os elementos interativos funcionem */
+  button, 
+  [role="button"], 
+  [role="tab"], 
+  [role="tablist"],
+  .cursor-pointer {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Específico para componentes de UI */
+  [data-radix-collection-item],
+  [data-state],
+  .react-tabs-tab,
+  .react-tabs-tablist {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 10;
   }
 }
