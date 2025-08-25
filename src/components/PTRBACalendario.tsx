@@ -1,10 +1,13 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Clock, Users, BookOpen, Calendar as CalendarIcon } from 'lucide-react';
+import { usePTRInstrucoes } from '@/hooks/usePTRInstrucoes';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PTRBACalendarioProps {
   selectedDate: Date;
@@ -15,20 +18,33 @@ export const PTRBACalendario: React.FC<PTRBACalendarioProps> = ({
   selectedDate,
   onDateSelect,
 }) => {
-  // Dados mockados - depois serão vindos do Supabase
-  const ptrsData = {
-    '2024-08-25': [
-      { id: 1, titulo: 'Procedimentos de Emergência', hora: '08:00', tipo: 'Procedimentos de Emergência', participantes: 8 },
-      { id: 2, titulo: 'Manuseio de Equipamentos', hora: '14:00', tipo: 'Manuseio de Equipamentos', participantes: 6 }
-    ],
-    '2024-08-26': [
-      { id: 3, titulo: 'Combate a Incêndio', hora: '09:00', tipo: 'Combate a Incêndio', participantes: 10 }
-    ],
-    '2024-08-28': [
-      { id: 4, titulo: 'Primeiros Socorros', hora: '10:00', tipo: 'Primeiros Socorros', participantes: 7 },
-      { id: 5, titulo: 'Resgate em Altura', hora: '15:00', tipo: 'Resgate em Altura', participantes: 5 }
-    ]
-  };
+  const { buscarInstrucoesPorData } = usePTRInstrucoes();
+
+  // Buscar instruções do mês atual para o calendário
+  const { data: instrucoesCalendario = [] } = useQuery({
+    queryKey: ['ptr-instrucoes-calendario', selectedDate.getFullYear(), selectedDate.getMonth()],
+    queryFn: async () => {
+      const primeiroDia = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      const ultimoDia = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+      
+      const { data, error } = await supabase
+        .from('ptr_instrucoes')
+        .select('id, data, hora, titulo, tipo')
+        .gte('data', primeiroDia.toISOString().split('T')[0])
+        .lte('data', ultimoDia.toISOString().split('T')[0])
+        .order('data')
+        .order('hora');
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Buscar instruções do dia selecionado
+  const { data: instrucoesDia = [] } = useQuery({
+    queryKey: ['ptr-instrucoes-dia', selectedDate.toISOString().split('T')[0]],
+    queryFn: () => buscarInstrucoesPorData(selectedDate.toISOString().split('T')[0])
+  });
 
   const tiposCores = {
     'Procedimentos de Emergência': 'bg-red-100 text-red-800 border-red-200',
@@ -41,22 +57,21 @@ export const PTRBACalendario: React.FC<PTRBACalendarioProps> = ({
     'Comunicação de Emergência': 'bg-indigo-100 text-indigo-800 border-indigo-200'
   };
 
-  const getDayPtrs = (date: Date) => {
+  const getDayInstructions = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return ptrsData[dateStr] || [];
+    return instrucoesCalendario.filter(instrucao => instrucao.data === dateStr);
   };
 
   const hasInstructions = (date: Date) => {
-    return getDayPtrs(date).length > 0;
+    return getDayInstructions(date).length > 0;
   };
 
   const getInstructionsCount = (date: Date) => {
-    return getDayPtrs(date).length;
+    return getDayInstructions(date).length;
   };
 
   return (
     <div className="space-y-6">
-      {/* Calendário Melhorado */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -110,7 +125,6 @@ export const PTRBACalendario: React.FC<PTRBACalendarioProps> = ({
         </CardContent>
       </Card>
 
-      {/* Legenda Melhorada */}
       <Card>
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -128,7 +142,6 @@ export const PTRBACalendario: React.FC<PTRBACalendarioProps> = ({
         </CardContent>
       </Card>
 
-      {/* Instruções do Dia Selecionado - Melhorado */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -143,9 +156,9 @@ export const PTRBACalendario: React.FC<PTRBACalendarioProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {getDayPtrs(selectedDate).length > 0 ? (
+          {instrucoesDia.length > 0 ? (
             <div className="space-y-3">
-              {getDayPtrs(selectedDate).map((ptr) => (
+              {instrucoesDia.map((ptr) => (
                 <Card key={ptr.id} className="border-l-4 border-l-primary bg-muted/30">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -160,10 +173,12 @@ export const PTRBACalendario: React.FC<PTRBACalendarioProps> = ({
                           </Badge>
                         </div>
                         <h4 className="font-semibold text-foreground">{ptr.titulo}</h4>
-                        <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-                          <Users className="w-4 h-4" />
-                          <span>{ptr.participantes} participantes</span>
-                        </div>
+                        {ptr.ptr_participantes && (
+                          <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+                            <Users className="w-4 h-4" />
+                            <span>{ptr.ptr_participantes.length} participantes</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>

@@ -518,6 +518,168 @@ export type Database = {
         }
         Relationships: []
       }
+      ptr_fotos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          foto_url: string
+          id: string
+          ordem: number | null
+          ptr_instrucao_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          foto_url: string
+          id?: string
+          ordem?: number | null
+          ptr_instrucao_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          foto_url?: string
+          id?: string
+          ordem?: number | null
+          ptr_instrucao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ptr_fotos_ptr_instrucao_id_fkey"
+            columns: ["ptr_instrucao_id"]
+            isOneToOne: false
+            referencedRelation: "ptr_instrucoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ptr_instrucoes: {
+        Row: {
+          created_at: string
+          data: string
+          hora: string
+          id: string
+          instrutor_id: string | null
+          observacoes: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          hora: string
+          id?: string
+          instrutor_id?: string | null
+          observacoes?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          hora?: string
+          id?: string
+          instrutor_id?: string | null
+          observacoes?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ptr_instrucoes_instrutor_id_fkey"
+            columns: ["instrutor_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ptr_participantes: {
+        Row: {
+          bombeiro_id: string
+          created_at: string
+          id: string
+          observacoes: string | null
+          presente: boolean | null
+          ptr_instrucao_id: string
+          updated_at: string
+        }
+        Insert: {
+          bombeiro_id: string
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          presente?: boolean | null
+          ptr_instrucao_id: string
+          updated_at?: string
+        }
+        Update: {
+          bombeiro_id?: string
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          presente?: boolean | null
+          ptr_instrucao_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ptr_participantes_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ptr_participantes_ptr_instrucao_id_fkey"
+            columns: ["ptr_instrucao_id"]
+            isOneToOne: false
+            referencedRelation: "ptr_instrucoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ptr_relatorios: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          pdf_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data: string
+          id?: string
+          pdf_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          pdf_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ptr_relatorios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       viaturas: {
         Row: {
           ano: number
