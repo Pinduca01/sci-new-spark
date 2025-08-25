@@ -74,9 +74,10 @@ export const useExtintoresAeroporto = () => {
   const { toast } = useToast();
 
   // Buscar quadrantes
-  const { data: quadrantes = [], isLoading: isLoadingQuadrantes } = useQuery({
+  const { data: quadrantes = [], isLoading: isLoadingQuadrantes, error: errorQuadrantes } = useQuery({
     queryKey: ['quadrantes-aeroporto'],
     queryFn: async () => {
+      console.log('Buscando quadrantes...');
       const { data, error } = await supabase
         .from('quadrantes_aeroporto')
         .select(`
@@ -89,15 +90,22 @@ export const useExtintoresAeroporto = () => {
         .eq('ativo', true)
         .order('nome_quadrante');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar quadrantes:', error);
+        throw error;
+      }
+      console.log('Quadrantes encontrados:', data?.length || 0);
       return data as QuadranteAeroporto[];
-    }
+    },
+    retry: 3,
+    retryDelay: 1000
   });
 
   // Buscar extintores
-  const { data: extintores = [], isLoading: isLoadingExtintores } = useQuery({
+  const { data: extintores = [], isLoading: isLoadingExtintores, error: errorExtintores } = useQuery({
     queryKey: ['extintores-aeroporto'],
     queryFn: async () => {
+      console.log('Buscando extintores...');
       const { data, error } = await supabase
         .from('extintores_aeroporto')
         .select(`
@@ -109,15 +117,22 @@ export const useExtintoresAeroporto = () => {
         `)
         .order('codigo_extintor');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar extintores:', error);
+        throw error;
+      }
+      console.log('Extintores encontrados:', data?.length || 0);
       return data as ExtintorAeroporto[];
-    }
+    },
+    retry: 3,
+    retryDelay: 1000
   });
 
   // Buscar inspeções
-  const { data: inspecoes = [], isLoading: isLoadingInspecoes } = useQuery({
+  const { data: inspecoes = [], isLoading: isLoadingInspecoes, error: errorInspecoes } = useQuery({
     queryKey: ['inspecoes-extintores'],
     queryFn: async () => {
+      console.log('Buscando inspeções...');
       const { data, error } = await supabase
         .from('inspecoes_extintores')
         .select(`
@@ -133,21 +148,32 @@ export const useExtintoresAeroporto = () => {
         `)
         .order('data_inspecao', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar inspeções:', error);
+        throw error;
+      }
+      console.log('Inspeções encontradas:', data?.length || 0);
       return data as InspecaoExtintor[];
-    }
+    },
+    retry: 3,
+    retryDelay: 1000
   });
 
   // Criar extintor
   const createExtintor = useMutation({
     mutationFn: async (extintor: Omit<ExtintorAeroporto, 'id' | 'created_at' | 'updated_at' | 'quadrantes_aeroporto'>) => {
+      console.log('Criando extintor:', extintor);
       const { data, error } = await supabase
         .from('extintores_aeroporto')
         .insert(extintor)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar extintor:', error);
+        throw error;
+      }
+      console.log('Extintor criado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
@@ -156,19 +182,32 @@ export const useExtintoresAeroporto = () => {
         title: "Sucesso",
         description: "Extintor cadastrado com sucesso!",
       });
+    },
+    onError: (error: any) => {
+      console.error('Erro na mutação de criar extintor:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao cadastrar extintor: " + (error.message || 'Erro desconhecido'),
+        variant: "destructive",
+      });
     }
   });
 
   // Criar inspeção
   const createInspecao = useMutation({
     mutationFn: async (inspecao: Omit<InspecaoExtintor, 'id' | 'created_at' | 'updated_at' | 'extintores_aeroporto' | 'bombeiros'>) => {
+      console.log('Criando inspeção:', inspecao);
       const { data, error } = await supabase
         .from('inspecoes_extintores')
         .insert(inspecao)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar inspeção:', error);
+        throw error;
+      }
+      console.log('Inspeção criada com sucesso:', data);
       return data;
     },
     onSuccess: () => {
@@ -177,12 +216,21 @@ export const useExtintoresAeroporto = () => {
         title: "Sucesso",
         description: "Inspeção registrada com sucesso!",
       });
+    },
+    onError: (error: any) => {
+      console.error('Erro na mutação de criar inspeção:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar inspeção: " + (error.message || 'Erro desconhecido'),
+        variant: "destructive",
+      });
     }
   });
 
   // Atualizar extintor
   const updateExtintor = useMutation({
     mutationFn: async ({ id, ...extintor }: Partial<ExtintorAeroporto> & { id: string }) => {
+      console.log('Atualizando extintor:', id, extintor);
       const { data, error } = await supabase
         .from('extintores_aeroporto')
         .update(extintor)
@@ -190,7 +238,11 @@ export const useExtintoresAeroporto = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar extintor:', error);
+        throw error;
+      }
+      console.log('Extintor atualizado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
@@ -199,14 +251,31 @@ export const useExtintoresAeroporto = () => {
         title: "Sucesso",
         description: "Extintor atualizado com sucesso!",
       });
+    },
+    onError: (error: any) => {
+      console.error('Erro na mutação de atualizar extintor:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar extintor: " + (error.message || 'Erro desconhecido'),
+        variant: "destructive",
+      });
     }
   });
+
+  // Log de erros para debug
+  if (errorQuadrantes) console.error('Erro nos quadrantes:', errorQuadrantes);
+  if (errorExtintores) console.error('Erro nos extintores:', errorExtintores);
+  if (errorInspecoes) console.error('Erro nas inspeções:', errorInspecoes);
+
+  const hasErrors = errorQuadrantes || errorExtintores || errorInspecoes;
+  const isLoading = isLoadingQuadrantes || isLoadingExtintores || isLoadingInspecoes;
 
   return {
     quadrantes,
     extintores,
     inspecoes,
-    isLoading: isLoadingQuadrantes || isLoadingExtintores || isLoadingInspecoes,
+    isLoading,
+    hasErrors,
     createExtintor,
     createInspecao,
     updateExtintor

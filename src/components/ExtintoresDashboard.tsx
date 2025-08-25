@@ -15,24 +15,50 @@ import {
   Calendar,
   Eye,
   Plus,
-  FileText
+  FileText,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { ExtintorForm } from './ExtintorForm';
 import { InspecaoForm } from './InspecaoForm';
 import { ExtintorDetailsModal } from './ExtintorDetailsModal';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const ExtintoresDashboard = () => {
-  const { quadrantes, extintores, inspecoes, isLoading } = useExtintoresAeroporto();
-  const { bombeiros } = useBombeiros();
+  const { quadrantes, extintores, inspecoes, isLoading, hasErrors } = useExtintoresAeroporto();
+  const { bombeiros, isLoading: isLoadingBombeiros } = useBombeiros();
   const [showExtintorForm, setShowExtintorForm] = useState(false);
   const [showInspecaoForm, setShowInspecaoForm] = useState(false);
   const [selectedExtintor, setSelectedExtintor] = useState<string | null>(null);
   const [selectedExtintorForDetails, setSelectedExtintorForDetails] = useState<string | null>(null);
 
-  if (isLoading) {
+  console.log('ExtintoresDashboard - Estado atual:', {
+    quadrantes: quadrantes?.length || 0,
+    extintores: extintores?.length || 0,
+    inspecoes: inspecoes?.length || 0,
+    bombeiros: bombeiros?.length || 0,
+    isLoading,
+    hasErrors
+  });
+
+  if (isLoading || isLoadingBombeiros) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-64 space-x-2">
+        <Loader2 className="animate-spin h-6 w-6" />
+        <span>Carregando dados...</span>
+      </div>
+    );
+  }
+
+  if (hasErrors) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Erro ao carregar dados. Verifique a conexão e tente novamente.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -70,16 +96,44 @@ export const ExtintoresDashboard = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setShowExtintorForm(true)} className="gap-2">
+          <Button 
+            onClick={() => setShowExtintorForm(true)} 
+            className="gap-2"
+            disabled={quadrantes.length === 0}
+          >
             <Plus className="h-4 w-4" />
             Novo Extintor
           </Button>
-          <Button onClick={() => setShowInspecaoForm(true)} variant="outline" className="gap-2">
+          <Button 
+            onClick={() => setShowInspecaoForm(true)} 
+            variant="outline" 
+            className="gap-2"
+            disabled={extintores.length === 0 || bombeiros.length === 0}
+          >
             <FileText className="h-4 w-4" />
             Nova Inspeção
           </Button>
         </div>
       </div>
+
+      {/* Alertas informativos */}
+      {quadrantes.length === 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Nenhum quadrante encontrado. Configure os quadrantes primeiro.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {bombeiros.length === 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Nenhum bombeiro encontrado. Configure os bombeiros primeiro para realizar inspeções.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -146,138 +200,191 @@ export const ExtintoresDashboard = () => {
         </TabsList>
 
         <TabsContent value="quadrantes" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {quadrantes.map((quadrante) => {
-              const extintoresQuadrante = extintores.filter(e => e.quadrante_id === quadrante.id);
-              return (
-                <Card key={quadrante.id} className="glass-card">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: quadrante.cor_identificacao }}
-                        />
-                        {quadrante.nome_quadrante}
-                      </CardTitle>
-                      <Badge variant="outline">
-                        {extintoresQuadrante.length} extintores
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {quadrante.descricao}
-                    </p>
-                    {quadrante.equipes && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Users className="h-4 w-4" />
-                        <span>Equipe: {quadrante.equipes.nome_equipe}</span>
+          {quadrantes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {quadrantes.map((quadrante) => {
+                const extintoresQuadrante = extintores.filter(e => e.quadrante_id === quadrante.id);
+                return (
+                  <Card key={quadrante.id} className="glass-card">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: quadrante.cor_identificacao }}
+                          />
+                          {quadrante.nome_quadrante}
+                        </CardTitle>
+                        <Badge variant="outline">
+                          {extintoresQuadrante.length} extintores
+                        </Badge>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {quadrante.descricao || 'Sem descrição'}
+                      </p>
+                      {quadrante.equipes && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Users className="h-4 w-4" />
+                          <span>Equipe: {quadrante.equipes.nome_equipe}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <Card className="glass-card">
+              <CardContent className="text-center py-8">
+                <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium mb-2">Nenhum quadrante encontrado</h3>
+                <p className="text-sm text-muted-foreground">
+                  Configure os quadrantes do aeroporto primeiro
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="extintores" className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            {extintores.map((extintor) => (
-              <Card key={extintor.id} className="glass-card">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Badge variant="secondary" className="font-mono">
-                          {extintor.codigo_extintor}
-                        </Badge>
-                        <Badge 
-                          variant={extintor.status === 'ativo' ? 'default' : 'secondary'}
-                        >
-                          {extintor.status}
-                        </Badge>
-                      </div>
-                      <h3 className="font-medium">{extintor.localizacao_detalhada}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {extintor.tipo_extintor} - {extintor.capacidade}{extintor.unidade_capacidade}
-                      </p>
-                      {extintor.quadrantes_aeroporto && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <div 
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: extintor.quadrantes_aeroporto.cor_identificacao }}
-                          />
-                          <span className="text-sm text-muted-foreground">
-                            {extintor.quadrantes_aeroporto.nome_quadrante}
-                          </span>
+          {extintores.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {extintores.map((extintor) => (
+                <Card key={extintor.id} className="glass-card">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Badge variant="secondary" className="font-mono">
+                            {extintor.codigo_extintor}
+                          </Badge>
+                          <Badge 
+                            variant={extintor.status === 'ativo' ? 'default' : 'secondary'}
+                          >
+                            {extintor.status}
+                          </Badge>
                         </div>
-                      )}
+                        <h3 className="font-medium">{extintor.localizacao_detalhada}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {extintor.tipo_extintor} - {extintor.capacidade}{extintor.unidade_capacidade}
+                        </p>
+                        {extintor.quadrantes_aeroporto && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: extintor.quadrantes_aeroporto.cor_identificacao }}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {extintor.quadrantes_aeroporto.nome_quadrante}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedExtintorForDetails(extintor.id)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedExtintor(extintor.id);
+                            setShowInspecaoForm(true);
+                          }}
+                          disabled={bombeiros.length === 0}
+                        >
+                          <Calendar className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setSelectedExtintorForDetails(extintor.id)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedExtintor(extintor.id);
-                          setShowInspecaoForm(true);
-                        }}
-                      >
-                        <Calendar className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="glass-card">
+              <CardContent className="text-center py-8">
+                <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium mb-2">Nenhum extintor encontrado</h3>
+                <p className="text-sm text-muted-foreground">
+                  Cadastre o primeiro extintor para começar
+                </p>
+                <Button 
+                  onClick={() => setShowExtintorForm(true)} 
+                  className="mt-4"
+                  disabled={quadrantes.length === 0}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Cadastrar Extintor
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="inspecoes" className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            {inspecoes.slice(0, 10).map((inspecao) => (
-              <Card key={inspecao.id} className="glass-card">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline">
-                          {inspecao.extintores_aeroporto?.codigo_extintor}
-                        </Badge>
-                        <Badge 
-                          variant={inspecao.status_extintor === 'conforme' ? 'default' : 'destructive'}
-                        >
-                          {inspecao.status_extintor}
-                        </Badge>
+          {inspecoes.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {inspecoes.slice(0, 10).map((inspecao) => (
+                <Card key={inspecao.id} className="glass-card">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline">
+                            {inspecao.extintores_aeroporto?.codigo_extintor || 'N/A'}
+                          </Badge>
+                          <Badge 
+                            variant={inspecao.status_extintor === 'conforme' ? 'default' : 'destructive'}
+                          >
+                            {inspecao.status_extintor === 'conforme' ? 'Conforme' : 'Não Conforme'}
+                          </Badge>
+                        </div>
+                        <h3 className="font-medium">
+                          {inspecao.extintores_aeroporto?.localizacao_detalhada || 'Localização não encontrada'}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Inspetor: {inspecao.bombeiros?.nome || 'Nome não encontrado'}
+                        </p>
                       </div>
-                      <h3 className="font-medium">
-                        {inspecao.extintores_aeroporto?.localizacao_detalhada}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Inspetor: {inspecao.bombeiros?.nome}
-                      </p>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">
+                          {new Date(inspecao.data_inspecao).toLocaleDateString('pt-BR')}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {inspecao.hora_inspecao}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">
-                        {new Date(inspecao.data_inspecao).toLocaleDateString('pt-BR')}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {inspecao.hora_inspecao}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="glass-card">
+              <CardContent className="text-center py-8">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="font-medium mb-2">Nenhuma inspeção encontrada</h3>
+                <p className="text-sm text-muted-foreground">
+                  Registre a primeira inspeção
+                </p>
+                <Button 
+                  onClick={() => setShowInspecaoForm(true)} 
+                  className="mt-4"
+                  disabled={extintores.length === 0 || bombeiros.length === 0}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Nova Inspeção
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="alertas" className="space-y-4">

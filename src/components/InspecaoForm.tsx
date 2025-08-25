@@ -11,7 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useExtintoresAeroporto, ExtintorAeroporto } from '@/hooks/useExtintoresAeroporto';
 import { Bombeiro } from '@/hooks/useBombeiros';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ItemVerificacao {
   item: string;
@@ -75,6 +76,18 @@ export const InspecaoForm = ({
   const statusGeral = itensVerificados?.every(item => item.conforme) ? 'conforme' : 'nao_conforme';
 
   const onSubmit = async (data: InspecaoFormData) => {
+    console.log('Dados do formulário de inspeção:', data);
+    
+    if (!data.extintor_id) {
+      alert('Selecione um extintor');
+      return;
+    }
+    
+    if (!data.bombeiro_inspetor_id) {
+      alert('Selecione um inspetor');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await createInspecao.mutateAsync({
@@ -89,6 +102,49 @@ export const InspecaoForm = ({
       setIsSubmitting(false);
     }
   };
+
+  // Validar se há dados necessários
+  if (extintores.length === 0) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Aviso</DialogTitle>
+          </DialogHeader>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Não há extintores cadastrados. Cadastre um extintor primeiro.
+            </AlertDescription>
+          </Alert>
+          <div className="flex justify-end">
+            <Button onClick={onClose}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (bombeiros.length === 0) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Aviso</DialogTitle>
+          </DialogHeader>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Não há bombeiros cadastrados. Configure os bombeiros primeiro.
+            </AlertDescription>
+          </Alert>
+          <div className="flex justify-end">
+            <Button onClick={onClose}>Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -116,6 +172,9 @@ export const InspecaoForm = ({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.extintor_id && (
+                <p className="text-sm text-red-600 mt-1">Campo obrigatório</p>
+              )}
             </div>
 
             <div>
@@ -132,6 +191,9 @@ export const InspecaoForm = ({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.bombeiro_inspetor_id && (
+                <p className="text-sm text-red-600 mt-1">Campo obrigatório</p>
+              )}
             </div>
           </div>
 
@@ -143,6 +205,9 @@ export const InspecaoForm = ({
                 type="date"
                 {...register('data_inspecao', { required: 'Campo obrigatório' })}
               />
+              {errors.data_inspecao && (
+                <p className="text-sm text-red-600 mt-1">{errors.data_inspecao.message}</p>
+              )}
             </div>
 
             <div>
@@ -152,6 +217,9 @@ export const InspecaoForm = ({
                 type="time"
                 {...register('hora_inspecao', { required: 'Campo obrigatório' })}
               />
+              {errors.hora_inspecao && (
+                <p className="text-sm text-red-600 mt-1">{errors.hora_inspecao.message}</p>
+              )}
             </div>
 
             <div>
@@ -192,6 +260,9 @@ export const InspecaoForm = ({
                       placeholder="Descrição do item"
                       {...register(`itens_verificados.${index}.item` as const, { required: true })}
                     />
+                    {errors.itens_verificados?.[index]?.item && (
+                      <p className="text-sm text-red-600 mt-1">Campo obrigatório</p>
+                    )}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -207,6 +278,7 @@ export const InspecaoForm = ({
                     variant="outline"
                     size="sm"
                     onClick={() => remove(index)}
+                    disabled={fields.length <= 1}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -214,6 +286,15 @@ export const InspecaoForm = ({
               ))}
             </CardContent>
           </Card>
+
+          {statusGeral === 'nao_conforme' && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Atenção: Este extintor será marcado como NÃO CONFORME devido a itens reprovados.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div>
             <Label htmlFor="observacoes">Observações</Label>
