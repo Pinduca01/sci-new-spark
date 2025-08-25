@@ -42,7 +42,7 @@ export const AgenteExtintorForm = () => {
     e.preventDefault();
     
     // Validação para garantir que tipo_agente não seja vazio
-    if (!formData.tipo_agente || formData.tipo_agente === "") {
+    if (!formData.tipo_agente) {
       return;
     }
 
