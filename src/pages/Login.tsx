@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Shield } from "lucide-react";
 import { User, Session } from '@supabase/supabase-js';
 
 const Login = () => {
@@ -15,8 +16,22 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Mouse tracking for interactive background
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100,
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   useEffect(() => {
     // Check if the user is already logged in
@@ -91,11 +106,11 @@ const Login = () => {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen abstract-bg flex items-center justify-center">
-        <Card className="glass-card">
+      <div className="min-h-screen login-3d-bg flex items-center justify-center">
+        <Card className="glass-card-3d animate-scale-in">
           <CardContent className="p-8">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <div className="loading-spinner-3d mx-auto"></div>
               <p className="mt-4 text-muted-foreground">Verificando autenticação...</p>
             </div>
           </CardContent>
@@ -105,112 +120,151 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen abstract-bg flex flex-col items-center justify-center p-4">
-      {/* Login Card */}
-      <Card className="glass-card w-full max-w-md relative z-10 border-0">
-        <CardHeader className="text-center space-y-6">
-          {/* Logo SCI-Core - apenas o ícone */}
-          <div className="mx-auto w-20 h-20 rounded-2xl flex items-center justify-center">
-            <img 
-              src="/lovable-uploads/a158ba50-7bfe-4ce6-bc26-0db3511ee40f.png" 
-              alt="SCI-Core"
-              className="w-20 h-20 object-contain"
-            />
-          </div>
-          <div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              SCI-Core
-            </CardTitle>
-            <CardDescription className="text-base text-muted-foreground mt-2">
-              Sistema de Gestão para Seção Contraincêndio
-            </CardDescription>
-          </div>
-        </CardHeader>
+    <div className="min-h-screen login-3d-bg overflow-hidden">
+      {/* Interactive Background Elements */}
+      <div className="floating-particles">
+        {[...Array(12)].map((_, i) => (
+          <div key={i} className={`particle particle-${i + 1}`}></div>
+        ))}
+      </div>
+      
+      {/* Geometric Shapes */}
+      <div className="geometric-shapes">
+        <div className="shape shape-1"></div>
+        <div className="shape shape-2"></div>
+        <div className="shape shape-3"></div>
+        <div className="shape shape-4"></div>
+      </div>
 
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input 
-                id="email" 
-                placeholder="seuemail@dominio.com" 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
-              />
+      {/* Dynamic Gradient Overlay */}
+      <div 
+        className="dynamic-gradient"
+        style={{
+          transform: `translate(${mousePosition.x * 0.1}px, ${mousePosition.y * 0.1}px)`,
+        }}
+      ></div>
+
+      {/* Main Content */}
+      <div className="login-container">
+        {/* Login Card with 3D Effects */}
+        <Card className="login-card-3d animate-card-entrance">
+          <CardHeader className="text-center space-y-6 pb-8">
+            {/* Logo moderno consistente com sidebar */}
+            <div className="logo-container-3d">
+              <div className="flex items-center justify-center space-x-4">
+                {/* Ícone 3D */}
+                <div className="logo-icon-3d">
+                  <div className="icon-base">
+                    <Shield className="w-8 h-8 text-white" />
+                  </div>
+                  <div className="icon-accent">
+                    <div className="accent-dot"></div>
+                  </div>
+                </div>
+                
+                {/* Texto com gradiente */}
+                <div className="logo-text-3d">
+                  <h1 className="text-4xl font-black bg-gradient-to-r from-primary via-orange-500 to-blue-600 bg-clip-text text-transparent">
+                    SCI-Core
+                  </h1>
+                  <p className="text-sm text-muted-foreground font-medium -mt-1">
+                    Sistema Integrado
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="password"
-                placeholder="********"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-                <span className="sr-only">Mostrar senha</span>
-              </Button>
+
+            <div className="text-center">
+              <CardDescription className="text-base text-muted-foreground">
+                Sistema de Gestão para Seção Contraincêndio
+              </CardDescription>
             </div>
-          </div>
-          <Button 
-            className="w-full" 
-            onClick={() => handleLogin('email')}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Entrando...
-              </>
-            ) : (
-              "Entrar"
-            )}
-          </Button>
-          <div className="text-center text-sm text-muted-foreground">
-            Ou entre com
-          </div>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => handleLogin('google')}
-            disabled={isLoading}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mr-2 h-4 w-4"
+          </CardHeader>
+
+          <CardContent className="space-y-6 px-8 pb-8">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <div className="input-container-3d">
+                <Mail className="input-icon" />
+                <Input 
+                  id="email" 
+                  placeholder="seuemail@dominio.com" 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-3d"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+              <div className="input-container-3d">
+                <Lock className="input-icon" />
+                <Input
+                  id="password"
+                  placeholder="••••••••"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-3d"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="password-toggle-3d"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <Button 
+              className="button-3d w-full"
+              onClick={() => handleLogin('email')}
+              disabled={isLoading}
             >
-              <path d="M20.283 10.356h-8.327v3.451h4.792c-.446 2.193-2.313 3.453-4.792 3.453a5.27 5.27 0 0 1-5.279-5.279 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.394.447 3.29 1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233a8.908 8.908 0 0 0-8.908 8.908 8.908 8.908 0 0 0 8.908 8.908c5.458 0 8.992-3.586 8.992-8.908 0-.545-.049-1.09-.139-1.621z" />
-            </svg>
-            Entrar com Google
-          </Button>
-        </CardContent>
-      </Card>
+              {isLoading ? (
+                <>
+                  <div className="loading-spinner-3d-small mr-2"></div>
+                  Entrando...
+                </>
+              ) : (
+                "Entrar"
+              )}
+            </Button>
+
+            <div className="divider-3d">
+              <span>Ou entre com</span>
+            </div>
+
+            <Button
+              variant="outline"
+              className="button-3d-outline w-full"
+              onClick={() => handleLogin('google')}
+              disabled={isLoading}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mr-2"
+              >
+                <path d="M20.283 10.356h-8.327v3.451h4.792c-.446 2.193-2.313 3.453-4.792 3.453a5.27 5.27 0 0 1-5.279-5.279 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.394.447 3.29 1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233a8.908 8.908 0 0 0-8.908 8.908 8.908 8.908 0 0 0 8.908 8.908c5.458 0 8.992-3.586 8.992-8.908 0-.545-.049-1.09-.139-1.621z" />
+              </svg>
+              Entrar com Google
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
