@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -71,7 +71,7 @@ export const AssinaturaDigital: React.FC<AssinaturaDigitalProps> = ({ onSave, as
     onSave(dataURL);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (assinatura && canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
