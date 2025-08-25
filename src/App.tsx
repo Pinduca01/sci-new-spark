@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import MainLayout from "./components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import ControlePessoal from "./pages/ControlePessoal";
+import TAF from "./pages/TAF";
 import Ocorrencias from "./pages/Ocorrencias";
 import Viaturas from "./pages/Viaturas";
 import Escalas from "./pages/Escalas";
@@ -33,6 +34,7 @@ const App = () => (
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
         <Route path="/pessoal" element={<MainLayout><ControlePessoal /></MainLayout>} />
+        <Route path="/pessoal/taf" element={<MainLayout><TAF /></MainLayout>} />
         <Route path="/ocorrencias" element={<MainLayout><Ocorrencias /></MainLayout>} />
         <Route path="/viaturas" element={<MainLayout><Viaturas /></MainLayout>} />
         <Route path="/veiculos" element={<MainLayout><Viaturas /></MainLayout>} />

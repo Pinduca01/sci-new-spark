@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
@@ -13,7 +14,10 @@ import {
   Calendar,
   AlertTriangle,
   Target,
-  GraduationCap
+  GraduationCap,
+  Activity,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 import {
@@ -25,6 +29,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
@@ -33,6 +40,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const mainNavItems = [
   { 
@@ -40,12 +48,6 @@ const mainNavItems = [
     url: "/dashboard", 
     icon: BarChart3,
     description: "Visão geral do sistema"
-  },
-  { 
-    title: "Controle de Pessoal", 
-    url: "/pessoal", 
-    icon: Users,
-    description: "Gestão da equipe SCI"
   },
   { 
     title: "Ocorrências", 
@@ -76,6 +78,21 @@ const mainNavItems = [
     url: "/ptr-ba", 
     icon: GraduationCap,
     description: "Programa de Treinamento Recorrente"
+  }
+];
+
+const pessoalSubItems = [
+  {
+    title: "Gestão de Bombeiros",
+    url: "/pessoal",
+    icon: Users,
+    description: "Gestão da equipe SCI"
+  },
+  {
+    title: "TAF",
+    url: "/pessoal/taf",
+    icon: Activity,
+    description: "Teste de Aptidão Física"
   }
 ];
 
@@ -112,6 +129,7 @@ const adminItems = [
 export function AppSidebar({ userRole }: { userRole?: string }) {
   const { state } = useSidebar();
   const [isHovered, setIsHovered] = useState(false);
+  const [isPessoalOpen, setIsPessoalOpen] = useState(true);
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
@@ -121,6 +139,7 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
   const showFull = !collapsed || isHovered;
 
   const isActive = (path: string) => currentPath === path;
+  const isPessoalActive = currentPath.startsWith("/pessoal");
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
       ? "bg-primary/10 text-primary border-r-2 border-primary" 
@@ -202,6 +221,50 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* Controle de Pessoal com Submenu */}
+              <SidebarMenuItem>
+                <Collapsible open={isPessoalOpen} onOpenChange={setIsPessoalOpen}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton 
+                      className={`w-full ${isPessoalActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"}`}
+                      title={showFull ? undefined : "Controle de Pessoal"}
+                    >
+                      <Users className="w-5 h-5 flex-shrink-0" />
+                      {showFull && (
+                        <>
+                          <span className="font-medium transition-opacity duration-200">Controle de Pessoal</span>
+                          {isPessoalOpen ? (
+                            <ChevronDown className="w-4 h-4 ml-auto" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 ml-auto" />
+                          )}
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  
+                  {showFull && (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {pessoalSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild>
+                              <NavLink
+                                to={subItem.url}
+                                className={getNavCls}
+                              >
+                                <subItem.icon className="w-4 h-4 flex-shrink-0" />
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </Collapsible>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
