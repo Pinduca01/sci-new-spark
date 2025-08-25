@@ -12,7 +12,8 @@ import {
   Truck,
   Archive,
   History,
-  Beaker
+  Beaker,
+  ShieldCheck
 } from "lucide-react";
 import { EstoqueDashboard } from "@/components/EstoqueDashboard";
 import { MaterialForm } from "@/components/MaterialForm";
@@ -131,7 +132,7 @@ const Equipamentos = () => {
       <EstoqueDashboard />
 
       <Tabs defaultValue="estoque" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="estoque" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             Estoque Almoxarifado
@@ -139,6 +140,10 @@ const Equipamentos = () => {
           <TabsTrigger value="agentes" className="flex items-center gap-2">
             <Beaker className="h-4 w-4" />
             Agentes Extintores
+          </TabsTrigger>
+          <TabsTrigger value="tp-uniformes" className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            TP e Uniformes
           </TabsTrigger>
           <TabsTrigger value="checklist" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -338,6 +343,52 @@ const Equipamentos = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="tp-uniformes">
+          <Card>
+            <CardHeader>
+              <CardTitle>Trajes de Proteção e Uniformes</CardTitle>
+              <p className="text-muted-foreground">
+                Controle completo de trajes de proteção individual e uniformes do efetivo
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <ShieldCheck className="h-12 w-12 mx-auto mb-4" />
+                <p className="text-lg font-medium mb-2">Sistema de TP e Uniformes</p>
+                <p className="text-sm mb-6">
+                  Esta seção permitirá o controle completo de:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Trajes de Proteção:</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>• Roupas de aproximação</li>
+                      <li>• Equipamentos de proteção individual</li>
+                      <li>• Capacetes e acessórios</li>
+                      <li>• Botas e luvas especiais</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Uniformes:</h4>
+                    <ul className="text-sm space-y-1">
+                      <li>• Uniformes operacionais</li>
+                      <li>• Uniformes administrativos</li>
+                      <li>• Controle por bombeiro</li>
+                      <li>• Histórico de distribuição</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mt-8">
+                  <Button variant="outline" className="mr-4">
+                    <Package className="w-4 h-4 mr-2" />
+                    Funcionalidade em desenvolvimento
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="checklist">
