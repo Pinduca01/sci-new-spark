@@ -17,7 +17,8 @@ import {
   Activity,
   ChevronDown,
   ChevronRight,
-  Briefcase
+  Briefcase,
+  ShieldCheck
 } from "lucide-react";
 
 import {
@@ -62,12 +63,6 @@ const mainNavItems = [
     description: "Gestão da frota"
   },
   { 
-    title: "Equipamentos", 
-    url: "/equipamentos", 
-    icon: Radio,
-    description: "Controle de equipamentos"
-  },
-  { 
     title: "Exercícios", 
     url: "/exercicios", 
     icon: Target,
@@ -99,6 +94,21 @@ const pessoalSubItems = [
     url: "/pessoal/taf",
     icon: Activity,
     description: "Teste de Aptidão Física"
+  }
+];
+
+const equipamentosSubItems = [
+  {
+    title: "Equipamentos Gerais",
+    url: "/equipamentos",
+    icon: Radio,
+    description: "Controle de equipamentos"
+  },
+  {
+    title: "TP e Uniformes",
+    url: "/equipamentos/tp-uniformes",
+    icon: ShieldCheck,
+    description: "Trajes de Proteção e Uniformes"
   }
 ];
 
@@ -136,6 +146,7 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
   const { state } = useSidebar();
   const [isHovered, setIsHovered] = useState(false);
   const [isPessoalOpen, setIsPessoalOpen] = useState(true);
+  const [isEquipamentosOpen, setIsEquipamentosOpen] = useState(true);
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
@@ -146,6 +157,7 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
 
   const isActive = (path: string) => currentPath === path;
   const isPessoalActive = currentPath.startsWith("/pessoal");
+  const isEquipamentosActive = currentPath.startsWith("/equipamentos");
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
       ? "bg-primary/10 text-primary border-r-2 border-primary" 
@@ -275,8 +287,56 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
                 </Collapsible>
               </SidebarMenuItem>
 
+              {/* Equipamentos com Submenu */}
+              <SidebarMenuItem>
+                <Collapsible open={isEquipamentosOpen} onOpenChange={setIsEquipamentosOpen}>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton 
+                      className={`w-full ${isEquipamentosActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"}`}
+                      title={showFull ? undefined : "Equipamentos"}
+                    >
+                      <Radio className="w-5 h-5 flex-shrink-0" />
+                      {showFull && (
+                        <>
+                          <span className="font-medium transition-opacity duration-200">Equipamentos</span>
+                          {isEquipamentosOpen ? (
+                            <ChevronDown className="w-4 h-4 ml-auto" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 ml-auto" />
+                          )}
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  
+                  {showFull && (
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {equipamentosSubItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton 
+                              asChild
+                              className={
+                                isActive(subItem.url)
+                                  ? "bg-primary/10 text-primary border-r-2 border-primary font-medium"
+                                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                              }
+                            >
+                              <NavLink to={subItem.url}>
+                                <subItem.icon className="w-4 h-4 flex-shrink-0" />
+                                <span className="font-medium">{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </Collapsible>
+              </SidebarMenuItem>
+
               {/* Demais itens do menu principal */}
-              {mainNavItems.slice(1).map((item) => (
+              {mainNavItems.slice(2).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
