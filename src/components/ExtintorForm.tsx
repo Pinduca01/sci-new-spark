@@ -1,0 +1,219 @@
+
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useExtintoresAeroporto, QuadranteAeroporto } from '@/hooks/useExtintoresAeroporto';
+
+interface ExtintorFormData {
+  codigo_extintor: string;
+  localizacao_detalhada: string;
+  quadrante_id: string;
+  tipo_extintor: string;
+  capacidade: number;
+  unidade_capacidade: string;
+  fabricante?: string;
+  data_fabricacao?: string;
+  data_instalacao: string;
+  observacoes?: string;
+}
+
+interface ExtintorFormProps {
+  open: boolean;
+  onClose: () => void;
+  quadrantes: QuadranteAeroporto[];
+}
+
+export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) => {
+  const { createExtintor } = useExtintoresAeroporto();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ExtintorFormData>();
+
+  const onSubmit = async (data: ExtintorFormData) => {
+    setIsSubmitting(true);
+    try {
+      await createExtintor.mutateAsync({
+        ...data,
+        status: 'ativo'
+      });
+      reset();
+      onClose();
+    } catch (error) {
+      console.error('Erro ao criar extintor:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const tiposExtintor = [
+    'Água Pressurizada',
+    'Espuma Mecânica',
+    'Pó Químico Seco',
+    'CO2',
+    'Pó Químico Especial'
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Cadastrar Novo Extintor</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="codigo_extintor">Código do Extintor *</Label>
+              <Input
+                id="codigo_extintor"
+                {...register('codigo_extintor', { required: 'Campo obrigatório' })}
+                placeholder="Ex: EXT-001"
+              />
+              {errors.codigo_extintor && (
+                <p className="text-sm text-red-600 mt-1">{errors.codigo_extintor.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="quadrante_id">Quadrante *</Label>
+              <Select onValueChange={(value) => setValue('quadrante_id', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o quadrante" />
+                </SelectTrigger>
+                <SelectContent>
+                  {quadrantes.map((quadrante) => (
+                    <SelectItem key={quadrante.id} value={quadrante.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: quadrante.cor_identificacao }}
+                        />
+                        {quadrante.nome_quadrante}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="localizacao_detalhada">Localização Detalhada *</Label>
+            <Input
+              id="localizacao_detalhada"
+              {...register('localizacao_detalhada', { required: 'Campo obrigatório' })}
+              placeholder="Ex: Terminal Principal - Portão 5"
+            />
+            {errors.localizacao_detalhada && (
+              <p className="text-sm text-red-600 mt-1">{errors.localizacao_detalhada.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="tipo_extintor">Tipo do Extintor *</Label>
+              <Select onValueChange={(value) => setValue('tipo_extintor', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiposExtintor.map((tipo) => (
+                    <SelectItem key={tipo} value={tipo}>
+                      {tipo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="capacidade">Capacidade *</Label>
+              <Input
+                id="capacidade"
+                type="number"
+                step="0.1"
+                {...register('capacidade', { 
+                  required: 'Campo obrigatório',
+                  valueAsNumber: true 
+                })}
+                placeholder="Ex: 4"
+              />
+              {errors.capacidade && (
+                <p className="text-sm text-red-600 mt-1">{errors.capacidade.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="unidade_capacidade">Unidade</Label>
+              <Select onValueChange={(value) => setValue('unidade_capacidade', value)} defaultValue="kg">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="kg">kg</SelectItem>
+                  <SelectItem value="l">l</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="fabricante">Fabricante</Label>
+              <Input
+                id="fabricante"
+                {...register('fabricante')}
+                placeholder="Ex: Extinção LTDA"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="data_instalacao">Data de Instalação *</Label>
+              <Input
+                id="data_instalacao"
+                type="date"
+                {...register('data_instalacao', { required: 'Campo obrigatório' })}
+              />
+              {errors.data_instalacao && (
+                <p className="text-sm text-red-600 mt-1">{errors.data_instalacao.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="data_fabricacao">Data de Fabricação</Label>
+            <Input
+              id="data_fabricacao"
+              type="date"
+              {...register('data_fabricacao')}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="observacoes">Observações</Label>
+            <Textarea
+              id="observacoes"
+              {...register('observacoes')}
+              placeholder="Informações adicionais sobre o extintor"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Salvando...' : 'Salvar Extintor'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};

@@ -1,5 +1,6 @@
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ExtintoresDashboard } from '@/components/ExtintoresDashboard';
 
 const AtividadesAcessorias = () => {
   return (
@@ -18,14 +19,15 @@ const AtividadesAcessorias = () => {
         </div>
 
         {/* Conteúdo Principal */}
-        <Card className="glass-card">
-          <CardContent className="p-8">
-            <div className="text-center text-muted-foreground">
-              <p>Esta página será desenvolvida em breve.</p>
-              <p className="mt-2">Aguarde as próximas atualizações do sistema.</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="extintores" className="w-full">
+          <TabsList className="grid w-full grid-cols-1">
+            <TabsTrigger value="extintores">Inspeção de Extintores</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="extintores" className="space-y-6">
+            <ExtintoresDashboard />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

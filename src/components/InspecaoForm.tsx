@@ -1,0 +1,249 @@
+
+import { useState } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useExtintoresAeroporto, ExtintorAeroporto } from '@/hooks/useExtintoresAeroporto';
+import { Bombeiro } from '@/hooks/useBombeiros';
+import { Plus, Trash2 } from 'lucide-react';
+
+interface ItemVerificacao {
+  item: string;
+  conforme: boolean;
+  observacao?: string;
+}
+
+interface InspecaoFormData {
+  extintor_id: string;
+  bombeiro_inspetor_id: string;
+  data_inspecao: string;
+  hora_inspecao: string;
+  tipo_inspecao: string;
+  status_extintor: string;
+  itens_verificados: ItemVerificacao[];
+  observacoes?: string;
+  proxima_inspecao?: string;
+}
+
+interface InspecaoFormProps {
+  open: boolean;
+  onClose: () => void;
+  extintores: ExtintorAeroporto[];
+  bombeiros: Bombeiro[];
+  selectedExtintorId?: string | null;
+}
+
+export const InspecaoForm = ({ 
+  open, 
+  onClose, 
+  extintores, 
+  bombeiros, 
+  selectedExtintorId 
+}: InspecaoFormProps) => {
+  const { createInspecao } = useExtintoresAeroporto();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { register, handleSubmit, reset, setValue, control, watch, formState: { errors } } = useForm<InspecaoFormData>({
+    defaultValues: {
+      extintor_id: selectedExtintorId || '',
+      data_inspecao: new Date().toISOString().split('T')[0],
+      hora_inspecao: new Date().toTimeString().split(' ')[0].substring(0, 5),
+      tipo_inspecao: 'rotina',
+      status_extintor: 'conforme',
+      itens_verificados: [
+        { item: 'Pressão do manômetro', conforme: false },
+        { item: 'Estado do lacre', conforme: false },
+        { item: 'Mangueira e esguicho', conforme: false },
+        { item: 'Sinalização e acessibilidade', conforme: false },
+        { item: 'Estado físico do extintor', conforme: false }
+      ]
+    }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'itens_verificados'
+  });
+
+  const itensVerificados = watch('itens_verificados');
+  const statusGeral = itensVerificados?.every(item => item.conforme) ? 'conforme' : 'nao_conforme';
+
+  const onSubmit = async (data: InspecaoFormData) => {
+    setIsSubmitting(true);
+    try {
+      await createInspecao.mutateAsync({
+        ...data,
+        status_extintor: statusGeral
+      });
+      reset();
+      onClose();
+    } catch (error) {
+      console.error('Erro ao criar inspeção:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Nova Inspeção de Extintor</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="extintor_id">Extintor *</Label>
+              <Select 
+                onValueChange={(value) => setValue('extintor_id', value)}
+                defaultValue={selectedExtintorId || ''}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o extintor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {extintores.map((extintor) => (
+                    <SelectItem key={extintor.id} value={extintor.id}>
+                      {extintor.codigo_extintor} - {extintor.localizacao_detalhada}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="bombeiro_inspetor_id">Inspetor *</Label>
+              <Select onValueChange={(value) => setValue('bombeiro_inspetor_id', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o inspetor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bombeiros.map((bombeiro) => (
+                    <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                      {bombeiro.nome} - {bombeiro.funcao}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="data_inspecao">Data da Inspeção *</Label>
+              <Input
+                id="data_inspecao"
+                type="date"
+                {...register('data_inspecao', { required: 'Campo obrigatório' })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="hora_inspecao">Hora da Inspeção *</Label>
+              <Input
+                id="hora_inspecao"
+                type="time"
+                {...register('hora_inspecao', { required: 'Campo obrigatório' })}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="tipo_inspecao">Tipo de Inspeção *</Label>
+              <Select onValueChange={(value) => setValue('tipo_inspecao', value)} defaultValue="rotina">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rotina">Rotina</SelectItem>
+                  <SelectItem value="manutencao">Manutenção</SelectItem>
+                  <SelectItem value="emergencial">Emergencial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Itens de Verificação</CardTitle>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => append({ item: '', conforme: false })}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Item
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex items-start gap-4 p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Descrição do item"
+                      {...register(`itens_verificados.${index}.item` as const, { required: true })}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={itensVerificados?.[index]?.conforme || false}
+                      onCheckedChange={(checked) => 
+                        setValue(`itens_verificados.${index}.conforme`, checked as boolean)
+                      }
+                    />
+                    <Label className="text-sm">Conforme</Label>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => remove(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <div>
+            <Label htmlFor="observacoes">Observações</Label>
+            <Textarea
+              id="observacoes"
+              {...register('observacoes')}
+              placeholder="Observações gerais sobre a inspeção"
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="proxima_inspecao">Próxima Inspeção</Label>
+            <Input
+              id="proxima_inspecao"
+              type="date"
+              {...register('proxima_inspecao')}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Salvando...' : 'Salvar Inspeção'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
