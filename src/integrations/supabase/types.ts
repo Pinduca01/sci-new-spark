@@ -1148,6 +1148,101 @@ export type Database = {
           },
         ]
       }
+      taf_avaliacoes: {
+        Row: {
+          abdominais_realizadas: number
+          aprovado: boolean
+          avaliador_nome: string
+          bombeiro_id: string
+          created_at: string | null
+          data_teste: string
+          faixa_etaria: string
+          flexoes_realizadas: number
+          id: string
+          idade_na_data: number
+          observacoes: string | null
+          polichinelos_realizados: number
+          tempo_limite_minutos: number
+          tempo_total_segundos: number
+          updated_at: string | null
+        }
+        Insert: {
+          abdominais_realizadas?: number
+          aprovado?: boolean
+          avaliador_nome: string
+          bombeiro_id: string
+          created_at?: string | null
+          data_teste?: string
+          faixa_etaria: string
+          flexoes_realizadas?: number
+          id?: string
+          idade_na_data: number
+          observacoes?: string | null
+          polichinelos_realizados?: number
+          tempo_limite_minutos: number
+          tempo_total_segundos: number
+          updated_at?: string | null
+        }
+        Update: {
+          abdominais_realizadas?: number
+          aprovado?: boolean
+          avaliador_nome?: string
+          bombeiro_id?: string
+          created_at?: string | null
+          data_teste?: string
+          faixa_etaria?: string
+          flexoes_realizadas?: number
+          id?: string
+          idade_na_data?: number
+          observacoes?: string | null
+          polichinelos_realizados?: number
+          tempo_limite_minutos?: number
+          tempo_total_segundos?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taf_avaliacoes_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taf_metas: {
+        Row: {
+          created_at: string | null
+          faixa_etaria: string
+          id: string
+          meta_abdominais: number
+          meta_flexoes: number
+          meta_polichinelos: number
+          tempo_limite_minutos: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          faixa_etaria: string
+          id?: string
+          meta_abdominais: number
+          meta_flexoes: number
+          meta_polichinelos: number
+          tempo_limite_minutos: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          faixa_etaria?: string
+          id?: string
+          meta_abdominais?: number
+          meta_flexoes?: number
+          meta_polichinelos?: number
+          tempo_limite_minutos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       viaturas: {
         Row: {
           ano: number
@@ -1223,6 +1318,17 @@ export type Database = {
           dias_para_vencimento: number
           lote: string
           quantidade_disponivel: number
+        }[]
+      }
+      get_taf_estatisticas: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bombeiros_pendentes: number
+          media_abdominais: number
+          media_flexoes: number
+          media_polichinelos: number
+          taxa_aprovacao: number
+          total_avaliacoes: number
         }[]
       }
       nextval: {
