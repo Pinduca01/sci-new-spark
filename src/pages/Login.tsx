@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -55,43 +54,26 @@ const Login = () => {
     checkAuth();
   }, [navigate, toast]);
 
-  const handleLogin = async (type: 'email' | 'google') => {
+  const handleLogin = async () => {
     setIsLoading(true);
     try {
-      if (type === 'email') {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (error) {
-          toast({
-            title: "Erro ao fazer login",
-            description: error.message,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Login realizado com sucesso",
-            description: "Redirecionando...",
-          });
-          navigate('/dashboard');
-        }
-      } else if (type === 'google') {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/dashboard`,
-          },
+      if (error) {
+        toast({
+          title: "Erro ao fazer login",
+          description: error.message,
+          variant: "destructive",
         });
-
-        if (error) {
-          toast({
-            title: "Erro ao fazer login com o Google",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+      } else {
+        toast({
+          title: "Login realizado com sucesso",
+          description: "Redirecionando...",
+        });
+        navigate('/dashboard');
       }
     } catch (error: any) {
       toast({
@@ -223,7 +205,7 @@ const Login = () => {
 
             <Button 
               className="button-3d w-full"
-              onClick={() => handleLogin('email')}
+              onClick={handleLogin}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -234,33 +216,6 @@ const Login = () => {
               ) : (
                 "Entrar"
               )}
-            </Button>
-
-            <div className="divider-3d">
-              <span>Ou entre com</span>
-            </div>
-
-            <Button
-              variant="outline"
-              className="button-3d-outline w-full"
-              onClick={() => handleLogin('google')}
-              disabled={isLoading}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mr-2"
-              >
-                <path d="M20.283 10.356h-8.327v3.451h4.792c-.446 2.193-2.313 3.453-4.792 3.453a5.27 5.27 0 0 1-5.279-5.279 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.394.447 3.29 1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233a8.908 8.908 0 0 0-8.908 8.908 8.908 8.908 0 0 0 8.908 8.908c5.458 0 8.992-3.586 8.992-8.908 0-.545-.049-1.09-.139-1.621z" />
-              </svg>
-              Entrar com Google
             </Button>
           </CardContent>
         </Card>
