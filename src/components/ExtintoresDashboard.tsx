@@ -64,24 +64,45 @@ export const ExtintoresDashboard = () => {
   }
 
   // Estatísticas
-  const totalExtintores = extintores.length;
-  const extintoresAtivos = extintores.filter(e => e.status === 'ativo').length;
-  const inspecoesMes = inspecoes.filter(i => {
+  const totalExtintores = extintores?.length || 0;
+  const extintoresAtivos = extintores?.filter(e => e.status === 'ativo').length || 0;
+  const inspecoesMes = inspecoes?.filter(i => {
     const inspecaoDate = new Date(i.data_inspecao);
     const currentDate = new Date();
     return inspecaoDate.getMonth() === currentDate.getMonth() && 
            inspecaoDate.getFullYear() === currentDate.getFullYear();
-  }).length;
+  }).length || 0;
 
   // Alertas de vencimento (próximos 30 dias)
-  const proximosVencimentos = extintores.filter(e => {
+  const proximosVencimentos = extintores?.filter(e => {
     if (!e.proxima_recarga) return false;
     const vencimento = new Date(e.proxima_recarga);
     const hoje = new Date();
     const diffTime = vencimento.getTime() - hoje.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 30 && diffDays >= 0;
-  });
+  }) || [];
+
+  const handleNovoExtintor = () => {
+    console.log('Botão Novo Extintor clicado');
+    setShowExtintorForm(true);
+  };
+
+  const handleNovaInspecao = () => {
+    console.log('Botão Nova Inspeção clicado');
+    setShowInspecaoForm(true);
+  };
+
+  const handleVerDetalhes = (extintorId: string) => {
+    console.log('Ver detalhes do extintor:', extintorId);
+    setSelectedExtintorForDetails(extintorId);
+  };
+
+  const handleInspecionar = (extintorId: string) => {
+    console.log('Inspecionar extintor:', extintorId);
+    setSelectedExtintor(extintorId);
+    setShowInspecaoForm(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -97,18 +118,18 @@ export const ExtintoresDashboard = () => {
         </div>
         <div className="flex gap-2">
           <Button 
-            onClick={() => setShowExtintorForm(true)} 
+            onClick={handleNovoExtintor}
             className="gap-2"
-            disabled={quadrantes.length === 0}
+            disabled={(quadrantes?.length || 0) === 0}
           >
             <Plus className="h-4 w-4" />
             Novo Extintor
           </Button>
           <Button 
-            onClick={() => setShowInspecaoForm(true)} 
+            onClick={handleNovaInspecao}
             variant="outline" 
             className="gap-2"
-            disabled={extintores.length === 0 || bombeiros.length === 0}
+            disabled={(extintores?.length || 0) === 0 || (bombeiros?.length || 0) === 0}
           >
             <FileText className="h-4 w-4" />
             Nova Inspeção
@@ -117,7 +138,7 @@ export const ExtintoresDashboard = () => {
       </div>
 
       {/* Alertas informativos */}
-      {quadrantes.length === 0 && (
+      {(quadrantes?.length || 0) === 0 && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -126,7 +147,7 @@ export const ExtintoresDashboard = () => {
         </Alert>
       )}
 
-      {bombeiros.length === 0 && (
+      {(bombeiros?.length || 0) === 0 && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -156,7 +177,7 @@ export const ExtintoresDashboard = () => {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{quadrantes.length}</div>
+            <div className="text-2xl font-bold">{quadrantes?.length || 0}</div>
             <p className="text-xs text-muted-foreground">
               áreas mapeadas
             </p>
@@ -200,10 +221,10 @@ export const ExtintoresDashboard = () => {
         </TabsList>
 
         <TabsContent value="quadrantes" className="space-y-4">
-          {quadrantes.length > 0 ? (
+          {(quadrantes?.length || 0) > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {quadrantes.map((quadrante) => {
-                const extintoresQuadrante = extintores.filter(e => e.quadrante_id === quadrante.id);
+                const extintoresQuadrante = extintores?.filter(e => e.quadrante_id === quadrante.id) || [];
                 return (
                   <Card key={quadrante.id} className="glass-card">
                     <CardHeader>
@@ -249,7 +270,7 @@ export const ExtintoresDashboard = () => {
         </TabsContent>
 
         <TabsContent value="extintores" className="space-y-4">
-          {extintores.length > 0 ? (
+          {(extintores?.length || 0) > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {extintores.map((extintor) => (
                 <Card key={extintor.id} className="glass-card">
@@ -286,18 +307,15 @@ export const ExtintoresDashboard = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => setSelectedExtintorForDetails(extintor.id)}
+                          onClick={() => handleVerDetalhes(extintor.id)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => {
-                            setSelectedExtintor(extintor.id);
-                            setShowInspecaoForm(true);
-                          }}
-                          disabled={bombeiros.length === 0}
+                          onClick={() => handleInspecionar(extintor.id)}
+                          disabled={(bombeiros?.length || 0) === 0}
                         >
                           <Calendar className="h-4 w-4" />
                         </Button>
@@ -316,9 +334,9 @@ export const ExtintoresDashboard = () => {
                   Cadastre o primeiro extintor para começar
                 </p>
                 <Button 
-                  onClick={() => setShowExtintorForm(true)} 
+                  onClick={handleNovoExtintor}
                   className="mt-4"
-                  disabled={quadrantes.length === 0}
+                  disabled={(quadrantes?.length || 0) === 0}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Cadastrar Extintor
@@ -329,7 +347,7 @@ export const ExtintoresDashboard = () => {
         </TabsContent>
 
         <TabsContent value="inspecoes" className="space-y-4">
-          {inspecoes.length > 0 ? (
+          {(inspecoes?.length || 0) > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {inspecoes.slice(0, 10).map((inspecao) => (
                 <Card key={inspecao.id} className="glass-card">
@@ -375,9 +393,9 @@ export const ExtintoresDashboard = () => {
                   Registre a primeira inspeção
                 </p>
                 <Button 
-                  onClick={() => setShowInspecaoForm(true)} 
+                  onClick={handleNovaInspecao}
                   className="mt-4"
-                  disabled={extintores.length === 0 || bombeiros.length === 0}
+                  disabled={(extintores?.length || 0) === 0 || (bombeiros?.length || 0) === 0}
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   Nova Inspeção
@@ -438,7 +456,7 @@ export const ExtintoresDashboard = () => {
         <ExtintorForm 
           open={showExtintorForm}
           onClose={() => setShowExtintorForm(false)}
-          quadrantes={quadrantes}
+          quadrantes={quadrantes || []}
         />
       )}
 
@@ -449,8 +467,8 @@ export const ExtintoresDashboard = () => {
             setShowInspecaoForm(false);
             setSelectedExtintor(null);
           }}
-          extintores={extintores}
-          bombeiros={bombeiros}
+          extintores={extintores || []}
+          bombeiros={bombeiros || []}
           selectedExtintorId={selectedExtintor}
         />
       )}
@@ -460,8 +478,8 @@ export const ExtintoresDashboard = () => {
           open={!!selectedExtintorForDetails}
           onClose={() => setSelectedExtintorForDetails(null)}
           extintorId={selectedExtintorForDetails}
-          extintores={extintores}
-          inspecoes={inspecoes}
+          extintores={extintores || []}
+          inspecoes={inspecoes || []}
         />
       )}
     </div>
