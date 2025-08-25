@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      agentes_extintores_controle: {
+        Row: {
+          capacidade: number
+          created_at: string
+          custo_unitario: number | null
+          data_fabricacao: string
+          data_ultima_recarga: string | null
+          data_vencimento: string
+          fornecedor: string | null
+          id: string
+          localizacao_fisica: string | null
+          lote: string
+          material_id: string
+          numero_recargas: number | null
+          numero_serie: string | null
+          observacoes: string | null
+          proxima_recarga: string | null
+          qr_code: string | null
+          status_uso: string
+          tipo_agente: string
+          unidade_capacidade: string
+          updated_at: string
+          viatura_id: string | null
+        }
+        Insert: {
+          capacidade: number
+          created_at?: string
+          custo_unitario?: number | null
+          data_fabricacao: string
+          data_ultima_recarga?: string | null
+          data_vencimento: string
+          fornecedor?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          lote: string
+          material_id: string
+          numero_recargas?: number | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          proxima_recarga?: string | null
+          qr_code?: string | null
+          status_uso?: string
+          tipo_agente: string
+          unidade_capacidade?: string
+          updated_at?: string
+          viatura_id?: string | null
+        }
+        Update: {
+          capacidade?: number
+          created_at?: string
+          custo_unitario?: number | null
+          data_fabricacao?: string
+          data_ultima_recarga?: string | null
+          data_vencimento?: string
+          fornecedor?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          lote?: string
+          material_id?: string
+          numero_recargas?: number | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          proxima_recarga?: string | null
+          qr_code?: string | null
+          status_uso?: string
+          tipo_agente?: string
+          unidade_capacidade?: string
+          updated_at?: string
+          viatura_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agentes_extintores_controle_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agentes_extintores_controle_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bombeiros: {
         Row: {
           avatar: string
@@ -111,6 +198,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      checklists_almoxarifado: {
+        Row: {
+          assinatura_digital: string | null
+          bombeiro_responsavel_id: string
+          bombeiro_responsavel_nome: string
+          created_at: string
+          data_checklist: string
+          hora_checklist: string
+          id: string
+          itens_checklist: Json
+          itens_conformes: number | null
+          itens_divergentes: number | null
+          observacoes_gerais: string | null
+          status_geral: string
+          total_itens: number | null
+          updated_at: string
+        }
+        Insert: {
+          assinatura_digital?: string | null
+          bombeiro_responsavel_id: string
+          bombeiro_responsavel_nome: string
+          created_at?: string
+          data_checklist?: string
+          hora_checklist?: string
+          id?: string
+          itens_checklist?: Json
+          itens_conformes?: number | null
+          itens_divergentes?: number | null
+          observacoes_gerais?: string | null
+          status_geral?: string
+          total_itens?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assinatura_digital?: string | null
+          bombeiro_responsavel_id?: string
+          bombeiro_responsavel_nome?: string
+          created_at?: string
+          data_checklist?: string
+          hora_checklist?: string
+          id?: string
+          itens_checklist?: Json
+          itens_conformes?: number | null
+          itens_divergentes?: number | null
+          observacoes_gerais?: string | null
+          status_geral?: string
+          total_itens?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       checklists_viaturas: {
         Row: {
@@ -233,6 +371,56 @@ export type Database = {
           },
         ]
       }
+      estoque_almoxarifado: {
+        Row: {
+          created_at: string
+          data_fabricacao: string | null
+          data_validade: string | null
+          id: string
+          localizacao_fisica: string | null
+          lote: string | null
+          material_id: string
+          observacoes: string | null
+          quantidade_disponivel: number
+          quantidade_minima: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_fabricacao?: string | null
+          data_validade?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          lote?: string | null
+          material_id: string
+          observacoes?: string | null
+          quantidade_disponivel?: number
+          quantidade_minima?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_fabricacao?: string | null
+          data_validade?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          lote?: string | null
+          material_id?: string
+          observacoes?: string | null
+          quantidade_disponivel?: number
+          quantidade_minima?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_almoxarifado_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feristas_escalas: {
         Row: {
           ano_referencia: number
@@ -297,6 +485,286 @@ export type Database = {
             columns: ["equipe_atual_id"]
             isOneToOne: false
             referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historico_recargas_agentes: {
+        Row: {
+          agente_extintor_id: string
+          certificado_url: string | null
+          created_at: string
+          custo: number | null
+          data_recarga: string
+          empresa_responsavel: string | null
+          id: string
+          observacoes: string | null
+          proxima_manutencao: string | null
+          responsavel_id: string | null
+          responsavel_nome: string
+          tipo_manutencao: string
+          viatura_id: string | null
+        }
+        Insert: {
+          agente_extintor_id: string
+          certificado_url?: string | null
+          created_at?: string
+          custo?: number | null
+          data_recarga: string
+          empresa_responsavel?: string | null
+          id?: string
+          observacoes?: string | null
+          proxima_manutencao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome: string
+          tipo_manutencao: string
+          viatura_id?: string | null
+        }
+        Update: {
+          agente_extintor_id?: string
+          certificado_url?: string | null
+          created_at?: string
+          custo?: number | null
+          data_recarga?: string
+          empresa_responsavel?: string | null
+          id?: string
+          observacoes?: string | null
+          proxima_manutencao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          tipo_manutencao?: string
+          viatura_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_recargas_agentes_agente_extintor_id_fkey"
+            columns: ["agente_extintor_id"]
+            isOneToOne: false
+            referencedRelation: "agentes_extintores_controle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_recargas_agentes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_recargas_agentes_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiais: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          codigo_material: string
+          created_at: string
+          descricao: string | null
+          especificacoes_tecnicas: Json | null
+          fabricante: string | null
+          id: string
+          nome: string
+          tipo_unidade: string
+          unidade_medida: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          codigo_material: string
+          created_at?: string
+          descricao?: string | null
+          especificacoes_tecnicas?: Json | null
+          fabricante?: string | null
+          id?: string
+          nome: string
+          tipo_unidade: string
+          unidade_medida: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          codigo_material?: string
+          created_at?: string
+          descricao?: string | null
+          especificacoes_tecnicas?: Json | null
+          fabricante?: string | null
+          id?: string
+          nome?: string
+          tipo_unidade?: string
+          unidade_medida?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      materiais_guardados: {
+        Row: {
+          created_at: string
+          data_guarda: string
+          id: string
+          material_id: string
+          motivo_guarda: string
+          observacoes: string | null
+          previsao_liberacao: string | null
+          quantidade: number
+          responsavel_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_guarda?: string
+          id?: string
+          material_id: string
+          motivo_guarda: string
+          observacoes?: string | null
+          previsao_liberacao?: string | null
+          quantidade: number
+          responsavel_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_guarda?: string
+          id?: string
+          material_id?: string
+          motivo_guarda?: string
+          observacoes?: string | null
+          previsao_liberacao?: string | null
+          quantidade?: number
+          responsavel_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_guardados_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiais_guardados_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiais_viaturas: {
+        Row: {
+          created_at: string
+          data_alocacao: string
+          id: string
+          material_id: string
+          observacoes: string | null
+          quantidade_alocada: number
+          status: string
+          updated_at: string
+          viatura_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_alocacao?: string
+          id?: string
+          material_id: string
+          observacoes?: string | null
+          quantidade_alocada?: number
+          status?: string
+          updated_at?: string
+          viatura_id: string
+        }
+        Update: {
+          created_at?: string
+          data_alocacao?: string
+          id?: string
+          material_id?: string
+          observacoes?: string | null
+          quantidade_alocada?: number
+          status?: string
+          updated_at?: string
+          viatura_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_viaturas_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiais_viaturas_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movimentacoes_estoque: {
+        Row: {
+          created_at: string
+          data_movimentacao: string
+          destino: string | null
+          id: string
+          material_id: string
+          motivo: string
+          observacoes: string | null
+          origem: string | null
+          quantidade: number
+          responsavel_id: string
+          tipo_movimentacao: string
+        }
+        Insert: {
+          created_at?: string
+          data_movimentacao?: string
+          destino?: string | null
+          id?: string
+          material_id: string
+          motivo: string
+          observacoes?: string | null
+          origem?: string | null
+          quantidade: number
+          responsavel_id: string
+          tipo_movimentacao: string
+        }
+        Update: {
+          created_at?: string
+          data_movimentacao?: string
+          destino?: string | null
+          id?: string
+          material_id?: string
+          motivo?: string
+          observacoes?: string | null
+          origem?: string | null
+          quantidade?: number
+          responsavel_id?: string
+          tipo_movimentacao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_estoque_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
             referencedColumns: ["id"]
           },
         ]
@@ -518,6 +986,168 @@ export type Database = {
         }
         Relationships: []
       }
+      ptr_fotos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          foto_url: string
+          id: string
+          ordem: number | null
+          ptr_instrucao_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          foto_url: string
+          id?: string
+          ordem?: number | null
+          ptr_instrucao_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          foto_url?: string
+          id?: string
+          ordem?: number | null
+          ptr_instrucao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ptr_fotos_ptr_instrucao_id_fkey"
+            columns: ["ptr_instrucao_id"]
+            isOneToOne: false
+            referencedRelation: "ptr_instrucoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ptr_instrucoes: {
+        Row: {
+          created_at: string
+          data: string
+          hora: string
+          id: string
+          instrutor_id: string | null
+          observacoes: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          hora: string
+          id?: string
+          instrutor_id?: string | null
+          observacoes?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          hora?: string
+          id?: string
+          instrutor_id?: string | null
+          observacoes?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ptr_instrucoes_instrutor_id_fkey"
+            columns: ["instrutor_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ptr_participantes: {
+        Row: {
+          bombeiro_id: string
+          created_at: string
+          id: string
+          observacoes: string | null
+          presente: boolean | null
+          ptr_instrucao_id: string
+          updated_at: string
+        }
+        Insert: {
+          bombeiro_id: string
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          presente?: boolean | null
+          ptr_instrucao_id: string
+          updated_at?: string
+        }
+        Update: {
+          bombeiro_id?: string
+          created_at?: string
+          id?: string
+          observacoes?: string | null
+          presente?: boolean | null
+          ptr_instrucao_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ptr_participantes_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ptr_participantes_ptr_instrucao_id_fkey"
+            columns: ["ptr_instrucao_id"]
+            isOneToOne: false
+            referencedRelation: "ptr_instrucoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ptr_relatorios: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          pdf_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data: string
+          id?: string
+          pdf_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          pdf_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ptr_relatorios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       viaturas: {
         Row: {
           ano: number
@@ -571,9 +1201,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_alertas_vencimento_agentes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          data_vencimento: string
+          dias_para_vencimento: number
+          lote: string
+          nivel_alerta: string
+          quantidade: number
+          tipo_agente: string
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_proximo_lote_recomendado: {
+        Args: { p_tipo_agente: string }
+        Returns: {
+          data_vencimento: string
+          dias_para_vencimento: number
+          lote: string
+          quantidade_disponivel: number
+        }[]
       }
       nextval: {
         Args: { sequence_name: string }

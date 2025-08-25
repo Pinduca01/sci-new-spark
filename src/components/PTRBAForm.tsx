@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { usePTRInstrucoes } from '@/hooks/usePTRInstrucoes';
+import { usePTRParticipantes } from '@/hooks/usePTRParticipantes';
+import { useBombeiros } from '@/hooks/useBombeiros';
+import { Loader2 } from 'lucide-react';
 
 interface PTRBAFormProps {
   open: boolean;
@@ -21,17 +25,27 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
   selectedDate,
 }) => {
   const { toast } = useToast();
+  const { criarInstrucao } = usePTRInstrucoes();
+  const { adicionarParticipantes } = usePTRParticipantes();
+  const { bombeirosAtivos, isLoading: loadingBombeiros } = useBombeiros();
+
   const [formData, setFormData] = useState({
     data: selectedDate.toISOString().split('T')[0],
     hora: '',
     titulo: '',
     tipo: '',
-    instrutor: '',
+    instrutor_id: '',
     participantes: [] as string[],
     observacoes: '',
   });
 
-  // Dados mockados - depois virão do Supabase
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      data: selectedDate.toISOString().split('T')[0]
+    }));
+  }, [selectedDate]);
+
   const tiposInstrucao = [
     'Procedimentos de Emergência',
     'Combate a Incêndio',
@@ -43,18 +57,9 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
     'Comunicação de Emergência'
   ];
 
-  const bombeirosDisponiveis = [
-    { id: '1', nome: 'João Silva', funcao: 'BA-CE' },
-    { id: '2', nome: 'Maria Santos', funcao: 'BA-LR' },
-    { id: '3', nome: 'Carlos Oliveira', funcao: 'BA-MC' },
-    { id: '4', nome: 'Ana Costa', funcao: 'BA-2' },
-    { id: '5', nome: 'Pedro Souza', funcao: 'BA-2' },
-  ];
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validações básicas
     if (!formData.titulo || !formData.hora || !formData.tipo) {
       toast({
         title: "Erro",
@@ -64,22 +69,40 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
       return;
     }
 
-    // Aqui seria a integração com Supabase
-    toast({
-      title: "Sucesso",
-      description: "Instrução PTR-BA cadastrada com sucesso.",
-    });
+    try {
+      // 1. Criar a instrução
+      const novaInstrucao = await criarInstrucao.mutateAsync({
+        data: formData.data,
+        hora: formData.hora,
+        tipo: formData.tipo,
+        titulo: formData.titulo,
+        instrutor_id: formData.instrutor_id || undefined,
+        observacoes: formData.observacoes || undefined,
+      });
 
-    onOpenChange(false);
-    setFormData({
-      data: selectedDate.toISOString().split('T')[0],
-      hora: '',
-      titulo: '',
-      tipo: '',
-      instrutor: '',
-      participantes: [],
-      observacoes: '',
-    });
+      // 2. Adicionar participantes se houver
+      if (formData.participantes.length > 0) {
+        await adicionarParticipantes.mutateAsync({
+          instrucaoId: novaInstrucao.id,
+          bombeirosIds: formData.participantes
+        });
+      }
+
+      // Resetar form e fechar
+      setFormData({
+        data: selectedDate.toISOString().split('T')[0],
+        hora: '',
+        titulo: '',
+        tipo: '',
+        instrutor_id: '',
+        participantes: [],
+        observacoes: '',
+      });
+      onOpenChange(false);
+
+    } catch (error) {
+      console.error('Erro ao criar instrução:', error);
+    }
   };
 
   const handleParticipanteChange = (bombeiroId: string, checked: boolean) => {
@@ -90,6 +113,8 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
         : prev.participantes.filter(id => id !== bombeiroId)
     }));
   };
+
+  const isSubmitting = criarInstrucao.isPending || adicionarParticipantes.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -151,32 +176,45 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
 
           <div>
             <Label htmlFor="instrutor">Instrutor Responsável</Label>
-            <Input
-              id="instrutor"
-              value={formData.instrutor}
-              onChange={(e) => setFormData(prev => ({ ...prev, instrutor: e.target.value }))}
-              placeholder="Nome do instrutor"
-            />
+            <Select value={formData.instrutor_id} onValueChange={(value) => setFormData(prev => ({ ...prev, instrutor_id: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o instrutor" />
+              </SelectTrigger>
+              <SelectContent>
+                {bombeirosAtivos.map((bombeiro) => (
+                  <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                    {bombeiro.nome} - {bombeiro.funcao}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
             <Label>Participantes</Label>
-            <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-2">
-              {bombeirosDisponiveis.map((bombeiro) => (
-                <div key={bombeiro.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`bombeiro-${bombeiro.id}`}
-                    checked={formData.participantes.includes(bombeiro.id)}
-                    onCheckedChange={(checked) => 
-                      handleParticipanteChange(bombeiro.id, checked as boolean)
-                    }
-                  />
-                  <Label htmlFor={`bombeiro-${bombeiro.id}`} className="text-sm">
-                    {bombeiro.nome} - {bombeiro.funcao}
-                  </Label>
-                </div>
-              ))}
-            </div>
+            {loadingBombeiros ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="ml-2">Carregando bombeiros...</span>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-2">
+                {bombeirosAtivos.map((bombeiro) => (
+                  <div key={bombeiro.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`bombeiro-${bombeiro.id}`}
+                      checked={formData.participantes.includes(bombeiro.id)}
+                      onCheckedChange={(checked) => 
+                        handleParticipanteChange(bombeiro.id, checked as boolean)
+                      }
+                    />
+                    <Label htmlFor={`bombeiro-${bombeiro.id}`} className="text-sm">
+                      {bombeiro.nome} - {bombeiro.funcao}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>
@@ -191,11 +229,18 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Salvar Instrução
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Instrução'
+              )}
             </Button>
           </div>
         </form>
