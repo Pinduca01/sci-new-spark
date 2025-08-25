@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
@@ -198,24 +197,14 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
     >
       {/* Header com Logo SCI-Core */}
       <SidebarHeader className="p-4 border-b border-border/50">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
+        <div className="flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
             <img 
               src="/lovable-uploads/a158ba50-7bfe-4ce6-bc26-0db3511ee40f.png" 
               alt="SCI-Core"
-              className="w-8 h-8 object-contain"
+              className="w-10 h-10 object-contain"
             />
           </div>
-          {showFull && (
-            <div className="transition-opacity duration-200">
-              <h2 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                SCI-Core
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Seção Contraincêndio
-              </p>
-            </div>
-          )}
         </div>
       </SidebarHeader>
 
