@@ -11,6 +11,8 @@ import { DonutChart } from './DonutChart';
 import { GaugeChart } from './GaugeChart';
 import { QuickStats } from './QuickStats';
 import { ExportadorPDF } from './ExportadorPDF';
+import { ApexDonutChart } from './apex/ApexDonutChart';
+import { ApexGaugeChart } from './apex/ApexGaugeChart';
 
 const DashboardProfissional = () => {
   const [mesAtual] = useState(new Date().getMonth() + 1);
@@ -194,7 +196,7 @@ const DashboardProfissional = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <DonutChart 
+              <ApexDonutChart 
                 dados={dadosOcorrencias}
                 titulo="Por Tipo"
                 altura={200}
@@ -211,7 +213,7 @@ const DashboardProfissional = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <GaugeChart
+              <ApexGaugeChart
                 valor={dados.taf?.taxa_aprovacao || 0}
                 maximo={100}
                 titulo="Taxa de Aprovação"
@@ -229,7 +231,7 @@ const DashboardProfissional = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <DonutChart 
+              <ApexDonutChart 
                 dados={dadosAgentes}
                 titulo="Por Status"
                 altura={200}

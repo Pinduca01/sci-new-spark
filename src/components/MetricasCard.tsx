@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { LucideIcon } from "lucide-react";
-import { SparklineChart } from './SparklineChart';
+import { ApexSparkline } from './apex/ApexSparkline';
 
 interface MetricasCardProps {
   titulo: string;
@@ -104,7 +104,7 @@ export const MetricasCard: React.FC<MetricasCardProps> = ({
           
           {dadosSparkline && dadosSparkline.length > 0 && (
             <div className="ml-2">
-              <SparklineChart 
+              <ApexSparkline 
                 dados={dadosSparkline} 
                 cor={getCorSparkline()}
                 altura={32}
