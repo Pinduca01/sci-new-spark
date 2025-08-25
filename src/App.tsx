@@ -11,6 +11,7 @@ import ControlePessoal from "./pages/ControlePessoal";
 import Ocorrencias from "./pages/Ocorrencias";
 import Viaturas from "./pages/Viaturas";
 import Escalas from "./pages/Escalas";
+import Exercicios from "./pages/Exercicios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/viaturas" element={<MainLayout><Viaturas /></MainLayout>} />
           <Route path="/veiculos" element={<MainLayout><Viaturas /></MainLayout>} />
           <Route path="/escalas" element={<MainLayout><Escalas /></MainLayout>} />
+          <Route path="/exercicios" element={<MainLayout><Exercicios /></MainLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

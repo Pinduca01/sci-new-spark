@@ -11,7 +11,8 @@ import {
   Truck,
   Radio,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Target
 } from "lucide-react";
 
 import {
@@ -62,6 +63,12 @@ const mainNavItems = [
     url: "/equipamentos", 
     icon: Radio,
     description: "Controle de equipamentos"
+  },
+  { 
+    title: "Exercícios", 
+    url: "/exercicios", 
+    icon: Target,
+    description: "Treinamentos e simulações"
   }
 ];
 
