@@ -13,6 +13,7 @@ export interface Bombeiro {
   turno: string;
   status: string;
   matricula?: string;
+  data_admissao: string; // Adicionado este campo que estava faltando
 }
 
 export const useBombeiros = () => {
