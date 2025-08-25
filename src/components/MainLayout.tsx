@@ -5,8 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { UserProfileMenu } from "@/components/UserProfileMenu";
+import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
 import { User, Session } from '@supabase/supabase-js';
 import { Card, CardContent } from "@/components/ui/card";
+import { Search, Command } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -94,21 +100,42 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         <AppSidebar userRole={profile?.role} />
         
         <div className="flex-1 flex flex-col relative z-50">
-          {/* Header */}
-          <header className="border-b border-border/50 backdrop-blur-sm bg-background/50 p-4 relative z-50">
-            <div className="flex items-center justify-between">
+          {/* New Enhanced Header */}
+          <header className="border-b border-border/50 backdrop-blur-sm bg-background/80 relative z-50">
+            {/* Top Header Bar */}
+            <div className="flex items-center justify-between p-4">
+              {/* Left Section */}
               <div className="flex items-center space-x-4">
                 <SidebarTrigger className="lg:hidden" />
+                
+                {/* Search Button (Spotlight style) */}
+                <Button variant="outline" className="w-64 justify-start text-muted-foreground hidden md:flex">
+                  <Search className="mr-2 h-4 w-4" />
+                  <span>Buscar...</span>
+                  <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                    <Command className="h-3 w-3" />K
+                  </kbd>
+                </Button>
               </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium">{user?.email}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {profile?.role === 'admin' ? 'Administrador' : 'Usuário'}
-                  </p>
+
+              {/* Right Section */}
+              <div className="flex items-center space-x-2">
+                {/* Theme Toggle */}
+                <ThemeToggle />
+                
+                {/* Notifications */}
+                <NotificationCenter />
+                
+                {/* User Profile Menu */}
+                <div className="hidden md:block">
+                  <UserProfileMenu user={user} profile={profile} />
                 </div>
               </div>
+            </div>
+
+            {/* Bottom Header Bar - Breadcrumbs */}
+            <div className="px-4 pb-3">
+              <HeaderBreadcrumb />
             </div>
           </header>
 

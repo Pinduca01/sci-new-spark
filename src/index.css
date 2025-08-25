@@ -47,57 +47,12 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
     
     /* Gradients */
@@ -116,22 +71,50 @@ All colors MUST be HSL.
 
   .dark {
     --background: 220 15% 9%;
-    --foreground: 0 0% 100%;
-    --card: 220 15% 9%;
-    --card-foreground: 0 0% 100%;
-    --gradient-glass: linear-gradient(135deg, hsl(var(--coal-black) / 0.9), hsl(var(--coal-black) / 0.7));
+    --foreground: 0 0% 98%;
+
+    --card: 220 15% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 15% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 14 100% 55%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 0 0% 85%;
+
+    --muted: 220 15% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 14 100% 55%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 15% 20%;
+    --input: 220 15% 15%;
+    --ring: 14 100% 55%;
+
+    --sidebar-background: 220 15% 7%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 14 100% 55%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 15% 15%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 14 100% 55%;
     
     /* Gradients para dark mode */
     --gradient-primary: linear-gradient(135deg, hsl(var(--radiant-orange)), hsl(var(--radiant-orange) / 0.8));
-    --gradient-abstract: linear-gradient(135deg, hsl(var(--radiant-orange) / 0.1), hsl(var(--radiant-orange) / 0.05));
+    --gradient-abstract: linear-gradient(135deg, hsl(220 15% 12%), hsl(220 15% 8%));
+    --gradient-glass: linear-gradient(135deg, hsl(220 15% 12% / 0.9), hsl(220 15% 8% / 0.7));
     
     /* Shadows para dark mode */
-    --shadow-glass: 0 8px 32px hsl(var(--pure-white) / 0.1);
-    --shadow-elegant: 0 20px 25px -5px hsl(var(--pure-white) / 0.1), 0 10px 10px -5px hsl(var(--pure-white) / 0.04);
-    
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --shadow-glass: 0 8px 32px hsl(0 0% 0% / 0.3);
+    --shadow-elegant: 0 20px 25px -5px hsl(0 0% 0% / 0.2), 0 10px 10px -5px hsl(0 0% 0% / 0.1);
   }
 }
 
@@ -143,6 +126,7 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -150,14 +134,15 @@ All colors MUST be HSL.
   .glass-card {
     background: var(--gradient-glass);
     backdrop-filter: blur(16px);
-    border: 1px solid hsl(var(--pure-white) / 0.2);
+    border: 1px solid hsl(var(--border));
     box-shadow: var(--shadow-glass);
   }
   
   .abstract-bg {
-    background: linear-gradient(135deg, hsl(var(--fog-gray)), hsl(var(--pure-white)));
+    background: var(--gradient-abstract);
     position: relative;
     overflow: hidden;
+    transition: background 0.3s ease;
   }
   
   .abstract-bg::before {
@@ -172,8 +157,8 @@ All colors MUST be HSL.
       radial-gradient(circle at 75% 75%, hsl(var(--radiant-orange) / 0.05) 0%, transparent 50%),
       radial-gradient(circle at 50% 50%, hsl(var(--radiant-orange) / 0.03) 0%, transparent 70%);
     animation: abstractFloat 20s ease-in-out infinite;
-    pointer-events: none; /* CRÍTICO: Permite cliques através do overlay */
-    z-index: -1; /* Garante que fica atrás do conteúdo */
+    pointer-events: none;
+    z-index: -1;
   }
   
   @keyframes abstractFloat {
@@ -201,5 +186,12 @@ All colors MUST be HSL.
     pointer-events: auto !important;
     position: relative;
     z-index: 10;
+  }
+
+  /* Smooth transitions for theme changes */
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
   }
 }
