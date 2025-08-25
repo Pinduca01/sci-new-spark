@@ -336,7 +336,7 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
               </SidebarMenuItem>
 
               {/* Demais itens do menu principal */}
-              {mainNavItems.slice(2).map((item) => (
+              {mainNavItems.slice(1).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
