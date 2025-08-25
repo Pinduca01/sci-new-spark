@@ -55,43 +55,23 @@ const ExercicioEPIVisualizacao = ({ open, onOpenChange, exercicio }: ExercicioEP
                     <th rowSpan={2} className="border border-gray-800 p-2 bg-gray-100 text-sm font-bold">
                       FUNÇÃO
                     </th>
-                    <th colSpan={16} className="border border-gray-800 p-2 bg-gray-100 text-sm font-bold text-center">
+                    <th colSpan={4} className="border border-gray-800 p-2 bg-gray-100 text-sm font-bold text-center">
                       Tempo Individual de cada Bombeiro
                     </th>
                   </tr>
                   <tr>
-                    <th colSpan={4} className="border border-gray-800 p-1 bg-gray-50 text-xs font-bold text-center">
+                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs font-bold text-center">
                       Calça + Bota
                     </th>
-                    <th colSpan={4} className="border border-gray-800 p-1 bg-gray-50 text-xs font-bold text-center">
+                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs font-bold text-center">
                       TP Completo
                     </th>
-                    <th colSpan={4} className="border border-gray-800 p-1 bg-gray-50 text-xs font-bold text-center">
+                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs font-bold text-center">
                       EPR + TP Completo
                     </th>
-                    <th colSpan={4} className="border border-gray-800 p-1 bg-gray-50 text-xs font-bold text-center">
+                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs font-bold text-center">
                       EPR sem TP
                     </th>
-                  </tr>
-                  <tr>
-                    <th className="border border-gray-800 p-1"></th>
-                    <th className="border border-gray-800 p-1"></th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">1º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">2º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">3º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">4º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">1º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">2º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">3º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">4º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">1º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">2º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">3º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">4º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">1º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">2º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">3º Tomada</th>
-                    <th className="border border-gray-800 p-1 bg-gray-50 text-xs">4º Tomada</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -105,55 +85,19 @@ const ExercicioEPIVisualizacao = ({ open, onOpenChange, exercicio }: ExercicioEP
                       </td>
                       {/* Calça + Bota */}
                       <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.calcaBota1}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.calcaBota2}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.calcaBota3}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.calcaBota4}
+                        {bombeiro.calcaBota || '-'}
                       </td>
                       {/* TP Completo */}
                       <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.tpCompleto1}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.tpCompleto2}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.tpCompleto3}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.tpCompleto4}
+                        {bombeiro.tpCompleto || '-'}
                       </td>
                       {/* EPR + TP Completo */}
                       <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprTpCompleto1}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprTpCompleto2}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprTpCompleto3}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprTpCompleto4}
+                        {bombeiro.eprTpCompleto || '-'}
                       </td>
                       {/* EPR sem TP */}
                       <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprSemTp1}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprSemTp2}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprSemTp3}
-                      </td>
-                      <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprSemTp4}
+                        {bombeiro.eprSemTp || '-'}
                       </td>
                     </tr>
                   ))}

@@ -14,41 +14,124 @@ const ExercicioEPI = () => {
   const [exercicios, setExercicios] = useState([
     {
       id: 1,
-      data: "2024-01-15",
+      data: "2024-01-14",
       equipe: "Alfa",
-      chefeEquipe: "Sgt. Santos",
+      chefeEquipe: "Ronan",
       tipoEPI: "Conjunto Completo",
       tempoVestimento: "3:45",
+      tempoMinutos: 3.75, // 3 minutos e 45 segundos
       status: "Concluído"
     },
     {
       id: 2,
       data: "2024-01-10", 
       equipe: "Bravo",
-      chefeEquipe: "Cb. Silva",
+      chefeEquipe: "Gediael",
       tipoEPI: "EPR + Capacete",
       tempoVestimento: "2:30",
+      tempoMinutos: 2.5, // 2 minutos e 30 segundos
       status: "Concluído"
     },
     {
       id: 3,
       data: "2024-01-08",
       equipe: "Charlie",
-      chefeEquipe: "3º Sgt. Costa",
+      chefeEquipe: "Leonardo",
       tipoEPI: "Vestimenta Química",
       tempoVestimento: "4:15",
-      status: "Em Revisão"
+      tempoMinutos: 4.25, // 4 minutos e 15 segundos
+      status: "Concluído"
+    },
+    {
+      id: 4,
+      data: "2024-01-12",
+      equipe: "Delta",
+      chefeEquipe: "Diego",
+      tipoEPI: "EPI Básico",
+      tempoVestimento: "0:45",
+      tempoMinutos: 0.75, // 45 segundos
+      status: "Concluído"
+    },
+    {
+      id: 5,
+      data: "2024-01-15",
+      equipe: "Echo",
+      chefeEquipe: "Ronan",
+      tipoEPI: "Conjunto Completo",
+      tempoVestimento: "1:30",
+      tempoMinutos: 1.5, // 1 minuto e 30 segundos
+      status: "Concluído"
     }
   ]);
 
-  const handleSaveExercicio = (novoExercicio: any) => {
-    setExercicios([novoExercicio, ...exercicios]);
+  const handleSaveExercicio = (exercicio: any) => {
+    // Mapear os dados do modal para a estrutura esperada
+    const exercicioFormatado = {
+      id: exercicio.id,
+      data: exercicio.data,
+      equipe: exercicio.equipe,
+      chefeEquipe: exercicio.chefeEquipe,
+      tipoEPI: "EPI/EPR", // Valor padrão baseado no tipo do exercício
+      tempoVestimento: "N/A", // Será calculado baseado nos bombeiros
+      tempoMinutos: 0, // Será calculado baseado nos bombeiros
+      status: exercicio.status || "Concluído",
+      // Dados adicionais do modal
+      identificacaoLocal: exercicio.identificacaoLocal,
+      hora: exercicio.hora,
+      bombeiros: exercicio.bombeiros,
+      observacoes: exercicio.observacoes,
+      gerenteSCI: exercicio.gerenteSCI,
+      tipo: exercicio.tipo
+    };
+
+    if (exercicioSelecionado) {
+      // Editando exercício existente
+      setExercicios(exercicios.map(ex => ex.id === exercicio.id ? exercicioFormatado : ex));
+    } else {
+      // Criando novo exercício
+      setExercicios([exercicioFormatado, ...exercicios]);
+    }
+    setExercicioSelecionado(null);
   };
 
   const handleViewExercicio = (exercicio: any) => {
     setExercicioSelecionado(exercicio);
     setVisualizacaoOpen(true);
   };
+
+  const handleEditExercicio = (exercicio: any) => {
+    setExercicioSelecionado(exercicio);
+    setModalOpen(true);
+  };
+
+  const handleNovoExercicio = () => {
+    setExercicioSelecionado(null);
+    setModalOpen(true);
+  };
+
+  const handleDeleteExercicio = (exercicioId: number) => {
+    if (window.confirm('Tem certeza que deseja excluir este exercício?')) {
+      setExercicios(exercicios.filter(ex => ex.id !== exercicioId));
+    }
+  };
+
+  // Cálculos para os cards de estatísticas
+  const totalExercicios = exercicios.length;
+  
+  // Taxa de aprovação baseada no tempo (≤1min = Aprovado, >1min = Reprovado)
+  const exerciciosAprovados = exercicios.filter(ex => ex.tempoMinutos <= 1).length;
+  const taxaAprovacao = totalExercicios > 0 ? Math.round((exerciciosAprovados / totalExercicios) * 100) : 0;
+  
+  // Tempo médio de todos os exercícios
+  const tempoMedio = totalExercicios > 0 
+    ? exercicios.reduce((acc, ex) => acc + ex.tempoMinutos, 0) / totalExercicios 
+    : 0;
+  const tempoMedioFormatado = `${Math.floor(tempoMedio)}:${String(Math.round((tempoMedio % 1) * 60)).padStart(2, '0')}`;
+  
+  // Equipes treinadas (baseado nas equipes únicas que fizeram exercícios)
+  const equipesUnicas = [...new Set(exercicios.map(ex => ex.equipe))];
+  const equipesTrainadas = equipesUnicas.length;
+  const totalEquipes = 10; // Valor fixo conforme solicitado
 
   return (
     <div className="space-y-6">
@@ -60,10 +143,8 @@ const ExercicioEPI = () => {
             <Shield className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">28</div>
-            <p className="text-xs text-muted-foreground">
-              Este mês
-            </p>
+            <div className="text-2xl font-bold text-primary">{totalExercicios}</div>
+            <p className="text-xs text-muted-foreground">Este mês</p>
           </CardContent>
         </Card>
 
@@ -73,10 +154,8 @@ const ExercicioEPI = () => {
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">3:12</div>
-            <p className="text-xs text-muted-foreground">
-              Vestimento EPI
-            </p>
+            <div className="text-2xl font-bold text-blue-500">{tempoMedioFormatado}</div>
+            <p className="text-xs text-muted-foreground">Vestimento EPI</p>
           </CardContent>
         </Card>
 
@@ -86,10 +165,8 @@ const ExercicioEPI = () => {
             <Users className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">8</div>
-            <p className="text-xs text-muted-foreground">
-              De 10 equipes
-            </p>
+            <div className="text-2xl font-bold text-green-500">{equipesTrainadas}</div>
+            <p className="text-xs text-muted-foreground">De {totalEquipes} equipes</p>
           </CardContent>
         </Card>
 
@@ -99,10 +176,8 @@ const ExercicioEPI = () => {
             <Award className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-500">94%</div>
-            <p className="text-xs text-muted-foreground">
-              Exercícios aprovados
-            </p>
+            <div className="text-2xl font-bold text-amber-500">{taxaAprovacao}%</div>
+            <p className="text-xs text-muted-foreground">Exercícios aprovados (≤1min)</p>
           </CardContent>
         </Card>
       </div>
@@ -117,7 +192,7 @@ const ExercicioEPI = () => {
         </div>
         <Button 
           className="flex items-center gap-2"
-          onClick={() => setModalOpen(true)}
+          onClick={handleNovoExercicio}
         >
           <Plus className="h-4 w-4" />
           Novo Exercício
@@ -139,8 +214,6 @@ const ExercicioEPI = () => {
                 <TableHead>Data</TableHead>
                 <TableHead>Equipe</TableHead>
                 <TableHead>Chefe de Equipe</TableHead>
-                <TableHead>Tipo EPI</TableHead>
-                <TableHead>Tempo</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -153,18 +226,9 @@ const ExercicioEPI = () => {
                     <Badge variant="outline">{exercicio.equipe}</Badge>
                   </TableCell>
                   <TableCell>{exercicio.chefeEquipe}</TableCell>
-                  <TableCell>{exercicio.tipoEPI}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      {exercicio.tempoVestimento}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={exercicio.status === "Concluído" ? "default" : "secondary"}
-                    >
-                      {exercicio.status}
+                    <Badge variant="default">
+                      Concluído
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -176,8 +240,19 @@ const ExercicioEPI = () => {
                       >
                         Ver
                       </Button>
-                      <Button variant="ghost" size="sm">Editar</Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditExercicio(exercicio)}
+                      >
+                        Editar
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteExercicio(exercicio.id)}
+                      >
                         Excluir
                       </Button>
                     </div>
@@ -193,6 +268,7 @@ const ExercicioEPI = () => {
         open={modalOpen}
         onOpenChange={setModalOpen}
         onSave={handleSaveExercicio}
+        exercicioParaEdicao={exercicioSelecionado}
       />
 
       <ExercicioEPIVisualizacao

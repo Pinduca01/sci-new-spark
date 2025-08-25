@@ -1,43 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface BombeiroCadastrado {
+  id: string;
+  nome: string;
+  funcao: string;
+  funcao_completa: string;
+  equipe?: string;
+  status: string;
+}
 
 interface BombeiroTempo {
   nome: string;
   funcao: string;
-  calcaBota1: string;
-  calcaBota2: string;
-  calcaBota3: string;
-  calcaBota4: string;
-  tpCompleto1: string;
-  tpCompleto2: string;
-  tpCompleto3: string;
-  tpCompleto4: string;
-  eprTpCompleto1: string;
-  eprTpCompleto2: string;
-  eprTpCompleto3: string;
-  eprTpCompleto4: string;
-  eprSemTp1: string;
-  eprSemTp2: string;
-  eprSemTp3: string;
-  eprSemTp4: string;
+  calcaBota: string;
+  tpCompleto: string;
+  eprTpCompleto: string;
+  eprSemTp: string;
 }
 
 interface ExercicioEPIModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (exercicio: any) => void;
+  exercicioParaEdicao?: any;
 }
 
-const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProps) => {
+const ExercicioEPIModal = ({ open, onOpenChange, onSave, exercicioParaEdicao }: ExercicioEPIModalProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [bombeirosCadastrados, setBombeirosCadastrados] = useState<BombeiroCadastrado[]>([]);
   
   // Form data
   const [identificacaoLocal, setIdentificacaoLocal] = useState("AEROPORTO INTERNACIONAL SANTA GENOVEVA - GYN");
@@ -52,10 +53,10 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
     {
       nome: "",
       funcao: "",
-      calcaBota1: "", calcaBota2: "", calcaBota3: "", calcaBota4: "",
-      tpCompleto1: "", tpCompleto2: "", tpCompleto3: "", tpCompleto4: "",
-      eprTpCompleto1: "", eprTpCompleto2: "", eprTpCompleto3: "", eprTpCompleto4: "",
-      eprSemTp1: "", eprSemTp2: "", eprSemTp3: "", eprSemTp4: ""
+      calcaBota: "",
+      tpCompleto: "",
+      eprTpCompleto: "",
+      eprSemTp: ""
     }
   ]);
 
@@ -63,10 +64,10 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
     setBombeiros([...bombeiros, {
       nome: "",
       funcao: "",
-      calcaBota1: "", calcaBota2: "", calcaBota3: "", calcaBota4: "",
-      tpCompleto1: "", tpCompleto2: "", tpCompleto3: "", tpCompleto4: "",
-      eprTpCompleto1: "", eprTpCompleto2: "", eprTpCompleto3: "", eprTpCompleto4: "",
-      eprSemTp1: "", eprSemTp2: "", eprSemTp3: "", eprSemTp4: ""
+      calcaBota: "",
+      tpCompleto: "",
+      eprTpCompleto: "",
+      eprSemTp: ""
     }]);
   };
 
@@ -80,12 +81,102 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
     setBombeiros(novosBombeiros);
   };
 
+  // Buscar bombeiros cadastrados do Supabase
+  const fetchBombeiros = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bombeiros')
+        .select('id, nome, funcao, funcao_completa, equipe, status')
+        .eq('status', 'ativo')
+        .order('nome');
+
+      if (error) throw error;
+      
+      // Se não houver dados no Supabase, usar dados mock
+      if (!data || data.length === 0) {
+        const bombeirosMock: BombeiroCadastrado[] = [
+          { id: '1', nome: 'João Silva', funcao: 'BA-CE', funcao_completa: 'Bombeiro Auxiliar - Chefe de Equipe', equipe: 'Alfa', status: 'ativo' },
+          { id: '2', nome: 'Maria Santos', funcao: 'BA-LR', funcao_completa: 'Bombeiro Auxiliar - Líder de Resgate', equipe: 'Bravo', status: 'ativo' },
+          { id: '3', nome: 'Carlos Oliveira', funcao: 'BA-MC', funcao_completa: 'Bombeiro Auxiliar - Motorista Condutor', equipe: 'Charlie', status: 'ativo' },
+          { id: '4', nome: 'Ana Costa', funcao: 'BA-2', funcao_completa: 'Bombeiro Auxiliar 2ª Classe', equipe: 'Delta', status: 'ativo' },
+          { id: '5', nome: 'Pedro Souza', funcao: 'BA-2', funcao_completa: 'Bombeiro Auxiliar 2ª Classe', equipe: 'Echo', status: 'ativo' },
+          { id: '6', nome: 'Lucas Ferreira', funcao: 'BA-1', funcao_completa: 'Bombeiro Auxiliar 1ª Classe', equipe: 'Foxtrot', status: 'ativo' },
+        ];
+        setBombeirosCadastrados(bombeirosMock);
+      } else {
+        setBombeirosCadastrados(data);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar bombeiros:', error);
+      // Em caso de erro, usar dados mock
+      const bombeirosMock: BombeiroCadastrado[] = [
+        { id: '1', nome: 'João Silva', funcao: 'BA-CE', funcao_completa: 'Bombeiro Auxiliar - Chefe de Equipe', equipe: 'Alfa', status: 'ativo' },
+        { id: '2', nome: 'Maria Santos', funcao: 'BA-LR', funcao_completa: 'Bombeiro Auxiliar - Líder de Resgate', equipe: 'Bravo', status: 'ativo' },
+        { id: '3', nome: 'Carlos Oliveira', funcao: 'BA-MC', funcao_completa: 'Bombeiro Auxiliar - Motorista Condutor', equipe: 'Charlie', status: 'ativo' },
+        { id: '4', nome: 'Ana Costa', funcao: 'BA-2', funcao_completa: 'Bombeiro Auxiliar 2ª Classe', equipe: 'Delta', status: 'ativo' },
+        { id: '5', nome: 'Pedro Souza', funcao: 'BA-2', funcao_completa: 'Bombeiro Auxiliar 2ª Classe', equipe: 'Echo', status: 'ativo' },
+        { id: '6', nome: 'Lucas Ferreira', funcao: 'BA-1', funcao_completa: 'Bombeiro Auxiliar 1ª Classe', equipe: 'Foxtrot', status: 'ativo' },
+      ];
+      setBombeirosCadastrados(bombeirosMock);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      fetchBombeiros();
+    }
+  }, [open]);
+
+  // Carregar dados do exercício para edição
+  useEffect(() => {
+    if (exercicioParaEdicao && open) {
+      setData(exercicioParaEdicao.data || new Date().toISOString().split('T')[0]);
+      setHora(exercicioParaEdicao.hora || new Date().toTimeString().slice(0, 5));
+      setEquipe(exercicioParaEdicao.equipe || "Alfa");
+      setChefeEquipe(exercicioParaEdicao.chefeEquipe || "");
+      setObservacoes(exercicioParaEdicao.observacoes || "");
+      setGerenteSCI(exercicioParaEdicao.gerenteSCI || "");
+      
+      // Se o exercício tem dados de bombeiros, carregá-los
+      if (exercicioParaEdicao.bombeiros && exercicioParaEdicao.bombeiros.length > 0) {
+        setBombeiros(exercicioParaEdicao.bombeiros);
+      }
+    } else if (open && !exercicioParaEdicao) {
+      // Resetar formulário para novo exercício
+      setData(new Date().toISOString().split('T')[0]);
+      setHora(new Date().toTimeString().slice(0, 5));
+      setEquipe("Alfa");
+      setChefeEquipe("");
+      setObservacoes("");
+      setGerenteSCI("");
+      setBombeiros([{
+        nome: "",
+        funcao: "",
+        calcaBota: "",
+        tpCompleto: "",
+        eprTpCompleto: "",
+        eprSemTp: ""
+      }]);
+    }
+  }, [exercicioParaEdicao, open]);
+
+  // Função para preencher automaticamente a função quando um bombeiro é selecionado
+  const handleBombeiroSelect = (index: number, bombeiroId: string) => {
+    const bombeiro = bombeirosCadastrados.find(b => b.id === bombeiroId);
+    if (bombeiro) {
+      const novosBombeiros = [...bombeiros];
+      novosBombeiros[index].nome = bombeiro.nome;
+      novosBombeiros[index].funcao = bombeiro.funcao;
+      setBombeiros(novosBombeiros);
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
     
     try {
       const exercicio = {
-        id: Date.now(),
+        id: exercicioParaEdicao ? exercicioParaEdicao.id : Date.now(),
         identificacaoLocal,
         data,
         hora,
@@ -101,15 +192,15 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
       onSave(exercicio);
       
       toast({
-        title: "Exercício criado",
-        description: "Exercício de EPI/EPR foi criado com sucesso.",
+        title: exercicioParaEdicao ? "Exercício atualizado" : "Exercício criado",
+        description: exercicioParaEdicao ? "Exercício de EPI/EPR foi atualizado com sucesso." : "Exercício de EPI/EPR foi criado com sucesso.",
       });
       
       onOpenChange(false);
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Erro ao criar exercício.",
+        description: exercicioParaEdicao ? "Erro ao atualizar exercício." : "Erro ao criar exercício.",
         variant: "destructive",
       });
     } finally {
@@ -121,7 +212,7 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Novo Exercício de EPI/EPR</DialogTitle>
+          <DialogTitle>{exercicioParaEdicao ? "Editar Exercício de EPI/EPR" : "Novo Exercício de EPI/EPR"}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -185,52 +276,40 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
                     <tr className="bg-muted">
                       <th className="border border-gray-300 p-2 text-left">Nome</th>
                       <th className="border border-gray-300 p-2 text-left">Função</th>
-                      <th className="border border-gray-300 p-2 text-center" colSpan={4}>
+                      <th className="border border-gray-300 p-2 text-center">
                         Calça + Bota
                       </th>
-                      <th className="border border-gray-300 p-2 text-center" colSpan={4}>
+                      <th className="border border-gray-300 p-2 text-center">
                         TP Completo
                       </th>
-                      <th className="border border-gray-300 p-2 text-center" colSpan={4}>
+                      <th className="border border-gray-300 p-2 text-center">
                         EPR + TP Completo
                       </th>
-                      <th className="border border-gray-300 p-2 text-center" colSpan={4}>
+                      <th className="border border-gray-300 p-2 text-center">
                         EPR sem TP
                       </th>
                       <th className="border border-gray-300 p-2">Ações</th>
-                    </tr>
-                    <tr className="bg-muted/50">
-                      <th className="border border-gray-300 p-1"></th>
-                      <th className="border border-gray-300 p-1"></th>
-                      <th className="border border-gray-300 p-1 text-xs">1º</th>
-                      <th className="border border-gray-300 p-1 text-xs">2º</th>
-                      <th className="border border-gray-300 p-1 text-xs">3º</th>
-                      <th className="border border-gray-300 p-1 text-xs">4º</th>
-                      <th className="border border-gray-300 p-1 text-xs">1º</th>
-                      <th className="border border-gray-300 p-1 text-xs">2º</th>
-                      <th className="border border-gray-300 p-1 text-xs">3º</th>
-                      <th className="border border-gray-300 p-1 text-xs">4º</th>
-                      <th className="border border-gray-300 p-1 text-xs">1º</th>
-                      <th className="border border-gray-300 p-1 text-xs">2º</th>
-                      <th className="border border-gray-300 p-1 text-xs">3º</th>
-                      <th className="border border-gray-300 p-1 text-xs">4º</th>
-                      <th className="border border-gray-300 p-1 text-xs">1º</th>
-                      <th className="border border-gray-300 p-1 text-xs">2º</th>
-                      <th className="border border-gray-300 p-1 text-xs">3º</th>
-                      <th className="border border-gray-300 p-1 text-xs">4º</th>
-                      <th className="border border-gray-300 p-1"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {bombeiros.map((bombeiro, index) => (
                       <tr key={index}>
                         <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.nome}
-                            onChange={(e) => atualizarBombeiro(index, 'nome', e.target.value)}
-                            className="border-0 h-8"
-                            placeholder="Nome do bombeiro"
-                          />
+                          <Select
+                            value={bombeirosCadastrados.find(b => b.nome === bombeiro.nome)?.id || ""}
+                            onValueChange={(value) => handleBombeiroSelect(index, value)}
+                          >
+                            <SelectTrigger className="border-0 h-8">
+                              <SelectValue placeholder="Selecione o bombeiro" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {bombeirosCadastrados.map((bombeiroCadastrado) => (
+                                <SelectItem key={bombeiroCadastrado.id} value={bombeiroCadastrado.id}>
+                                  {bombeiroCadastrado.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="border border-gray-300 p-1">
                           <Input
@@ -243,32 +322,8 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
                         {/* Calça + Bota */}
                         <td className="border border-gray-300 p-1">
                           <Input
-                            value={bombeiro.calcaBota1}
-                            onChange={(e) => atualizarBombeiro(index, 'calcaBota1', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.calcaBota2}
-                            onChange={(e) => atualizarBombeiro(index, 'calcaBota2', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.calcaBota3}
-                            onChange={(e) => atualizarBombeiro(index, 'calcaBota3', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.calcaBota4}
-                            onChange={(e) => atualizarBombeiro(index, 'calcaBota4', e.target.value)}
+                            value={bombeiro.calcaBota}
+                            onChange={(e) => atualizarBombeiro(index, 'calcaBota', e.target.value)}
                             className="border-0 h-8 text-center"
                             placeholder="00:00"
                           />
@@ -276,32 +331,8 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
                         {/* TP Completo */}
                         <td className="border border-gray-300 p-1">
                           <Input
-                            value={bombeiro.tpCompleto1}
-                            onChange={(e) => atualizarBombeiro(index, 'tpCompleto1', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.tpCompleto2}
-                            onChange={(e) => atualizarBombeiro(index, 'tpCompleto2', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.tpCompleto3}
-                            onChange={(e) => atualizarBombeiro(index, 'tpCompleto3', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.tpCompleto4}
-                            onChange={(e) => atualizarBombeiro(index, 'tpCompleto4', e.target.value)}
+                            value={bombeiro.tpCompleto}
+                            onChange={(e) => atualizarBombeiro(index, 'tpCompleto', e.target.value)}
                             className="border-0 h-8 text-center"
                             placeholder="00:00"
                           />
@@ -309,32 +340,8 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
                         {/* EPR + TP Completo */}
                         <td className="border border-gray-300 p-1">
                           <Input
-                            value={bombeiro.eprTpCompleto1}
-                            onChange={(e) => atualizarBombeiro(index, 'eprTpCompleto1', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.eprTpCompleto2}
-                            onChange={(e) => atualizarBombeiro(index, 'eprTpCompleto2', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.eprTpCompleto3}
-                            onChange={(e) => atualizarBombeiro(index, 'eprTpCompleto3', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.eprTpCompleto4}
-                            onChange={(e) => atualizarBombeiro(index, 'eprTpCompleto4', e.target.value)}
+                            value={bombeiro.eprTpCompleto}
+                            onChange={(e) => atualizarBombeiro(index, 'eprTpCompleto', e.target.value)}
                             className="border-0 h-8 text-center"
                             placeholder="00:00"
                           />
@@ -342,32 +349,8 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave }: ExercicioEPIModalProp
                         {/* EPR sem TP */}
                         <td className="border border-gray-300 p-1">
                           <Input
-                            value={bombeiro.eprSemTp1}
-                            onChange={(e) => atualizarBombeiro(index, 'eprSemTp1', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.eprSemTp2}
-                            onChange={(e) => atualizarBombeiro(index, 'eprSemTp2', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.eprSemTp3}
-                            onChange={(e) => atualizarBombeiro(index, 'eprSemTp3', e.target.value)}
-                            className="border-0 h-8 text-center"
-                            placeholder="00:00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
-                            value={bombeiro.eprSemTp4}
-                            onChange={(e) => atualizarBombeiro(index, 'eprSemTp4', e.target.value)}
+                            value={bombeiro.eprSemTp}
+                            onChange={(e) => atualizarBombeiro(index, 'eprSemTp', e.target.value)}
                             className="border-0 h-8 text-center"
                             placeholder="00:00"
                           />
