@@ -11,13 +11,18 @@ import {
   FileText,
   Truck,
   Archive,
-  History
+  History,
+  Beaker
 } from "lucide-react";
 import { EstoqueDashboard } from "@/components/EstoqueDashboard";
 import { MaterialForm } from "@/components/MaterialForm";
 import { MovimentacaoForm } from "@/components/MovimentacaoForm";
+import { AgentesExtintoresDashboard } from "@/components/AgentesExtintoresDashboard";
+import { AgenteExtintorForm } from "@/components/AgenteExtintorForm";
+import { LoteRecomendacao } from "@/components/LoteRecomendacao";
 import { useEstoqueAlmoxarifado } from "@/hooks/useEstoqueAlmoxarifado";
 import { useMovimentacoes } from "@/hooks/useMovimentacoes";
+import { useAgentesExtintores } from "@/hooks/useAgentesExtintores";
 import {
   Table,
   TableBody,
@@ -31,9 +36,12 @@ import { ChecklistAlmoxarifadoForm } from "@/components/ChecklistAlmoxarifadoFor
 const Equipamentos = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [searchAgentes, setSearchAgentes] = useState("");
+  const [filterTipoAgente, setFilterTipoAgente] = useState("");
   
   const { estoque, isLoading: estoqueLoading } = useEstoqueAlmoxarifado();
   const { movimentacoes, isLoading: movimentacoesLoading } = useMovimentacoes();
+  const { agentes, isLoading: agentesLoading } = useAgentesExtintores();
 
   const filteredEstoque = estoque.filter(item => {
     const matchesSearch = 
@@ -43,6 +51,17 @@ const Equipamentos = () => {
     const matchesCategory = !selectedCategory || item.materiais?.categoria === selectedCategory;
     
     return matchesSearch && matchesCategory;
+  });
+
+  const filteredAgentes = agentes.filter(agente => {
+    const matchesSearch = 
+      agente.lote.toLowerCase().includes(searchAgentes.toLowerCase()) ||
+      agente.materiais?.nome.toLowerCase().includes(searchAgentes.toLowerCase()) ||
+      agente.materiais?.codigo_material.toLowerCase().includes(searchAgentes.toLowerCase());
+    
+    const matchesTipo = !filterTipoAgente || agente.tipo_agente === filterTipoAgente;
+    
+    return matchesSearch && matchesTipo;
   });
 
   const categorias = [...new Set(estoque.map(item => item.materiais?.categoria))].filter(Boolean);
@@ -72,6 +91,28 @@ const Equipamentos = () => {
     return <Badge variant="default">Normal</Badge>;
   };
 
+  const getStatusAgenteColor = (status: string) => {
+    switch (status) {
+      case 'disponivel': return 'default';
+      case 'em_uso': return 'secondary';
+      case 'vencido': return 'destructive';
+      case 'descartado': return 'outline';
+      default: return 'outline';
+    }
+  };
+
+  const getVencimentoColor = (dataVencimento: string) => {
+    const hoje = new Date();
+    const vencimento = new Date(dataVencimento);
+    const diasParaVencer = (vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (diasParaVencer < 0) return 'text-red-600';
+    if (diasParaVencer <= 30) return 'text-red-600';
+    if (diasParaVencer <= 60) return 'text-orange-600';
+    if (diasParaVencer <= 90) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -90,10 +131,14 @@ const Equipamentos = () => {
       <EstoqueDashboard />
 
       <Tabs defaultValue="estoque" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="estoque" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             Estoque Almoxarifado
+          </TabsTrigger>
+          <TabsTrigger value="agentes" className="flex items-center gap-2">
+            <Beaker className="h-4 w-4" />
+            Agentes Extintores
           </TabsTrigger>
           <TabsTrigger value="checklist" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -192,6 +237,107 @@ const Equipamentos = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="agentes">
+          <div className="space-y-6">
+            {/* Dashboard de Agentes */}
+            <AgentesExtintoresDashboard />
+            
+            {/* Recomendação de Lotes */}
+            <LoteRecomendacao />
+            
+            {/* Tabela de Agentes */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Controle de Agentes Extintores</CardTitle>
+                  <AgenteExtintorForm />
+                </div>
+                <div className="flex gap-4 items-center">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Buscar por lote, material..."
+                      value={searchAgentes}
+                      onChange={(e) => setSearchAgentes(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <select
+                    value={filterTipoAgente}
+                    onChange={(e) => setFilterTipoAgente(e.target.value)}
+                    className="px-3 py-2 border rounded-md"
+                  >
+                    <option value="">Todos os tipos</option>
+                    <option value="LGE">LGE</option>
+                    <option value="PQS">PQS</option>
+                  </select>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {agentesLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Lote</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Material</TableHead>
+                        <TableHead>Capacidade</TableHead>
+                        <TableHead>Fabricação</TableHead>
+                        <TableHead>Vencimento</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Localização</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAgentes.map((agente) => (
+                        <TableRow key={agente.id}>
+                          <TableCell className="font-mono font-medium">
+                            {agente.lote}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={agente.tipo_agente === 'LGE' ? 'default' : 'secondary'}>
+                              {agente.tipo_agente}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{agente.materiais?.nome}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {agente.materiais?.codigo_material}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {agente.capacidade} {agente.unidade_capacidade}
+                          </TableCell>
+                          <TableCell>
+                            {formatDate(agente.data_fabricacao)}
+                          </TableCell>
+                          <TableCell className={getVencimentoColor(agente.data_vencimento)}>
+                            {formatDate(agente.data_vencimento)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusAgenteColor(agente.status_uso) as any}>
+                              {agente.status_uso.replace('_', ' ')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {agente.localizacao_fisica || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="checklist">

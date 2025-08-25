@@ -14,6 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      agentes_extintores_controle: {
+        Row: {
+          capacidade: number
+          created_at: string
+          custo_unitario: number | null
+          data_fabricacao: string
+          data_ultima_recarga: string | null
+          data_vencimento: string
+          fornecedor: string | null
+          id: string
+          localizacao_fisica: string | null
+          lote: string
+          material_id: string
+          numero_recargas: number | null
+          numero_serie: string | null
+          observacoes: string | null
+          proxima_recarga: string | null
+          qr_code: string | null
+          status_uso: string
+          tipo_agente: string
+          unidade_capacidade: string
+          updated_at: string
+          viatura_id: string | null
+        }
+        Insert: {
+          capacidade: number
+          created_at?: string
+          custo_unitario?: number | null
+          data_fabricacao: string
+          data_ultima_recarga?: string | null
+          data_vencimento: string
+          fornecedor?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          lote: string
+          material_id: string
+          numero_recargas?: number | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          proxima_recarga?: string | null
+          qr_code?: string | null
+          status_uso?: string
+          tipo_agente: string
+          unidade_capacidade?: string
+          updated_at?: string
+          viatura_id?: string | null
+        }
+        Update: {
+          capacidade?: number
+          created_at?: string
+          custo_unitario?: number | null
+          data_fabricacao?: string
+          data_ultima_recarga?: string | null
+          data_vencimento?: string
+          fornecedor?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          lote?: string
+          material_id?: string
+          numero_recargas?: number | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          proxima_recarga?: string | null
+          qr_code?: string | null
+          status_uso?: string
+          tipo_agente?: string
+          unidade_capacidade?: string
+          updated_at?: string
+          viatura_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agentes_extintores_controle_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agentes_extintores_controle_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bombeiros: {
         Row: {
           avatar: string
@@ -398,6 +485,76 @@ export type Database = {
             columns: ["equipe_atual_id"]
             isOneToOne: false
             referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historico_recargas_agentes: {
+        Row: {
+          agente_extintor_id: string
+          certificado_url: string | null
+          created_at: string
+          custo: number | null
+          data_recarga: string
+          empresa_responsavel: string | null
+          id: string
+          observacoes: string | null
+          proxima_manutencao: string | null
+          responsavel_id: string | null
+          responsavel_nome: string
+          tipo_manutencao: string
+          viatura_id: string | null
+        }
+        Insert: {
+          agente_extintor_id: string
+          certificado_url?: string | null
+          created_at?: string
+          custo?: number | null
+          data_recarga: string
+          empresa_responsavel?: string | null
+          id?: string
+          observacoes?: string | null
+          proxima_manutencao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome: string
+          tipo_manutencao: string
+          viatura_id?: string | null
+        }
+        Update: {
+          agente_extintor_id?: string
+          certificado_url?: string | null
+          created_at?: string
+          custo?: number | null
+          data_recarga?: string
+          empresa_responsavel?: string | null
+          id?: string
+          observacoes?: string | null
+          proxima_manutencao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          tipo_manutencao?: string
+          viatura_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_recargas_agentes_agente_extintor_id_fkey"
+            columns: ["agente_extintor_id"]
+            isOneToOne: false
+            referencedRelation: "agentes_extintores_controle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_recargas_agentes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_recargas_agentes_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
             referencedColumns: ["id"]
           },
         ]
@@ -1044,9 +1201,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_alertas_vencimento_agentes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          data_vencimento: string
+          dias_para_vencimento: number
+          lote: string
+          nivel_alerta: string
+          quantidade: number
+          tipo_agente: string
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_proximo_lote_recomendado: {
+        Args: { p_tipo_agente: string }
+        Returns: {
+          data_vencimento: string
+          dias_para_vencimento: number
+          lote: string
+          quantidade_disponivel: number
+        }[]
       }
       nextval: {
         Args: { sequence_name: string }
