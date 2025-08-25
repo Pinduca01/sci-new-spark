@@ -49,7 +49,7 @@ export const validateInput = {
   // Validate date format
   date: (date: string): boolean => {
     const parsedDate = new Date(date);
-    return !isNaN(parsedDate.getTime()) && date.match(/^\d{4}-\d{2}-\d{2}$/);
+    return !isNaN(parsedDate.getTime()) && date.match(/^\d{4}-\d{2}-\d{2}$/) !== null;
   }
 };
 
