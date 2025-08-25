@@ -1,7 +1,7 @@
+
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
-  Shield, 
   Users, 
   ClipboardList, 
   BarChart3, 
@@ -196,11 +196,15 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Header */}
+      {/* Header com Logo SCI-Core */}
       <SidebarHeader className="p-4 border-b border-border/50">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary-foreground" />
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5">
+            <img 
+              src="/lovable-uploads/a158ba50-7bfe-4ce6-bc26-0db3511ee40f.png" 
+              alt="SCI-Core"
+              className="w-8 h-8 object-contain"
+            />
           </div>
           {showFull && (
             <div className="transition-opacity duration-200">

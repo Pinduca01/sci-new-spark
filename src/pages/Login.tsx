@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, Users } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { User, Session } from '@supabase/supabase-js';
 
 const Login = () => {
@@ -102,8 +102,13 @@ const Login = () => {
       {/* Login Card */}
       <Card className="glass-card w-full max-w-md relative z-10 border-0">
         <CardHeader className="text-center space-y-6">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-            <Users className="w-8 h-8 text-primary-foreground" />
+          {/* Logo SCI-Core */}
+          <div className="mx-auto w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center shadow-lg overflow-hidden">
+            <img 
+              src="/lovable-uploads/a158ba50-7bfe-4ce6-bc26-0db3511ee40f.png" 
+              alt="SCI-Core Logo"
+              className="w-20 h-20 object-contain"
+            />
           </div>
           <div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
