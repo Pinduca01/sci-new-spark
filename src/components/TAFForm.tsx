@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Play, Pause, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useBombeiros } from '@/hooks/useBombeiros';
 import { useTAFMetas } from '@/hooks/useTAFMetas';
 import { useTAFAvaliacoes } from '@/hooks/useTAFAvaliacoes';
@@ -25,65 +26,34 @@ const TAFForm = () => {
   const [polichinelos, setPolichinelos] = useState(0);
   const [observacoes, setObservacoes] = useState('');
   
-  // Cronômetro
+  // Campos para tempo manual
+  const [minutos, setMinutos] = useState(0);
   const [segundos, setSegundos] = useState(0);
-  const [ativo, setAtivo] = useState(false);
-  const [pausado, setPausado] = useState(false);
 
   const bombeiro = bombeiros.find(b => b.id === selectedBombeiro);
-  // Calcular idade usando data_admissao como aproximação (ou pode ser idade atual)
-  const idade = bombeiro ? new Date().getFullYear() - new Date(bombeiro.data_admissao).getFullYear() + 25 : 0; // +25 assumindo idade mínima de ingresso
+  const idade = bombeiro ? new Date().getFullYear() - new Date(bombeiro.data_admissao).getFullYear() + 25 : 0;
   const meta = getMetaPorIdade(idade);
 
-  // Cronômetro logic
-  useEffect(() => {
-    let intervalo: NodeJS.Timeout | null = null;
-    
-    if (ativo && !pausado) {
-      intervalo = setInterval(() => {
-        setSegundos(s => s + 1);
-      }, 1000);
-    } else if (intervalo) {
-      clearInterval(intervalo);
-    }
-
-    return () => {
-      if (intervalo) clearInterval(intervalo);
-    };
-  }, [ativo, pausado]);
-
-  const formatarTempo = (s: number) => {
-    const minutos = Math.floor(s / 60);
-    const segs = s % 60;
-    return `${minutos.toString().padStart(2, '0')}:${segs.toString().padStart(2, '0')}`;
-  };
-
-  const iniciarCronometro = () => {
-    setAtivo(true);
-    setPausado(false);
-  };
-
-  const pausarCronometro = () => {
-    setPausado(!pausado);
-  };
-
-  const resetarCronometro = () => {
-    setSegundos(0);
-    setAtivo(false);
-    setPausado(false);
-  };
+  // Converter tempo manual para segundos totais
+  const tempoTotalSegundos = minutos * 60 + segundos;
 
   const calcularAprovacao = () => {
     if (!meta) return false;
     
     const tempoLimite = meta.tempo_limite_minutos * 60;
-    const dentroDoTempo = segundos <= tempoLimite;
+    const dentroDoTempo = tempoTotalSegundos <= tempoLimite;
     const metasAtingidas = 
       flexoes >= meta.meta_flexoes &&
       abdominais >= meta.meta_abdominais &&
       polichinelos >= meta.meta_polichinelos;
 
     return dentroDoTempo && metasAtingidas;
+  };
+
+  const formatarTempo = (totalSegundos: number) => {
+    const mins = Math.floor(totalSegundos / 60);
+    const secs = totalSegundos % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,6 +63,15 @@ const TAFForm = () => {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (tempoTotalSegundos === 0) {
+      toast({
+        title: "Erro",
+        description: "Informe o tempo realizado pelo bombeiro",
         variant: "destructive"
       });
       return;
@@ -110,7 +89,7 @@ const TAFForm = () => {
         abdominais_realizadas: abdominais,
         polichinelos_realizados: polichinelos,
         tempo_limite_minutos: meta.tempo_limite_minutos,
-        tempo_total_segundos: segundos,
+        tempo_total_segundos: tempoTotalSegundos,
         aprovado,
         avaliador_nome: avaliadorNome,
         observacoes: observacoes || undefined
@@ -123,7 +102,8 @@ const TAFForm = () => {
       setAbdominais(0);
       setPolichinelos(0);
       setObservacoes('');
-      resetarCronometro();
+      setMinutos(0);
+      setSegundos(0);
     } catch (error) {
       toast({
         title: "Erro",
@@ -189,41 +169,56 @@ const TAFForm = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Cronômetro</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Tempo Realizado
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center space-y-4">
-                <div className="text-4xl font-mono font-bold text-primary">
-                  {formatarTempo(segundos)}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="minutos">Minutos</Label>
+                    <Input
+                      id="minutos"
+                      type="number"
+                      min="0"
+                      max="30"
+                      value={minutos}
+                      onChange={(e) => setMinutos(Number(e.target.value))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="segundos">Segundos</Label>
+                    <Input
+                      id="segundos"
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={segundos}
+                      onChange={(e) => setSegundos(Number(e.target.value))}
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
-                <div className="flex justify-center gap-2">
-                  <Button 
-                    type="button"
-                    onClick={iniciarCronometro}
-                    disabled={ativo && !pausado}
-                    variant="outline"
-                  >
-                    <Play className="w-4 h-4 mr-1" />
-                    Iniciar
-                  </Button>
-                  <Button 
-                    type="button"
-                    onClick={pausarCronometro}
-                    disabled={!ativo}
-                    variant="outline"
-                  >
-                    <Pause className="w-4 h-4 mr-1" />
-                    {pausado ? 'Continuar' : 'Pausar'}
-                  </Button>
-                  <Button 
-                    type="button"
-                    onClick={resetarCronometro}
-                    variant="outline"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1" />
-                    Reset
-                  </Button>
-                </div>
+                
+                {tempoTotalSegundos > 0 && (
+                  <div className="text-center">
+                    <div className="text-2xl font-mono font-bold text-primary">
+                      {formatarTempo(tempoTotalSegundos)}
+                    </div>
+                    {meta && (
+                      <div className="mt-2">
+                        <Badge 
+                          variant={tempoTotalSegundos <= meta.tempo_limite_minutos * 60 ? "default" : "destructive"}
+                        >
+                          Limite: {formatarTempo(meta.tempo_limite_minutos * 60)}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -295,7 +290,7 @@ const TAFForm = () => {
             />
           </div>
 
-          {bombeiro && meta && (
+          {bombeiro && meta && tempoTotalSegundos > 0 && (
             <Card className={`border-2 ${aprovado ? 'border-green-500' : 'border-red-500'}`}>
               <CardContent className="pt-4">
                 <div className="flex items-center justify-center gap-2">
@@ -318,7 +313,7 @@ const TAFForm = () => {
           <Button 
             type="submit" 
             className="w-full"
-            disabled={createAvaliacao.isPending || !selectedBombeiro || !avaliadorNome}
+            disabled={createAvaliacao.isPending || !selectedBombeiro || !avaliadorNome || tempoTotalSegundos === 0}
           >
             {createAvaliacao.isPending ? 'Salvando...' : 'Registrar TAF'}
           </Button>
