@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -444,7 +445,7 @@ All colors MUST be HSL.
     border: 1px solid hsl(var(--border) / 0.5);
     backdrop-filter: blur(10px);
     box-shadow: var(--shadow-3d-inset);
-    padding-left: 3.5rem;
+    padding-left: 4.5rem;
     height: 48px;
     border-radius: 12px;
     transition: var(--transition-smooth);
