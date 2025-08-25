@@ -51,7 +51,14 @@ export const useChecklistsAlmoxarifado = () => {
         .order('hora_checklist', { ascending: false });
 
       if (error) throw error;
-      return data as ChecklistAlmoxarifado[];
+      
+      // Transform the data to match our interface
+      return (data || []).map(item => ({
+        ...item,
+        itens_checklist: Array.isArray(item.itens_checklist) 
+          ? item.itens_checklist as ChecklistItem[]
+          : []
+      })) as ChecklistAlmoxarifado[];
     }
   });
 
@@ -60,7 +67,10 @@ export const useChecklistsAlmoxarifado = () => {
     mutationFn: async (checklist: Omit<ChecklistAlmoxarifado, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('checklists_almoxarifado')
-        .insert(checklist)
+        .insert({
+          ...checklist,
+          itens_checklist: checklist.itens_checklist as any
+        })
         .select()
         .single();
 
@@ -79,9 +89,14 @@ export const useChecklistsAlmoxarifado = () => {
   // Atualizar checklist
   const updateChecklist = useMutation({
     mutationFn: async ({ id, ...checklist }: Partial<ChecklistAlmoxarifado> & { id: string }) => {
+      const updateData = {
+        ...checklist,
+        itens_checklist: checklist.itens_checklist as any
+      };
+      
       const { data, error } = await supabase
         .from('checklists_almoxarifado')
-        .update(checklist)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -112,7 +127,7 @@ export const useChecklistsAlmoxarifado = () => {
 
     if (error) throw error;
 
-    return estoque.map(item => ({
+    return (estoque || []).map(item => ({
       material_id: item.material_id,
       codigo_material: item.materiais?.codigo_material || '',
       nome: item.materiais?.nome || '',

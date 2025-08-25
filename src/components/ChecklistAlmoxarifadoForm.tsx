@@ -1,82 +1,142 @@
 
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { AssinaturaDigital } from '@/components/AssinaturaDigital';
-import { ChecklistItem, ChecklistAlmoxarifado, useChecklistsAlmoxarifado } from '@/hooks/useChecklistsAlmoxarifado';
+import { useChecklistsAlmoxarifado, ChecklistItem, ChecklistAlmoxarifado } from '@/hooks/useChecklistsAlmoxarifado';
 import { useBombeiros } from '@/hooks/useBombeiros';
+import { AssinaturaDigital } from './AssinaturaDigital';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Check, 
-  X, 
+  CheckCircle2, 
+  XCircle, 
   AlertTriangle, 
+  Clock,
   Search,
   Save,
-  CheckCircle,
-  Camera,
-  FileText
+  FileCheck
 } from 'lucide-react';
 
 export const ChecklistAlmoxarifadoForm = () => {
-  const { toast } = useToast();
-  const { bombeiros } = useBombeiros();
-  const { createChecklist, updateChecklist, prepareChecklistItems } = useChecklistsAlmoxarifado();
-  
-  const [itensChecklist, setItensChecklist] = useState<ChecklistItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [assinaturaDigital, setAssinaturaDigital] = useState<string>('');
-  const [checklistId, setChecklistId] = useState<string>('');
-
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<ChecklistAlmoxarifado>({
-    defaultValues: {
-      data_checklist: new Date().toISOString().split('T')[0],
-      hora_checklist: new Date().toTimeString().slice(0, 5),
-      status_geral: 'em_andamento',
-      observacoes_gerais: ''
-    }
+  const [checklist, setChecklist] = useState<Partial<ChecklistAlmoxarifado>>({
+    data_checklist: new Date().toISOString().split('T')[0],
+    hora_checklist: new Date().toTimeString().slice(0, 5),
+    status_geral: 'em_andamento',
+    itens_checklist: [],
+    total_itens: 0,
+    itens_conformes: 0,
+    itens_divergentes: 0
   });
 
-  const bombeiro_responsavel_id = watch('bombeiro_responsavel_id');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Carregar itens do checklist ao iniciar
+  const { createChecklist, updateChecklist, prepareChecklistItems } = useChecklistsAlmoxarifado();
+  const { bombeiros } = useBombeiros();
+  const { toast } = useToast();
+
+  // Carregar itens do estoque ao inicializar
   useEffect(() => {
     const loadItems = async () => {
       try {
+        setIsLoading(true);
         const items = await prepareChecklistItems();
-        setItensChecklist(items);
+        setChecklist(prev => ({
+          ...prev,
+          itens_checklist: items,
+          total_itens: items.length
+        }));
       } catch (error) {
         console.error('Erro ao carregar itens:', error);
         toast({
           title: "Erro",
-          description: "Erro ao carregar materiais do estoque.",
+          description: "Erro ao carregar itens do estoque",
           variant: "destructive"
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadItems();
-  }, []);
+  }, [prepareChecklistItems, toast]);
 
-  // Atualizar nome do bombeiro quando selecionado
-  useEffect(() => {
-    if (bombeiro_responsavel_id) {
-      const bombeiro = bombeiros.find(b => b.id === bombeiro_responsavel_id);
-      if (bombeiro) {
-        setValue('bombeiro_responsavel_nome', bombeiro.nome);
-      }
+  const updateItemStatus = (materialId: string, status: ChecklistItem['status'], quantidadeEncontrada?: number, justificativa?: string) => {
+    setChecklist(prev => {
+      const items = prev.itens_checklist || [];
+      const updatedItems = items.map(item => 
+        item.material_id === materialId 
+          ? { ...item, status, quantidade_encontrada: quantidadeEncontrada, justificativa }
+          : item
+      );
+
+      const conformes = updatedItems.filter(item => item.status === 'conforme').length;
+      const divergentes = updatedItems.filter(item => item.status === 'divergencia' || item.status === 'nao_localizado').length;
+
+      return {
+        ...prev,
+        itens_checklist: updatedItems,
+        itens_conformes: conformes,
+        itens_divergentes: divergentes
+      };
+    });
+  };
+
+  const handleSave = async () => {
+    if (!checklist.bombeiro_responsavel_id) {
+      toast({
+        title: "Erro",
+        description: "Selecione o bombeiro responsável",
+        variant: "destructive"
+      });
+      return;
     }
-  }, [bombeiro_responsavel_id, bombeiros, setValue]);
 
-  // Filtrar itens
-  const filteredItems = itensChecklist.filter(item => {
+    if (!checklist.assinatura_digital) {
+      toast({
+        title: "Erro",
+        description: "Assinatura digital é obrigatória",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const checklistData = {
+        ...checklist,
+        status_geral: checklist.status_geral || 'em_andamento'
+      } as Omit<ChecklistAlmoxarifado, 'id' | 'created_at' | 'updated_at'>;
+
+      if (checklist.id) {
+        await updateChecklist.mutateAsync({ id: checklist.id, ...checklistData });
+        toast({
+          title: "Sucesso",
+          description: "Checklist atualizado com sucesso!",
+        });
+      } else {
+        await createChecklist.mutateAsync(checklistData);
+        toast({
+          title: "Sucesso",
+          description: "Checklist criado com sucesso!",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao salvar checklist:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar checklist",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredItems = (checklist.itens_checklist || []).filter(item => {
     const matchesSearch = 
       item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.codigo_material.toLowerCase().includes(searchTerm.toLowerCase());
@@ -86,175 +146,123 @@ export const ChecklistAlmoxarifadoForm = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const categorias = [...new Set(itensChecklist.map(item => item.categoria))];
+  const categories = [...new Set((checklist.itens_checklist || []).map(item => item.categoria))];
+  const progress = checklist.total_itens > 0 
+    ? ((checklist.itens_conformes + checklist.itens_divergentes) / checklist.total_itens) * 100 
+    : 0;
 
-  // Calcular estatísticas
-  const totalItens = itensChecklist.length;
-  const itensConferidos = itensChecklist.filter(item => item.status !== 'pendente').length;
-  const itensConformes = itensChecklist.filter(item => item.status === 'conforme').length;
-  const itensDivergentes = itensChecklist.filter(item => 
-    item.status === 'divergencia' || item.status === 'nao_localizado'
-  ).length;
-  const progresso = totalItens > 0 ? (itensConferidos / totalItens) * 100 : 0;
-
-  const updateItemStatus = (materialId: string, status: ChecklistItem['status']) => {
-    setItensChecklist(prev => prev.map(item => 
-      item.material_id === materialId 
-        ? { ...item, status, quantidade_encontrada: status === 'conforme' ? item.quantidade_teorica : item.quantidade_encontrada }
-        : item
-    ));
-  };
-
-  const updateItemQuantity = (materialId: string, quantidade: number) => {
-    setItensChecklist(prev => prev.map(item => 
-      item.material_id === materialId 
-        ? { ...item, quantidade_encontrada: quantidade }
-        : item
-    ));
-  };
-
-  const updateItemJustificative = (materialId: string, justificativa: string) => {
-    setItensChecklist(prev => prev.map(item => 
-      item.material_id === materialId 
-        ? { ...item, justificativa }
-        : item
-    ));
+  const getStatusIcon = (status: ChecklistItem['status']) => {
+    switch (status) {
+      case 'conforme':
+        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+      case 'divergencia':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'nao_localizado':
+        return <AlertTriangle className="h-4 w-4 text-orange-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-400" />;
+    }
   };
 
   const getStatusBadge = (status: ChecklistItem['status']) => {
-    switch (status) {
-      case 'conforme':
-        return <Badge className="bg-green-100 text-green-800"><Check className="h-3 w-3 mr-1" />Conforme</Badge>;
-      case 'divergencia':
-        return <Badge className="bg-yellow-100 text-yellow-800"><AlertTriangle className="h-3 w-3 mr-1" />Divergência</Badge>;
-      case 'nao_localizado':
-        return <Badge variant="destructive"><X className="h-3 w-3 mr-1" />Não Localizado</Badge>;
-      default:
-        return <Badge variant="outline">Pendente</Badge>;
-    }
-  };
+    const variants = {
+      conforme: 'default',
+      divergencia: 'destructive',
+      nao_localizado: 'secondary',
+      pendente: 'outline'
+    } as const;
 
-  const handleSaveSignature = (signature: string) => {
-    setAssinaturaDigital(signature);
-    toast({
-      title: "Sucesso",
-      description: "Assinatura digital salva!",
-    });
-  };
-
-  const onSubmit = async (data: ChecklistAlmoxarifado) => {
-    if (!assinaturaDigital) {
-      toast({
-        title: "Erro",
-        description: "Assinatura digital é obrigatória.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const checklistData = {
-      ...data,
-      itens_checklist: itensChecklist,
-      assinatura_digital: assinaturaDigital,
-      total_itens: totalItens,
-      itens_conformes: itensConformes,
-      itens_divergentes: itensDivergentes,
-      status_geral: progresso === 100 ? 'concluido' as const : 'em_andamento' as const
+    const labels = {
+      conforme: 'Conforme',
+      divergencia: 'Divergência',
+      nao_localizado: 'Não Localizado',
+      pendente: 'Pendente'
     };
 
-    try {
-      if (checklistId) {
-        await updateChecklist.mutateAsync({ id: checklistId, ...checklistData });
-      } else {
-        const result = await createChecklist.mutateAsync(checklistData);
-        setChecklistId(result.id);
-      }
-      
-      toast({
-        title: "Sucesso",
-        description: "Checklist salvo com sucesso!",
-      });
-    } catch (error) {
-      console.error('Erro ao salvar checklist:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar checklist.",
-        variant: "destructive"
-      });
-    }
+    return (
+      <Badge variant={variants[status]}>
+        {getStatusIcon(status)}
+        <span className="ml-1">{labels[status]}</span>
+      </Badge>
+    );
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-4 max-w-4xl mx-auto">
-      {/* Header com informações gerais */}
+      {/* Cabeçalho */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+            <FileCheck className="h-5 w-5" />
             Checklist do Almoxarifado
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="data_checklist">Data do Checklist</Label>
+              <Label htmlFor="data">Data</Label>
               <Input
-                id="data_checklist"
+                id="data"
                 type="date"
-                {...register('data_checklist', { required: 'Data é obrigatória' })}
+                value={checklist.data_checklist}
+                onChange={(e) => setChecklist(prev => ({ ...prev, data_checklist: e.target.value }))}
               />
-              {errors.data_checklist && (
-                <span className="text-sm text-red-500">{errors.data_checklist.message}</span>
-              )}
             </div>
-            
             <div>
-              <Label htmlFor="hora_checklist">Hora do Checklist</Label>
+              <Label htmlFor="hora">Hora</Label>
               <Input
-                id="hora_checklist"
+                id="hora"
                 type="time"
-                {...register('hora_checklist', { required: 'Hora é obrigatória' })}
+                value={checklist.hora_checklist}
+                onChange={(e) => setChecklist(prev => ({ ...prev, hora_checklist: e.target.value }))}
               />
-              {errors.hora_checklist && (
-                <span className="text-sm text-red-500">{errors.hora_checklist.message}</span>
-              )}
+            </div>
+            <div>
+              <Label htmlFor="responsavel">Bombeiro Responsável</Label>
+              <Select 
+                value={checklist.bombeiro_responsavel_id}
+                onValueChange={(value) => {
+                  const bombeiro = bombeiros.find(b => b.id === value);
+                  setChecklist(prev => ({ 
+                    ...prev, 
+                    bombeiro_responsavel_id: value,
+                    bombeiro_responsavel_nome: bombeiro?.nome || ''
+                  }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bombeiros.map((bombeiro) => (
+                    <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                      {bombeiro.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="bombeiro_responsavel">Bombeiro Responsável</Label>
-            <Select onValueChange={(value) => setValue('bombeiro_responsavel_id', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o bombeiro responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                {bombeiros.map((bombeiro) => (
-                  <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                    {bombeiro.nome} - {bombeiro.funcao}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.bombeiro_responsavel_id && (
-              <span className="text-sm text-red-500">Bombeiro responsável é obrigatório</span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Progresso */}
-      <Card>
-        <CardContent className="pt-6">
+          {/* Progresso */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Progresso do Checklist</span>
-              <span>{Math.round(progresso)}% ({itensConferidos}/{totalItens})</span>
+              <span>{Math.round(progress)}%</span>
             </div>
-            <Progress value={progresso} className="h-2" />
-            <div className="flex gap-4 text-sm">
-              <span className="text-green-600">Conformes: {itensConformes}</span>
-              <span className="text-yellow-600">Divergências: {itensDivergentes}</span>
-              <span className="text-gray-600">Pendentes: {totalItens - itensConferidos}</span>
+            <Progress value={progress} className="h-2" />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Conformes: {checklist.itens_conformes}</span>
+              <span>Divergentes: {checklist.itens_divergentes}</span>
+              <span>Total: {checklist.total_itens}</span>
             </div>
           </div>
         </CardContent>
@@ -263,8 +271,8 @@ export const ChecklistAlmoxarifadoForm = () => {
       {/* Filtros */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
+          <div className="flex gap-4 items-center">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Buscar materiais..."
@@ -279,7 +287,7 @@ export const ChecklistAlmoxarifadoForm = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">Todas as categorias</SelectItem>
-                {categorias.map((categoria) => (
+                {categories.map((categoria) => (
                   <SelectItem key={categoria} value={categoria}>
                     {categoria}
                   </SelectItem>
@@ -290,83 +298,92 @@ export const ChecklistAlmoxarifadoForm = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de materiais */}
-      <div className="space-y-3">
+      {/* Lista de Itens */}
+      <div className="space-y-4">
         {filteredItems.map((item) => (
-          <Card key={item.material_id} className="border-l-4 border-l-gray-200">
-            <CardContent className="pt-4">
-              <div className="space-y-3">
+          <Card key={item.material_id}>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
                 <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="font-medium">{item.nome}</div>
-                    <div className="text-sm text-gray-500">
-                      {item.codigo_material} • {item.categoria}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      Qtd. Teórica: {item.quantidade_teorica} {item.unidade_medida}
-                    </div>
+                  <div>
+                    <h3 className="font-semibold">{item.nome}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Código: {item.codigo_material} | Categoria: {item.categoria}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Quantidade Teórica: {item.quantidade_teorica} {item.unidade_medida}
+                    </p>
                   </div>
-                  <div className="ml-4">
-                    {getStatusBadge(item.status)}
-                  </div>
+                  {getStatusBadge(item.status)}
                 </div>
 
-                {/* Botões de ação */}
-                <div className="grid grid-cols-3 gap-2">
+                {/* Campos de conferência */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <Button
-                    size="sm"
+                    type="button"
                     variant={item.status === 'conforme' ? 'default' : 'outline'}
-                    onClick={() => updateItemStatus(item.material_id, 'conforme')}
-                    className="flex items-center gap-1"
+                    size="sm"
+                    onClick={() => updateItemStatus(item.material_id, 'conforme', item.quantidade_teorica)}
+                    className="w-full"
                   >
-                    <Check className="h-3 w-3" />
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
                     Conforme
                   </Button>
-                  
                   <Button
+                    type="button"
+                    variant={item.status === 'divergencia' ? 'destructive' : 'outline'}
                     size="sm"
-                    variant={item.status === 'divergencia' ? 'default' : 'outline'}
                     onClick={() => updateItemStatus(item.material_id, 'divergencia')}
-                    className="flex items-center gap-1"
+                    className="w-full"
                   >
-                    <AlertTriangle className="h-3 w-3" />
+                    <XCircle className="h-4 w-4 mr-1" />
                     Divergência
                   </Button>
-                  
                   <Button
+                    type="button"
+                    variant={item.status === 'nao_localizado' ? 'secondary' : 'outline'}
                     size="sm"
-                    variant={item.status === 'nao_localizado' ? 'destructive' : 'outline'}
                     onClick={() => updateItemStatus(item.material_id, 'nao_localizado')}
-                    className="flex items-center gap-1"
+                    className="w-full"
                   >
-                    <X className="h-3 w-3" />
+                    <AlertTriangle className="h-4 w-4 mr-1" />
                     Não Localizado
                   </Button>
                 </div>
 
-                {/* Campos adicionais para divergências */}
+                {/* Campos adicionais para divergência */}
                 {(item.status === 'divergencia' || item.status === 'nao_localizado') && (
-                  <div className="space-y-2 p-3 bg-yellow-50 rounded-lg border">
+                  <div className="space-y-2 pt-2 border-t">
                     {item.status === 'divergencia' && (
                       <div>
-                        <Label className="text-sm">Quantidade Encontrada</Label>
+                        <Label htmlFor={`qtd-${item.material_id}`}>Quantidade Encontrada</Label>
                         <Input
+                          id={`qtd-${item.material_id}`}
                           type="number"
-                          placeholder="Digite a quantidade encontrada"
+                          placeholder="Quantidade encontrada"
                           value={item.quantidade_encontrada || ''}
-                          onChange={(e) => updateItemQuantity(item.material_id, Number(e.target.value))}
-                          className="mt-1"
+                          onChange={(e) => updateItemStatus(
+                            item.material_id, 
+                            item.status, 
+                            Number(e.target.value),
+                            item.justificativa
+                          )}
                         />
                       </div>
                     )}
-                    
                     <div>
-                      <Label className="text-sm">Justificativa (obrigatória)</Label>
+                      <Label htmlFor={`just-${item.material_id}`}>Justificativa</Label>
                       <Textarea
-                        placeholder="Descreva o motivo da divergência..."
+                        id={`just-${item.material_id}`}
+                        placeholder="Justificativa para a divergência..."
                         value={item.justificativa || ''}
-                        onChange={(e) => updateItemJustificative(item.material_id, e.target.value)}
-                        className="mt-1 min-h-[60px]"
+                        onChange={(e) => updateItemStatus(
+                          item.material_id, 
+                          item.status, 
+                          item.quantidade_encontrada,
+                          e.target.value
+                        )}
+                        rows={2}
                       />
                     </div>
                   </div>
@@ -377,47 +394,49 @@ export const ChecklistAlmoxarifadoForm = () => {
         ))}
       </div>
 
-      {/* Observações gerais */}
+      {/* Observações Gerais */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Observações Gerais</CardTitle>
+          <CardTitle>Observações Gerais</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
-            placeholder="Digite aqui observações gerais sobre o checklist..."
-            {...register('observacoes_gerais')}
-            className="min-h-[100px]"
+            placeholder="Observações gerais sobre o checklist..."
+            value={checklist.observacoes_gerais || ''}
+            onChange={(e) => setChecklist(prev => ({ ...prev, observacoes_gerais: e.target.value }))}
+            rows={3}
           />
         </CardContent>
       </Card>
 
       {/* Assinatura Digital */}
       <AssinaturaDigital
-        onSave={handleSaveSignature}
-        assinaturaExistente={assinaturaDigital}
+        assinatura={checklist.assinatura_digital}
+        onSave={(assinatura) => setChecklist(prev => ({ ...prev, assinatura_digital: assinatura }))}
       />
 
-      {/* Botões de ação */}
-      <div className="flex gap-3 justify-center pb-8">
+      {/* Botões de Ação */}
+      <div className="flex gap-4 justify-center">
         <Button
-          onClick={handleSubmit(onSubmit)}
+          type="button"
+          variant="outline"
+          onClick={() => setChecklist(prev => ({ ...prev, status_geral: 'em_andamento' }))}
           disabled={createChecklist.isPending || updateChecklist.isPending}
-          className="flex items-center gap-2 px-8"
         >
-          <Save className="h-4 w-4" />
-          Salvar Checklist
+          <Save className="h-4 w-4 mr-2" />
+          Salvar Rascunho
         </Button>
-        
-        {progresso === 100 && assinaturaDigital && (
-          <Button
-            onClick={handleSubmit((data) => onSubmit({ ...data, status_geral: 'concluido' }))}
-            disabled={createChecklist.isPending || updateChecklist.isPending}
-            className="flex items-center gap-2 px-8 bg-green-600 hover:bg-green-700"
-          >
-            <CheckCircle className="h-4 w-4" />
-            Finalizar Checklist
-          </Button>
-        )}
+        <Button
+          type="button"
+          onClick={() => {
+            setChecklist(prev => ({ ...prev, status_geral: 'concluido' }));
+            handleSave();
+          }}
+          disabled={createChecklist.isPending || updateChecklist.isPending}
+        >
+          <FileCheck className="h-4 w-4 mr-2" />
+          Finalizar Checklist
+        </Button>
       </div>
     </div>
   );
