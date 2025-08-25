@@ -248,13 +248,17 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
                       <SidebarMenuSub>
                         {pessoalSubItems.map((subItem) => (
                           <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild>
-                              <NavLink
-                                to={subItem.url}
-                                className={getNavCls}
-                              >
+                            <SidebarMenuSubButton 
+                              asChild
+                              className={
+                                isActive(subItem.url)
+                                  ? "bg-primary/10 text-primary border-r-2 border-primary font-medium"
+                                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                              }
+                            >
+                              <NavLink to={subItem.url}>
                                 <subItem.icon className="w-4 h-4 flex-shrink-0" />
-                                <span>{subItem.title}</span>
+                                <span className="font-medium">{subItem.title}</span>
                               </NavLink>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
