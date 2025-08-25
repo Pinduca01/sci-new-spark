@@ -33,7 +33,7 @@ export const ChecklistAlmoxarifadoForm = () => {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [isLoadingItems, setIsLoadingItems] = useState(false);
 
   const { createChecklist, updateChecklist, prepareChecklistItems } = useChecklistsAlmoxarifado();
@@ -142,7 +142,7 @@ export const ChecklistAlmoxarifadoForm = () => {
       item.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.codigo_material.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = !selectedCategory || item.categoria === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || item.categoria === selectedCategory;
     
     return matchesSearch && matchesCategory;
   });
@@ -151,42 +151,6 @@ export const ChecklistAlmoxarifadoForm = () => {
   const progress = checklist.total_itens > 0 
     ? ((checklist.itens_conformes + checklist.itens_divergentes) / checklist.total_itens) * 100 
     : 0;
-
-  const getStatusIcon = (status: ChecklistItem['status']) => {
-    switch (status) {
-      case 'conforme':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case 'divergencia':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'nao_localizado':
-        return <AlertTriangle className="h-4 w-4 text-orange-600" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
-    }
-  };
-
-  const getStatusBadge = (status: ChecklistItem['status']) => {
-    const variants = {
-      conforme: 'default',
-      divergencia: 'destructive',
-      nao_localizado: 'secondary',
-      pendente: 'outline'
-    } as const;
-
-    const labels = {
-      conforme: 'Conforme',
-      divergencia: 'Divergência',
-      nao_localizado: 'Não Localizado',
-      pendente: 'Pendente'
-    };
-
-    return (
-      <Badge variant={variants[status]}>
-        {getStatusIcon(status)}
-        <span className="ml-1">{labels[status]}</span>
-      </Badge>
-    );
-  };
 
   if (isLoadingItems) {
     return (
@@ -284,7 +248,7 @@ export const ChecklistAlmoxarifadoForm = () => {
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="all">Todas as categorias</SelectItem>
                 {categories.map((categoria) => (
                   <SelectItem key={categoria} value={categoria}>
                     {categoria}
@@ -432,4 +396,40 @@ export const ChecklistAlmoxarifadoForm = () => {
       </div>
     </div>
   );
+
+  function getStatusIcon(status: ChecklistItem['status']) {
+    switch (status) {
+      case 'conforme':
+        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+      case 'divergencia':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'nao_localizado':
+        return <AlertTriangle className="h-4 w-4 text-orange-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-400" />;
+    }
+  }
+
+  function getStatusBadge(status: ChecklistItem['status']) {
+    const variants = {
+      conforme: 'default',
+      divergencia: 'destructive',
+      nao_localizado: 'secondary',
+      pendente: 'outline'
+    } as const;
+
+    const labels = {
+      conforme: 'Conforme',
+      divergencia: 'Divergência',
+      nao_localizado: 'Não Localizado',
+      pendente: 'Pendente'
+    };
+
+    return (
+      <Badge variant={variants[status]}>
+        {getStatusIcon(status)}
+        <span className="ml-1">{labels[status]}</span>
+      </Badge>
+    );
+  }
 };
