@@ -11,7 +11,7 @@ interface SparklineChartProps {
 
 export const SparklineChart: React.FC<SparklineChartProps> = ({
   dados,
-  cor = '#3b82f6',
+  cor = '#ea580c',
   altura = 40,
   largura = 80
 }) => {

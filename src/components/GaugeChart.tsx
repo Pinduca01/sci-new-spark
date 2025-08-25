@@ -15,7 +15,7 @@ export const GaugeChart: React.FC<GaugeChartProps> = ({
   maximo,
   titulo,
   unidade = '',
-  cor = '#3b82f6'
+  cor = '#ea580c'
 }) => {
   const porcentagem = Math.min((valor / maximo) * 100, 100);
   
@@ -26,9 +26,9 @@ export const GaugeChart: React.FC<GaugeChartProps> = ({
 
   const getCorPorcentagem = (pct: number) => {
     if (pct >= 80) return '#10b981';
-    if (pct >= 60) return '#f59e0b';
-    if (pct >= 40) return '#ef4444';
-    return '#6b7280';
+    if (pct >= 60) return '#ea580c';
+    if (pct >= 40) return '#f59e0b';
+    return '#dc2626';
   };
 
   return (

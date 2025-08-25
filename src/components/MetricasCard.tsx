@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +55,7 @@ export const MetricasCard: React.FC<MetricasCardProps> = ({
   const getCorIcone = () => {
     switch (cor) {
       case 'blue':
-        return 'text-blue-600';
+        return 'text-orange-600';
       case 'green':
         return 'text-green-600';
       case 'purple':
@@ -64,14 +65,14 @@ export const MetricasCard: React.FC<MetricasCardProps> = ({
       case 'red':
         return 'text-red-600';
       default:
-        return 'text-gray-600';
+        return 'text-orange-600';
     }
   };
 
   const getCorSparkline = () => {
     switch (cor) {
       case 'blue':
-        return '#2563eb';
+        return '#ea580c';
       case 'green':
         return '#059669';
       case 'purple':
@@ -81,12 +82,12 @@ export const MetricasCard: React.FC<MetricasCardProps> = ({
       case 'red':
         return '#dc2626';
       default:
-        return '#6b7280';
+        return '#ea580c';
     }
   };
 
   return (
-    <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
+    <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-orange-500">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{titulo}</CardTitle>
         <Icon className={`h-5 w-5 ${getCorIcone()}`} />

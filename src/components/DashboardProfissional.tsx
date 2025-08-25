@@ -61,12 +61,12 @@ const DashboardProfissional = () => {
     {
       name: 'Aeronáuticas',
       value: dados.ocorrencias.ocorrencias_aeronauticas,
-      color: '#ef4444'
+      color: '#dc2626'
     },
     {
       name: 'Não Aeronáuticas',
       value: dados.ocorrencias.ocorrencias_nao_aeronauticas,
-      color: '#3b82f6'
+      color: '#ea580c'
     }
   ];
 
@@ -86,9 +86,9 @@ const DashboardProfissional = () => {
 
   // Quick Stats
   const quickStats = [
-    { icone: Users, valor: dados.ptr.bombeiros_treinados, label: 'Bombeiros Treinados', cor: 'text-blue-600' },
+    { icone: Users, valor: dados.ptr.bombeiros_treinados, label: 'Bombeiros Treinados', cor: 'text-orange-600' },
     { icone: Shield, valor: dados.agentes_extintores.total_lge + dados.agentes_extintores.total_pqs, label: 'Agentes Disponíveis', cor: 'text-green-600' },
-    { icone: Wrench, valor: dados.viaturas.proximas_manutencoes, label: 'Manutenções Pendentes', cor: 'text-orange-600' },
+    { icone: Wrench, valor: dados.viaturas.proximas_manutencoes, label: 'Manutenções Pendentes', cor: 'text-yellow-600' },
     { icone: CheckCircle, valor: dados.tp_uniformes.conformidade_percentual + '%', label: 'Conformidade TP', cor: 'text-purple-600' },
     { icone: Activity, valor: dados.ptr.instrucoes_realizadas, label: 'Instruções PTR', cor: 'text-indigo-600' },
     { icone: AlertTriangle, valor: dados.ocorrencias.tempo_medio_resposta + 'min', label: 'Tempo Resposta', cor: 'text-red-600' }
@@ -150,7 +150,7 @@ const DashboardProfissional = () => {
             titulo="Ocorrências Totais"
             valor={dados.ocorrencias.total_ocorrencias}
             icone={AlertTriangle}
-            cor="blue"
+            cor="orange"
             tendencia={dados.ocorrencias.tendencia_mensal}
             dadosSparkline={sparklineOcorrencias}
             subvalor="Este mês"
@@ -272,7 +272,7 @@ const DashboardProfissional = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{dados.tp_uniformes.verificacoes_mes}</div>
+              <div className="text-3xl font-bold text-orange-600">{dados.tp_uniformes.verificacoes_mes}</div>
               <p className="text-xs text-muted-foreground mt-1">Este mês</p>
             </CardContent>
           </Card>
