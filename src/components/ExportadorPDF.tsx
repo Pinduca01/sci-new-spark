@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface ExportadorPDFProps {
   dados: any;
@@ -150,8 +149,8 @@ export const ExportadorPDF: React.FC<ExportadorPDFProps> = ({ dados, periodo }) 
         });
       }
 
-      // Rodapé
-      const pageCount = pdf.internal.getNumberOfPages();
+      // Rodapé - Usando a propriedade correta para obter número de páginas
+      const pageCount = pdf.internal.pages.length - 1; // -1 porque a primeira posição é null
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);

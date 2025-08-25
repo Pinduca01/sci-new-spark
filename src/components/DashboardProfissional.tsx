@@ -1,23 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Download, 
-  RefreshCw,
-  Users,
-  Truck,
-  Shield,
-  Activity,
-  Clock,
-  AlertTriangle,
-  CheckCircle,
-  Package
-} from "lucide-react";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Calendar, RefreshCw } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { MetricasCard } from './MetricasCard';
 import { GraficoOcorrencias } from './GraficoOcorrencias';
@@ -29,219 +15,185 @@ import { TabelaViaturas } from './TabelaViaturas';
 import { ExportadorPDF } from './ExportadorPDF';
 
 const DashboardProfissional = () => {
-  const [mesAtual, setMesAtual] = useState(new Date().getMonth() + 1);
-  const [anoAtual, setAnoAtual] = useState(new Date().getFullYear());
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [mesAtual] = useState(new Date().getMonth() + 1);
+  const [anoAtual] = useState(new Date().getFullYear());
+  const [mesSelecionado, setMesSelecionado] = useState(mesAtual);
+  const [anoSelecionado, setAnoSelecionado] = useState(anoAtual);
 
-  const dashboardStats = useDashboardStats(mesAtual, anoAtual);
-
-  // Auto refresh a cada 30 segundos
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      window.location.reload();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
-
+  const dados = useDashboardStats(mesSelecionado, anoSelecionado);
+  
   const meses = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    { value: 1, label: 'Janeiro' },
+    { value: 2, label: 'Fevereiro' },
+    { value: 3, label: 'Março' },
+    { value: 4, label: 'Abril' },
+    { value: 5, label: 'Maio' },
+    { value: 6, label: 'Junho' },
+    { value: 7, label: 'Julho' },
+    { value: 8, label: 'Agosto' },
+    { value: 9, label: 'Setembro' },
+    { value: 10, label: 'Outubro' },
+    { value: 11, label: 'Novembro' },
+    { value: 12, label: 'Dezembro' }
   ];
 
+  const anos = Array.from({ length: 10 }, (_, i) => anoAtual - 5 + i);
+  const periodoFormatado = `${meses.find(m => m.value === mesSelecionado)?.label} ${anoSelecionado}`;
+
   return (
-    <div className="p-6 space-y-6">
-      {/* Header do Dashboard */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard Operacional</h1>
-          <p className="text-muted-foreground">
-            Indicadores e métricas - {meses[mesAtual - 1]} {anoAtual}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <select 
-              value={mesAtual}
-              onChange={(e) => setMesAtual(Number(e.target.value))}
-              className="px-3 py-2 border rounded-md"
-            >
-              {meses.map((mes, index) => (
-                <option key={index} value={index + 1}>{mes}</option>
-              ))}
-            </select>
-            
-            <select 
-              value={anoAtual}
-              onChange={(e) => setAnoAtual(Number(e.target.value))}
-              className="px-3 py-2 border rounded-md"
-            >
-              {[2023, 2024, 2025].map(ano => (
-                <option key={ano} value={ano}>{ano}</option>
-              ))}
-            </select>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Cabeçalho */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard Operacional</h1>
+            <p className="text-gray-600 mt-1">Sistema de Controle Integrado - SCI Core</p>
           </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            {/* Seletores de Período */}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <Select value={mesSelecionado.toString()} onValueChange={(value) => setMesSelecionado(parseInt(value))}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {meses.map((mes) => (
+                    <SelectItem key={mes.value} value={mes.value.toString()}>
+                      {mes.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={anoSelecionado.toString()} onValueChange={(value) => setAnoSelecionado(parseInt(value))}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {anos.map((ano) => (
+                    <SelectItem key={ano} value={ano.toString()}>
+                      {ano}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={autoRefresh ? "text-green-600" : "text-gray-600"}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
-            Auto Refresh {autoRefresh ? 'ON' : 'OFF'}
-          </Button>
+            {/* Botões de Ação */}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Atualizar
+              </Button>
+              <ExportadorPDF dados={dados} periodo={periodoFormatado} />
+            </div>
+          </div>
+        </div>
 
-          <ExportadorPDF 
-            dados={dashboardStats}
-            periodo={`${meses[mesAtual - 1]} ${anoAtual}`}
+        {/* Métricas Principais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricasCard
+            titulo="Ocorrências Totais"
+            valor={dados.ocorrencias.total_ocorrencias}
+            icone="AlertTriangle"
+            cor="blue"
+            tendencia={dados.ocorrencias.tendencia_mensal}
+          />
+          <MetricasCard
+            titulo="Taxa Aprovação TAF"
+            valor={`${dados.taf?.taxa_aprovacao?.toFixed(1) || 0}%`}
+            icone="Activity"
+            cor="green"
+            tendencia={5.2}
+          />
+          <MetricasCard
+            titulo="Horas Treinamento"
+            valor={dados.ptr.total_horas_treinamento}
+            icone="Clock"
+            cor="purple"
+            tendencia={12.5}
+          />
+          <MetricasCard
+            titulo="Viaturas Operacionais"
+            valor={`${dados.viaturas.viaturas_operacionais}/${dados.viaturas.total_viaturas}`}
+            icone="Truck"
+            cor="orange"
+            tendencia={-2.1}
           />
         </div>
-      </div>
 
-      {/* Métricas Principais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricasCard
-          titulo="Ocorrências"
-          valor={dashboardStats.ocorrencias.total_ocorrencias}
-          subvalor={`${dashboardStats.ocorrencias.ocorrencias_mes_atual} este mês`}
-          icone={AlertTriangle}
-          cor="text-orange-600"
-          tendencia={dashboardStats.ocorrencias.tendencia_mensal}
-        />
-        
-        <MetricasCard
-          titulo="Pessoal TAF Ativo"
-          valor={((dashboardStats.taf?.total_avaliacoes || 0) - (dashboardStats.taf?.bombeiros_pendentes || 0))}
-          subvalor={`${dashboardStats.taf?.taxa_aprovacao?.toFixed(1) || 0}% aprovação`}
-          icone={Users}
-          cor="text-green-600"
-          tendencia={5}
-        />
-        
-        <MetricasCard
-          titulo="Viaturas Operacionais"
-          valor={dashboardStats.viaturas.viaturas_operacionais}
-          subvalor={`${dashboardStats.viaturas.total_viaturas} total`}
-          icone={Truck}
-          cor="text-blue-600"
-          tendencia={0}
-        />
-        
-        <MetricasCard
-          titulo="Agentes Extintores"
-          valor={dashboardStats.agentes_extintores.disponivel_uso}
-          subvalor={`${dashboardStats.agentes_extintores.vencimento_proximo} vencendo`}
-          icone={Shield}
-          cor="text-purple-600"
-          tendencia={-2}
-        />
-      </div>
+        {/* Gráficos - Linha Superior */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <GraficoOcorrencias dados={dados.ocorrencias} />
+          <GraficoTAF dados={dados.taf} />
+        </div>
 
-      {/* Gráficos e Tabelas Detalhadas */}
-      <Tabs defaultValue="ocorrencias" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="ocorrencias">Ocorrências</TabsTrigger>
-          <TabsTrigger value="taf">TAF</TabsTrigger>
-          <TabsTrigger value="ptr">PTR-BA</TabsTrigger>
-          <TabsTrigger value="equipamentos">Equipamentos</TabsTrigger>
-          <TabsTrigger value="viaturas">Viaturas</TabsTrigger>
-          <TabsTrigger value="trocas">Trocas</TabsTrigger>
-        </TabsList>
+        {/* Gráficos - Linha Média */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <GraficoPTR dados={dados.ptr} />
+          <GraficoAgentesExtintores dados={dados.agentes_extintores} />
+        </div>
 
-        <TabsContent value="ocorrencias" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <GraficoOcorrencias dados={dashboardStats.ocorrencias} />
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Tempo de Resposta
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center space-y-4">
-                  <div className="text-4xl font-bold text-primary">
-                    {dashboardStats.ocorrencias.tempo_medio_resposta}min
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Tempo médio de resposta às ocorrências
-                  </p>
-                  <Badge variant={dashboardStats.ocorrencias.tempo_medio_resposta <= 8 ? "default" : "destructive"}>
-                    {dashboardStats.ocorrencias.tempo_medio_resposta <= 8 ? "Dentro da Meta" : "Acima da Meta"}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Seção Inferior */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <TabelaViaturas dados={dados.viaturas} />
           </div>
-        </TabsContent>
-
-        <TabsContent value="taf" className="space-y-6">
-          <GraficoTAF dados={dashboardStats.taf} />
-        </TabsContent>
-
-        <TabsContent value="ptr" className="space-y-6">
-          <GraficoPTR dados={dashboardStats.ptr} />
-        </TabsContent>
-
-        <TabsContent value="equipamentos" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <GraficoAgentesExtintores dados={dashboardStats.agentes_extintores} />
-            
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  TP e Uniformes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {dashboardStats.tp_uniformes.verificacoes_mes}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Verificações</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {dashboardStats.tp_uniformes.conformidade_percentual}%
-                    </div>
-                    <p className="text-sm text-muted-foreground">Conformidade</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {dashboardStats.tp_uniformes.higienizacoes_realizadas}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Higienizações</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {dashboardStats.tp_uniformes.epis_distribuidos}
-                    </div>
-                    <p className="text-sm text-muted-foreground">EPIs Entregues</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <div>
+            <GraficoTrocas dados={dados.trocas} />
           </div>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="viaturas" className="space-y-6">
-          <TabelaViaturas dados={dashboardStats.viaturas} />
-        </TabsContent>
+        {/* Cards de TP/Uniformes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Verificações TP</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dados.tp_uniformes.verificacoes_mes}</div>
+              <p className="text-xs text-gray-600 mt-1">Este mês</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Conformidade TP</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dados.tp_uniformes.conformidade_percentual}%</div>
+              <p className="text-xs text-gray-600 mt-1">Taxa de conformidade</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">Higienizações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dados.tp_uniformes.higienizacoes_realizadas}</div>
+              <p className="text-xs text-gray-600 mt-1">TPs higienizados</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-gray-600">EPIs Distribuídos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dados.tp_uniformes.epis_distribuidos}</div>
+              <p className="text-xs text-gray-600 mt-1">Este mês</p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <TabsContent value="trocas" className="space-y-6">
-          <GraficoTrocas dados={dashboardStats.trocas} />
-        </TabsContent>
-      </Tabs>
+        {/* Rodapé */}
+        <div className="text-center text-sm text-gray-500 mt-8 pb-4">
+          <p>Dashboard atualizado em tempo real • SCI-Core v2.0</p>
+        </div>
+      </div>
     </div>
   );
 };

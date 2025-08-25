@@ -44,6 +44,8 @@ export interface DashboardStats {
     higienizacoes_realizadas: number;
     epis_distribuidos: number;
   };
+  taf: any;
+  trocas: any[];
 }
 
 export const useDashboardStats = (mes: number, ano: number) => {
@@ -107,7 +109,7 @@ export const useDashboardStats = (mes: number, ano: number) => {
       }, 0) || 0;
 
       return {
-        total_horas_treinamento: data?.length * 2 || 0, // Estimativa de 2h por instrução
+        total_horas_treinamento: (data?.length || 0) * 2, // Estimativa de 2h por instrução
         instrucoes_realizadas: data?.length || 0,
         participacao_media: totalParticipantes / Math.max(data?.length || 1, 1),
         bombeiros_treinados: totalParticipantes
