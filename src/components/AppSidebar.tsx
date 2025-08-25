@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
@@ -17,7 +16,8 @@ import {
   GraduationCap,
   Activity,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Briefcase
 } from "lucide-react";
 
 import {
@@ -78,6 +78,12 @@ const mainNavItems = [
     url: "/ptr-ba", 
     icon: GraduationCap,
     description: "Programa de Treinamento Recorrente"
+  },
+  { 
+    title: "Atividades Acessórias", 
+    url: "/atividades-acessorias", 
+    icon: Briefcase,
+    description: "Atividades complementares"
   }
 ];
 

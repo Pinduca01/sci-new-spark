@@ -15,6 +15,7 @@ import Escalas from "./pages/Escalas";
 import Exercicios from "./pages/Exercicios";
 import PTRBA from "./pages/PTRBA";
 import Equipamentos from "./pages/Equipamentos";
+import AtividadesAcessorias from "./pages/AtividadesAcessorias";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -42,6 +43,7 @@ const App = () => (
         <Route path="/exercicios" element={<MainLayout><Exercicios /></MainLayout>} />
         <Route path="/equipamentos" element={<MainLayout><Equipamentos /></MainLayout>} />
         <Route path="/ptr-ba" element={<MainLayout><PTRBA /></MainLayout>} />
+        <Route path="/atividades-acessorias" element={<MainLayout><AtividadesAcessorias /></MainLayout>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
