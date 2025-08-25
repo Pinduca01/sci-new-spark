@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,10 +41,14 @@ export const AgenteExtintorForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.tipo_agente) return;
+    // Validação para garantir que tipo_agente não seja vazio
+    if (!formData.tipo_agente || formData.tipo_agente === "") {
+      return;
+    }
 
     const agenteData = {
       ...formData,
+      tipo_agente: formData.tipo_agente as "LGE" | "PQS", // Type assertion para garantir o tipo correto
       capacidade: parseFloat(formData.capacidade),
       custo_unitario: parseFloat(formData.custo_unitario) || 0,
       numero_recargas: 0,
