@@ -17,7 +17,8 @@ import {
   ChevronDown,
   ChevronRight,
   Briefcase,
-  ShieldCheck
+  ShieldCheck,
+  Shield
 } from "lucide-react";
 
 import {
@@ -195,16 +196,42 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Header com Logo SCI-Core */}
+      {/* Header moderno com ícone e texto SCI-Core */}
       <SidebarHeader className="p-4 border-b border-border/50">
         <div className="flex items-center justify-center">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-            <img 
-              src="/lovable-uploads/a158ba50-7bfe-4ce6-bc26-0db3511ee40f.png" 
-              alt="SCI-Core"
-              className="w-10 h-10 object-contain"
-            />
-          </div>
+          {showFull ? (
+            <div className="flex items-center space-x-3">
+              {/* Ícone moderno inspirado na imagem */}
+              <div className="relative">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-white"></div>
+                </div>
+              </div>
+              
+              {/* Texto SCI-Core moderno */}
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-blue-600 bg-clip-text text-transparent">
+                  SCI-Core
+                </h1>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Sistema Integrado
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Versão compacta - apenas o ícone */
+            <div className="relative">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-white"></div>
+              </div>
+            </div>
+          )}
         </div>
       </SidebarHeader>
 
