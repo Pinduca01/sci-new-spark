@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Calendar, Users, FileText, ArrowLeft } from "lucide-react";
+import { Calendar, Users, FileText, ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import EscalaCalendario from "@/components/EscalaCalendario";
 import EscalaIndividual from "@/components/EscalaIndividual";
 import GerenciadorFerias from "@/components/GerenciadorFerias";
+import TrocasPlantoesGestao from "@/components/TrocasPlantoesGestao";
 
 const Escalas = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
@@ -16,7 +17,7 @@ const Escalas = () => {
   const [selectedRegime, setSelectedRegime] = useState<string>("");
   const [selectedEquipeInicial, setSelectedEquipeInicial] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [viewMode, setViewMode] = useState<"generator" | "calendar" | "individual" | "ferias">("generator");
+  const [viewMode, setViewMode] = useState<"generator" | "calendar" | "individual" | "ferias" | "trocas">("generator");
   const [escalas, setEscalas] = useState<any[]>([]);
   const [equipes, setEquipes] = useState<any[]>([]);
 
@@ -225,6 +226,10 @@ const Escalas = () => {
     );
   }
 
+  if (viewMode === "trocas") {
+    return <TrocasPlantoesGestao onBack={() => setViewMode("generator")} />;
+  }
+
   if (viewMode === "calendar") {
     return (
       <EscalaCalendario
@@ -335,7 +340,7 @@ const Escalas = () => {
             </Select>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -346,6 +351,18 @@ const Escalas = () => {
             >
               <Users className="h-4 w-4 mr-2" />
               Gerenciar Férias
+            </Button>
+
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                console.log('Gerenciar Trocas button clicked');
+                setViewMode("trocas");
+              }}
+              className="hover-scale"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Trocas de Plantão
             </Button>
           </div>
 

@@ -1669,6 +1669,86 @@ export type Database = {
           },
         ]
       }
+      trocas_plantao: {
+        Row: {
+          ano_referencia: number
+          base: string
+          bombeiro_substituido_id: string
+          bombeiro_substituto_id: string
+          created_at: string
+          data_servico_pagamento: string
+          data_servico_trocado: string
+          equipe_id: string
+          id: string
+          mes_referencia: number
+          observacoes: string | null
+          solicitante_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ano_referencia: number
+          base?: string
+          bombeiro_substituido_id: string
+          bombeiro_substituto_id: string
+          created_at?: string
+          data_servico_pagamento: string
+          data_servico_trocado: string
+          equipe_id: string
+          id?: string
+          mes_referencia: number
+          observacoes?: string | null
+          solicitante_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ano_referencia?: number
+          base?: string
+          bombeiro_substituido_id?: string
+          bombeiro_substituto_id?: string
+          created_at?: string
+          data_servico_pagamento?: string
+          data_servico_trocado?: string
+          equipe_id?: string
+          id?: string
+          mes_referencia?: number
+          observacoes?: string | null
+          solicitante_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trocas_plantao_bombeiro_substituido_id_fkey"
+            columns: ["bombeiro_substituido_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trocas_plantao_bombeiro_substituto_id_fkey"
+            columns: ["bombeiro_substituto_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trocas_plantao_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trocas_plantao_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       viaturas: {
         Row: {
           ano: number
