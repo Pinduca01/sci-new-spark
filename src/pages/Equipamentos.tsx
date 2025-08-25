@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,7 @@ const Equipamentos = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <MovimentacaoForm />
+              <MovimentacaoForm tipo="estoque" />
             </CardContent>
           </Card>
         </TabsContent>
@@ -139,7 +140,7 @@ const Equipamentos = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <HistoricoChecklists />
+              <HistoricoChecklists tipo="almoxarifado" />
             </CardContent>
           </Card>
           <Card>
@@ -150,7 +151,7 @@ const Equipamentos = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <HistoricoOS />
+              <HistoricoOS tipo="geral" />
             </CardContent>
           </Card>
         </TabsContent>
