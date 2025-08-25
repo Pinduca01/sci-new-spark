@@ -2,15 +2,30 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar, Plus, FileText, Clock } from 'lucide-react';
+import { Calendar, Plus, FileText, Clock, History } from 'lucide-react';
 import { PTRBACalendario } from '@/components/PTRBACalendario';
 import { PTRBAForm } from '@/components/PTRBAForm';
 import { PTRBARelatorio } from '@/components/PTRBARelatorio';
+import { PTRBAHistorico } from '@/components/PTRBAHistorico';
 
 const PTRBA = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showForm, setShowForm] = useState(false);
   const [showRelatorio, setShowRelatorio] = useState(false);
+  const [showHistorico, setShowHistorico] = useState(false);
+
+  // Dados mockados para o resumo do dia
+  const resumoDia = {
+    '2024-08-25': [
+      { hora: '08:00', titulo: 'Procedimentos de Emergência', instrutor: 'João Silva', participantes: 8 },
+      { hora: '14:00', titulo: 'Manuseio de Equipamentos', instrutor: 'Maria Santos', participantes: 6 }
+    ]
+  };
+
+  const getResumoData = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return resumoDia[dateStr] || [];
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -29,26 +44,20 @@ const PTRBA = () => {
             <FileText className="w-4 h-4" />
             <span>Relatório</span>
           </Button>
+          <Button variant="outline" onClick={() => setShowHistorico(true)} className="flex items-center space-x-2">
+            <History className="w-4 h-4" />
+            <span>Histórico</span>
+          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendário Principal */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Calendar className="w-5 h-5" />
-                <span>Calendário de Instruções</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <PTRBACalendario 
-                selectedDate={selectedDate}
-                onDateSelect={setSelectedDate}
-              />
-            </CardContent>
-          </Card>
+          <PTRBACalendario 
+            selectedDate={selectedDate}
+            onDateSelect={setSelectedDate}
+          />
         </div>
 
         {/* Ações Rápidas */}
@@ -77,36 +86,61 @@ const PTRBA = () => {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
+                onClick={() => setShowHistorico(true)}
+              >
+                <History className="w-4 h-4 mr-2" />
+                Histórico Completo
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
               >
                 <Clock className="w-4 h-4 mr-2" />
-                Histórico
+                Estatísticas Mensais
               </Button>
             </CardContent>
           </Card>
 
-          {/* Resumo do Dia Selecionado */}
+          {/* Resumo do Dia Selecionado - Melhorado */}
           <Card>
             <CardHeader>
-              <CardTitle>
+              <CardTitle className="text-lg">
                 {selectedDate.toLocaleDateString('pt-BR', { 
                   weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
+                  day: 'numeric',
+                  month: 'long'
                 })}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">Instruções programadas:</p>
-              <div className="space-y-2">
-                <div className="text-sm p-2 bg-muted rounded">
-                  <strong>08:00 - Procedimentos de Emergência</strong>
-                  <p className="text-muted-foreground">Instrutor: João Silva</p>
-                </div>
-                <div className="text-sm p-2 bg-muted rounded">
-                  <strong>14:00 - Manuseio de Equipamentos</strong>
-                  <p className="text-muted-foreground">Instrutor: Maria Santos</p>
-                </div>
+              <p className="text-sm text-muted-foreground mb-3">Instruções programadas:</p>
+              <div className="space-y-3">
+                {getResumoData(selectedDate).length > 0 ? (
+                  getResumoData(selectedDate).map((instrucao, index) => (
+                    <Card key={index} className="bg-muted/30 border-l-4 border-l-primary">
+                      <CardContent className="p-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-sm">{instrucao.hora}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {instrucao.participantes} participantes
+                            </span>
+                          </div>
+                          <h5 className="font-medium text-sm">{instrucao.titulo}</h5>
+                          <p className="text-xs text-muted-foreground">
+                            Instrutor: {instrucao.instrutor}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhuma instrução programada</p>
+                    <p className="text-xs">Clique em "Novo PTR" para adicionar</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -124,6 +158,11 @@ const PTRBA = () => {
         open={showRelatorio}
         onOpenChange={setShowRelatorio}
         selectedDate={selectedDate}
+      />
+
+      <PTRBAHistorico 
+        open={showHistorico}
+        onOpenChange={setShowHistorico}
       />
     </div>
   );
