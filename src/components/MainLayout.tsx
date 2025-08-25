@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,9 +93,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       <div className="min-h-screen flex w-full abstract-bg">
         <AppSidebar userRole={profile?.role} />
         
-        <div className="flex-1 flex flex-col relative z-20">
+        <div className="flex-1 flex flex-col relative z-50">
           {/* Header */}
-          <header className="border-b border-border/50 backdrop-blur-sm bg-background/50 p-4 relative z-30">
+          <header className="border-b border-border/50 backdrop-blur-sm bg-background/50 p-4 relative z-50">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger className="lg:hidden" />
@@ -112,7 +113,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 relative z-20">
+          <main className="flex-1 relative z-50" style={{ pointerEvents: 'auto' }}>
             {children}
           </main>
         </div>
