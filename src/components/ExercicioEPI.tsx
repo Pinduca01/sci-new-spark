@@ -1,12 +1,17 @@
+import { useState } from "react";
 import { Shield, Plus, Clock, Users, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import ExercicioEPIModal from "./ExercicioEPIModal";
+import ExercicioEPIVisualizacao from "./ExercicioEPIVisualizacao";
 
 const ExercicioEPI = () => {
-  // Mock data para demonstração
-  const exercicios = [
+  const [modalOpen, setModalOpen] = useState(false);
+  const [visualizacaoOpen, setVisualizacaoOpen] = useState(false);
+  const [exercicioSelecionado, setExercicioSelecionado] = useState(null);
+  const [exercicios, setExercicios] = useState([
     {
       id: 1,
       data: "2024-01-15",
@@ -34,7 +39,16 @@ const ExercicioEPI = () => {
       tempoVestimento: "4:15",
       status: "Em Revisão"
     }
-  ];
+  ]);
+
+  const handleSaveExercicio = (novoExercicio: any) => {
+    setExercicios([novoExercicio, ...exercicios]);
+  };
+
+  const handleViewExercicio = (exercicio: any) => {
+    setExercicioSelecionado(exercicio);
+    setVisualizacaoOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -101,7 +115,10 @@ const ExercicioEPI = () => {
             Treinamentos de equipamentos de proteção individual e respiratória
           </p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button 
+          className="flex items-center gap-2"
+          onClick={() => setModalOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           Novo Exercício
         </Button>
@@ -152,7 +169,13 @@ const ExercicioEPI = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">Ver</Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleViewExercicio(exercicio)}
+                      >
+                        Ver
+                      </Button>
                       <Button variant="ghost" size="sm">Editar</Button>
                       <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
                         Excluir
@@ -165,6 +188,18 @@ const ExercicioEPI = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <ExercicioEPIModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSave={handleSaveExercicio}
+      />
+
+      <ExercicioEPIVisualizacao
+        open={visualizacaoOpen}
+        onOpenChange={setVisualizacaoOpen}
+        exercicio={exercicioSelecionado}
+      />
     </div>
   );
 };
