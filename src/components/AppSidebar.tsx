@@ -12,7 +12,8 @@ import {
   Radio,
   Calendar,
   AlertTriangle,
-  Target
+  Target,
+  GraduationCap
 } from "lucide-react";
 
 import {
@@ -69,6 +70,12 @@ const mainNavItems = [
     url: "/exercicios", 
     icon: Target,
     description: "Treinamentos e simulações"
+  },
+  { 
+    title: "PTR-BA", 
+    url: "/ptr-ba", 
+    icon: GraduationCap,
+    description: "Programa de Treinamento Recorrente"
   }
 ];
 

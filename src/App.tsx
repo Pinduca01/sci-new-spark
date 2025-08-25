@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +13,7 @@ import Ocorrencias from "./pages/Ocorrencias";
 import Viaturas from "./pages/Viaturas";
 import Escalas from "./pages/Escalas";
 import Exercicios from "./pages/Exercicios";
+import PTRBA from "./pages/PTRBA";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,7 @@ const App = () => (
           <Route path="/veiculos" element={<MainLayout><Viaturas /></MainLayout>} />
           <Route path="/escalas" element={<MainLayout><Escalas /></MainLayout>} />
           <Route path="/exercicios" element={<MainLayout><Exercicios /></MainLayout>} />
+          <Route path="/ptr-ba" element={<MainLayout><PTRBA /></MainLayout>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
