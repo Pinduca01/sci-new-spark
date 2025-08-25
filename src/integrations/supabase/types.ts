@@ -112,6 +112,57 @@ export type Database = {
           },
         ]
       }
+      checklists_almoxarifado: {
+        Row: {
+          assinatura_digital: string | null
+          bombeiro_responsavel_id: string
+          bombeiro_responsavel_nome: string
+          created_at: string
+          data_checklist: string
+          hora_checklist: string
+          id: string
+          itens_checklist: Json
+          itens_conformes: number | null
+          itens_divergentes: number | null
+          observacoes_gerais: string | null
+          status_geral: string
+          total_itens: number | null
+          updated_at: string
+        }
+        Insert: {
+          assinatura_digital?: string | null
+          bombeiro_responsavel_id: string
+          bombeiro_responsavel_nome: string
+          created_at?: string
+          data_checklist?: string
+          hora_checklist?: string
+          id?: string
+          itens_checklist?: Json
+          itens_conformes?: number | null
+          itens_divergentes?: number | null
+          observacoes_gerais?: string | null
+          status_geral?: string
+          total_itens?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assinatura_digital?: string | null
+          bombeiro_responsavel_id?: string
+          bombeiro_responsavel_nome?: string
+          created_at?: string
+          data_checklist?: string
+          hora_checklist?: string
+          id?: string
+          itens_checklist?: Json
+          itens_conformes?: number | null
+          itens_divergentes?: number | null
+          observacoes_gerais?: string | null
+          status_geral?: string
+          total_itens?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       checklists_viaturas: {
         Row: {
           bombeiro_responsavel: string

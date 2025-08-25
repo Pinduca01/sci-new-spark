@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ChecklistAlmoxarifadoForm } from "@/components/ChecklistAlmoxarifadoForm";
 
 const Equipamentos = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -90,10 +90,14 @@ const Equipamentos = () => {
       <EstoqueDashboard />
 
       <Tabs defaultValue="estoque" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="estoque" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             Estoque Almoxarifado
+          </TabsTrigger>
+          <TabsTrigger value="checklist" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Checklist Almoxarifado
           </TabsTrigger>
           <TabsTrigger value="viaturas" className="flex items-center gap-2">
             <Truck className="h-4 w-4" />
@@ -188,6 +192,10 @@ const Equipamentos = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="checklist">
+          <ChecklistAlmoxarifadoForm />
         </TabsContent>
 
         <TabsContent value="viaturas">
