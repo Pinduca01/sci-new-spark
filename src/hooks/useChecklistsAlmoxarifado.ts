@@ -33,6 +33,44 @@ export interface ChecklistAlmoxarifado {
   updated_at?: string;
 }
 
+// Função para validar se um objeto é um ChecklistItem válido
+const isValidChecklistItem = (item: any): item is ChecklistItem => {
+  return (
+    item &&
+    typeof item === 'object' &&
+    typeof item.material_id === 'string' &&
+    typeof item.codigo_material === 'string' &&
+    typeof item.nome === 'string' &&
+    typeof item.categoria === 'string' &&
+    typeof item.unidade_medida === 'string' &&
+    typeof item.quantidade_teorica === 'number' &&
+    ['pendente', 'conforme', 'divergencia', 'nao_localizado'].includes(item.status)
+  );
+};
+
+// Função para converter dados JSON em ChecklistItem com validação
+const parseChecklistItems = (jsonData: any): ChecklistItem[] => {
+  if (!Array.isArray(jsonData)) {
+    console.warn('Dados de itens_checklist não são um array:', jsonData);
+    return [];
+  }
+
+  return jsonData
+    .filter(isValidChecklistItem)
+    .map(item => ({
+      material_id: item.material_id,
+      codigo_material: item.codigo_material,
+      nome: item.nome,
+      categoria: item.categoria,
+      unidade_medida: item.unidade_medida,
+      quantidade_teorica: item.quantidade_teorica,
+      quantidade_encontrada: item.quantidade_encontrada,
+      status: item.status,
+      justificativa: item.justificativa,
+      foto_evidencia: item.foto_evidencia
+    }));
+};
+
 export const useChecklistsAlmoxarifado = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -52,12 +90,10 @@ export const useChecklistsAlmoxarifado = () => {
 
       if (error) throw error;
       
-      // Transform the data to match our interface
+      // Transform the data to match our interface with proper validation
       return (data || []).map(item => ({
         ...item,
-        itens_checklist: Array.isArray(item.itens_checklist) 
-          ? item.itens_checklist as ChecklistItem[]
-          : []
+        itens_checklist: parseChecklistItems(item.itens_checklist)
       })) as ChecklistAlmoxarifado[];
     }
   });
@@ -69,7 +105,7 @@ export const useChecklistsAlmoxarifado = () => {
         .from('checklists_almoxarifado')
         .insert({
           ...checklist,
-          itens_checklist: checklist.itens_checklist as any
+          itens_checklist: JSON.stringify(checklist.itens_checklist)
         })
         .select()
         .single();
@@ -91,7 +127,7 @@ export const useChecklistsAlmoxarifado = () => {
     mutationFn: async ({ id, ...checklist }: Partial<ChecklistAlmoxarifado> & { id: string }) => {
       const updateData = {
         ...checklist,
-        itens_checklist: checklist.itens_checklist as any
+        itens_checklist: checklist.itens_checklist ? JSON.stringify(checklist.itens_checklist) : undefined
       };
       
       const { data, error } = await supabase
