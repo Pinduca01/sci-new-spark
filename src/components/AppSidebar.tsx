@@ -205,22 +205,21 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={getNavCls}
-                      title={showFull ? undefined : item.description}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {showFull && (
-                        <span className="font-medium transition-opacity duration-200">{item.title}</span>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {/* Dashboard */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to="/dashboard" 
+                    className={getNavCls}
+                    title={showFull ? undefined : "Visão geral do sistema"}
+                  >
+                    <BarChart3 className="w-5 h-5 flex-shrink-0" />
+                    {showFull && (
+                      <span className="font-medium transition-opacity duration-200">Dashboard</span>
+                    )}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               
               {/* Controle de Pessoal com Submenu */}
               <SidebarMenuItem>
@@ -265,6 +264,24 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
                   )}
                 </Collapsible>
               </SidebarMenuItem>
+
+              {/* Demais itens do menu principal */}
+              {mainNavItems.slice(1).map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={item.url} 
+                      className={getNavCls}
+                      title={showFull ? undefined : item.description}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {showFull && (
+                        <span className="font-medium transition-opacity duration-200">{item.title}</span>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
