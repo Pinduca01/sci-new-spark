@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +14,7 @@ type FormData = Omit<TPVerificacao, "id" | "created_at" | "updated_at">;
 const TPVerificacaoForm = () => {
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<FormData>();
   const createVerificacao = useCreateTPVerificacao();
-  const { data: bombeiros = [] } = useBombeiros();
+  const { bombeiros = [] } = useBombeiros();
 
   const mesAtual = new Date().getMonth() + 1;
   const anoAtual = new Date().getFullYear();

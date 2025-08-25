@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,7 @@ interface OrdemServico {
 }
 
 interface HistoricoOSProps {
-  viaturaId: string;
+  viaturaId?: string;
 }
 
 export const HistoricoOS = ({ viaturaId }: HistoricoOSProps) => {
@@ -47,11 +48,15 @@ export const HistoricoOS = ({ viaturaId }: HistoricoOSProps) => {
 
   const fetchOrdens = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('ordens_servico')
-        .select('*')
-        .eq('viatura_id', viaturaId)
-        .order('data_abertura', { ascending: false });
+        .select('*');
+
+      if (viaturaId) {
+        query = query.eq('viatura_id', viaturaId);
+      }
+
+      const { data, error } = await query.order('data_abertura', { ascending: false });
 
       if (error) throw error;
       setOrdens(data || []);

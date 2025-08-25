@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ type FormData = Omit<EPIDistribuicao, "id" | "created_at" | "updated_at">;
 const EPIDistribuicaoForm = () => {
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<FormData>();
   const createDistribuicao = useCreateEPIDistribuicao();
-  const { data: bombeiros = [] } = useBombeiros();
+  const { bombeiros = [] } = useBombeiros();
 
   const mesAtual = new Date().getMonth() + 1;
   const anoAtual = new Date().getFullYear();

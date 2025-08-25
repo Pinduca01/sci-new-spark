@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,7 @@ interface ChecklistHistorico {
 }
 
 interface HistoricoChecklistsProps {
-  viaturaId: string;
+  viaturaId?: string;
 }
 
 export const HistoricoChecklists = ({ viaturaId }: HistoricoChecklistsProps) => {
@@ -42,11 +43,15 @@ export const HistoricoChecklists = ({ viaturaId }: HistoricoChecklistsProps) => 
 
   const fetchChecklists = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('checklists_viaturas')
-        .select('*')
-        .eq('viatura_id', viaturaId)
-        .order('created_at', { ascending: false });
+        .select('*');
+
+      if (viaturaId) {
+        query = query.eq('viatura_id', viaturaId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setChecklists(data || []);
