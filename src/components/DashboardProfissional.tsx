@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Calendar, RefreshCw } from 'lucide-react';
+import { Calendar, RefreshCw, AlertTriangle, Activity, Clock, Truck } from 'lucide-react';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { MetricasCard } from './MetricasCard';
 import { GraficoOcorrencias } from './GraficoOcorrencias';
@@ -97,28 +96,28 @@ const DashboardProfissional = () => {
           <MetricasCard
             titulo="Ocorrências Totais"
             valor={dados.ocorrencias.total_ocorrencias}
-            icone="AlertTriangle"
+            icone={AlertTriangle}
             cor="blue"
             tendencia={dados.ocorrencias.tendencia_mensal}
           />
           <MetricasCard
             titulo="Taxa Aprovação TAF"
             valor={`${dados.taf?.taxa_aprovacao?.toFixed(1) || 0}%`}
-            icone="Activity"
+            icone={Activity}
             cor="green"
             tendencia={5.2}
           />
           <MetricasCard
             titulo="Horas Treinamento"
             valor={dados.ptr.total_horas_treinamento}
-            icone="Clock"
+            icone={Clock}
             cor="purple"
             tendencia={12.5}
           />
           <MetricasCard
             titulo="Viaturas Operacionais"
             valor={`${dados.viaturas.viaturas_operacionais}/${dados.viaturas.total_viaturas}`}
-            icone="Truck"
+            icone={Truck}
             cor="orange"
             tendencia={-2.1}
           />
