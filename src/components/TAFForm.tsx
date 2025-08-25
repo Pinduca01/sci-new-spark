@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,8 @@ const TAFForm = () => {
   const [pausado, setPausado] = useState(false);
 
   const bombeiro = bombeiros.find(b => b.id === selectedBombeiro);
-  const idade = bombeiro ? new Date().getFullYear() - new Date(bombeiro.data_admissao).getFullYear() : 0;
+  // Calcular idade usando data_admissao como aproximação (ou pode ser idade atual)
+  const idade = bombeiro ? new Date().getFullYear() - new Date(bombeiro.data_admissao).getFullYear() + 25 : 0; // +25 assumindo idade mínima de ingresso
   const meta = getMetaPorIdade(idade);
 
   // Cronômetro logic
@@ -116,11 +116,6 @@ const TAFForm = () => {
         observacoes: observacoes || undefined
       });
 
-      toast({
-        title: "Sucesso",
-        description: `TAF registrado com sucesso. Bombeiro ${aprovado ? 'APROVADO' : 'REPROVADO'}`,
-      });
-
       // Reset form
       setSelectedBombeiro('');
       setAvaliadorNome('');
@@ -179,7 +174,7 @@ const TAFForm = () => {
           {bombeiro && meta && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg">
               <div>
-                <p><strong>Idade:</strong> {idade} anos</p>
+                <p><strong>Idade Estimada:</strong> {idade} anos</p>
                 <p><strong>Faixa Etária:</strong> {idade < 40 ? 'Menor que 40 anos' : '40 anos ou mais'}</p>
                 <p><strong>Tempo Limite:</strong> {meta.tempo_limite_minutos} minutos</p>
               </div>
