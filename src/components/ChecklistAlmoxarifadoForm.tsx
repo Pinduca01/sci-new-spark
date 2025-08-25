@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +34,7 @@ export const ChecklistAlmoxarifadoForm = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingItems, setIsLoadingItems] = useState(false);
 
   const { createChecklist, updateChecklist, prepareChecklistItems } = useChecklistsAlmoxarifado();
   const { bombeiros } = useBombeiros();
@@ -43,29 +42,44 @@ export const ChecklistAlmoxarifadoForm = () => {
 
   // Carregar itens do estoque ao inicializar
   useEffect(() => {
+    let isMounted = true;
+
     const loadItems = async () => {
+      if (!isMounted) return;
+      
       try {
-        setIsLoading(true);
+        setIsLoadingItems(true);
         const items = await prepareChecklistItems();
-        setChecklist(prev => ({
-          ...prev,
-          itens_checklist: items,
-          total_itens: items.length
-        }));
+        
+        if (isMounted) {
+          setChecklist(prev => ({
+            ...prev,
+            itens_checklist: items,
+            total_itens: items.length
+          }));
+        }
       } catch (error) {
         console.error('Erro ao carregar itens:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar itens do estoque",
-          variant: "destructive"
-        });
+        if (isMounted) {
+          toast({
+            title: "Erro",
+            description: "Erro ao carregar itens do estoque",
+            variant: "destructive"
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoadingItems(false);
+        }
       }
     };
 
     loadItems();
-  }, [prepareChecklistItems, toast]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const updateItemStatus = (materialId: string, status: ChecklistItem['status'], quantidadeEncontrada?: number, justificativa?: string) => {
     setChecklist(prev => {
@@ -115,24 +129,11 @@ export const ChecklistAlmoxarifadoForm = () => {
 
       if (checklist.id) {
         await updateChecklist.mutateAsync({ id: checklist.id, ...checklistData });
-        toast({
-          title: "Sucesso",
-          description: "Checklist atualizado com sucesso!",
-        });
       } else {
         await createChecklist.mutateAsync(checklistData);
-        toast({
-          title: "Sucesso",
-          description: "Checklist criado com sucesso!",
-        });
       }
     } catch (error) {
       console.error('Erro ao salvar checklist:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar checklist",
-        variant: "destructive"
-      });
     }
   };
 
@@ -187,7 +188,7 @@ export const ChecklistAlmoxarifadoForm = () => {
     );
   };
 
-  if (isLoading) {
+  if (isLoadingItems) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -197,7 +198,6 @@ export const ChecklistAlmoxarifadoForm = () => {
 
   return (
     <div className="space-y-6 p-4 max-w-4xl mx-auto">
-      {/* Cabeçalho */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -252,7 +252,6 @@ export const ChecklistAlmoxarifadoForm = () => {
             </div>
           </div>
 
-          {/* Progresso */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Progresso do Checklist</span>
@@ -268,7 +267,6 @@ export const ChecklistAlmoxarifadoForm = () => {
         </CardContent>
       </Card>
 
-      {/* Filtros */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex gap-4 items-center">
@@ -298,7 +296,6 @@ export const ChecklistAlmoxarifadoForm = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de Itens */}
       <div className="space-y-4">
         {filteredItems.map((item) => (
           <Card key={item.material_id}>
@@ -317,7 +314,6 @@ export const ChecklistAlmoxarifadoForm = () => {
                   {getStatusBadge(item.status)}
                 </div>
 
-                {/* Campos de conferência */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <Button
                     type="button"
@@ -351,7 +347,6 @@ export const ChecklistAlmoxarifadoForm = () => {
                   </Button>
                 </div>
 
-                {/* Campos adicionais para divergência */}
                 {(item.status === 'divergencia' || item.status === 'nao_localizado') && (
                   <div className="space-y-2 pt-2 border-t">
                     {item.status === 'divergencia' && (
@@ -394,7 +389,6 @@ export const ChecklistAlmoxarifadoForm = () => {
         ))}
       </div>
 
-      {/* Observações Gerais */}
       <Card>
         <CardHeader>
           <CardTitle>Observações Gerais</CardTitle>
@@ -409,13 +403,11 @@ export const ChecklistAlmoxarifadoForm = () => {
         </CardContent>
       </Card>
 
-      {/* Assinatura Digital */}
       <AssinaturaDigital
         assinatura={checklist.assinatura_digital}
         onSave={(assinatura) => setChecklist(prev => ({ ...prev, assinatura_digital: assinatura }))}
       />
 
-      {/* Botões de Ação */}
       <div className="flex gap-4 justify-center">
         <Button
           type="button"

@@ -76,10 +76,7 @@ export const useChecklistsAlmoxarifado = () => {
   const { toast } = useToast();
 
   // Buscar checklists existentes
-  const {
-    data: checklists = [],
-    isLoading
-  } = useQuery({
+  const checklistsQuery = useQuery({
     queryKey: ['checklists-almoxarifado'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -88,7 +85,10 @@ export const useChecklistsAlmoxarifado = () => {
         .order('data_checklist', { ascending: false })
         .order('hora_checklist', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar checklists:', error);
+        throw error;
+      }
       
       // Transform the data to match our interface with proper validation
       return (data || []).map(item => ({
@@ -110,7 +110,10 @@ export const useChecklistsAlmoxarifado = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar checklist:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -118,6 +121,14 @@ export const useChecklistsAlmoxarifado = () => {
       toast({
         title: "Sucesso",
         description: "Checklist criado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      console.error('Erro na criação do checklist:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar checklist",
+        variant: "destructive"
       });
     }
   });
@@ -137,46 +148,69 @@ export const useChecklistsAlmoxarifado = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar checklist:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['checklists-almoxarifado'] });
+      toast({
+        title: "Sucesso",
+        description: "Checklist atualizado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      console.error('Erro na atualização do checklist:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar checklist",
+        variant: "destructive"
+      });
     }
   });
 
   // Preparar itens do checklist a partir do estoque
   const prepareChecklistItems = async (): Promise<ChecklistItem[]> => {
-    const { data: estoque, error } = await supabase
-      .from('estoque_almoxarifado')
-      .select(`
-        *,
-        materiais:material_id (
-          codigo_material,
-          nome,
-          categoria,
-          unidade_medida
-        )
-      `)
-      .order('materiais(categoria)', { ascending: true })
-      .order('materiais(nome)', { ascending: true });
+    try {
+      const { data: estoque, error } = await supabase
+        .from('estoque_almoxarifado')
+        .select(`
+          *,
+          materiais:material_id (
+            codigo_material,
+            nome,
+            categoria,
+            unidade_medida
+          )
+        `)
+        .order('materiais(categoria)', { ascending: true })
+        .order('materiais(nome)', { ascending: true });
 
-    if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar estoque:', error);
+        throw error;
+      }
 
-    return (estoque || []).map(item => ({
-      material_id: item.material_id,
-      codigo_material: item.materiais?.codigo_material || '',
-      nome: item.materiais?.nome || '',
-      categoria: item.materiais?.categoria || '',
-      unidade_medida: item.materiais?.unidade_medida || '',
-      quantidade_teorica: Number(item.quantidade_disponivel),
-      status: 'pendente' as const
-    }));
+      return (estoque || []).map(item => ({
+        material_id: item.material_id,
+        codigo_material: item.materiais?.codigo_material || '',
+        nome: item.materiais?.nome || '',
+        categoria: item.materiais?.categoria || '',
+        unidade_medida: item.materiais?.unidade_medida || '',
+        quantidade_teorica: Number(item.quantidade_disponivel),
+        status: 'pendente' as const
+      }));
+    } catch (error) {
+      console.error('Erro ao preparar itens do checklist:', error);
+      return [];
+    }
   };
 
   return {
-    checklists,
-    isLoading,
+    checklists: checklistsQuery.data || [],
+    isLoading: checklistsQuery.isLoading,
     createChecklist,
     updateChecklist,
     prepareChecklistItems
