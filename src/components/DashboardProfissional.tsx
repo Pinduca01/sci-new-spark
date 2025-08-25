@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -96,18 +95,18 @@ const DashboardProfissional = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+    <div className="min-h-screen abstract-bg p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Cabeçalho */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white rounded-lg p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 glass-card rounded-lg p-6 shadow-sm">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard Operacional</h1>
-            <p className="text-gray-600">Sistema de Controle Integrado - SCI Core</p>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Dashboard Operacional</h1>
+            <p className="text-muted-foreground">Sistema de Controle Integrado - SCI Core</p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 items-center">
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
+              <Calendar className="h-4 w-4 text-muted-foreground" />
               <Select value={mesSelecionado.toString()} onValueChange={(value) => setMesSelecionado(parseInt(value))}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -240,14 +239,14 @@ const DashboardProfissional = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900">Estatísticas Rápidas</h2>
+        <div className="glass-card rounded-lg p-6 shadow-sm">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Estatísticas Rápidas</h2>
           <QuickStats stats={quickStats} />
         </div>
 
         {/* Insights Automáticos */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900">Insights e Análises</h2>
+        <div className="glass-card rounded-lg p-6 shadow-sm">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">Insights e Análises</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {insights.map((insight, index) => (
               <InsightCard
@@ -267,59 +266,59 @@ const DashboardProfissional = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 Verificações TP
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">{dados.tp_uniformes.verificacoes_mes}</div>
-              <p className="text-xs text-gray-600 mt-1">Este mês</p>
+              <p className="text-xs text-muted-foreground mt-1">Este mês</p>
             </CardContent>
           </Card>
           
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 Conformidade TP
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">{dados.tp_uniformes.conformidade_percentual}%</div>
-              <p className="text-xs text-gray-600 mt-1">Taxa de conformidade</p>
+              <p className="text-xs text-muted-foreground mt-1">Taxa de conformidade</p>
             </CardContent>
           </Card>
           
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <RefreshCw className="h-4 w-4" />
                 Higienizações
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-purple-600">{dados.tp_uniformes.higienizacoes_realizadas}</div>
-              <p className="text-xs text-gray-600 mt-1">TPs higienizados</p>
+              <p className="text-xs text-muted-foreground mt-1">TPs higienizados</p>
             </CardContent>
           </Card>
           
           <Card className="hover:shadow-lg transition-shadow duration-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Shield className="h-4 w-4" />
                 EPIs Distribuídos
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-orange-600">{dados.tp_uniformes.epis_distribuidos}</div>
-              <p className="text-xs text-gray-600 mt-1">Este mês</p>
+              <p className="text-xs text-muted-foreground mt-1">Este mês</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Rodapé */}
-        <div className="text-center text-sm text-gray-500 mt-8 pb-4">
+        <div className="text-center text-sm text-muted-foreground mt-8 pb-4">
           <p>Dashboard atualizado em tempo real • SCI-Core v2.1 • Última atualização: {new Date().toLocaleString()}</p>
         </div>
       </div>

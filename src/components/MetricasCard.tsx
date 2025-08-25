@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -89,16 +88,16 @@ export const MetricasCard: React.FC<MetricasCardProps> = ({
   return (
     <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-700">{titulo}</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground">{titulo}</CardTitle>
         <Icon className={`h-5 w-5 ${getCorIcone()}`} />
       </CardHeader>
       <CardContent className="pb-3">
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-2xl font-bold text-gray-900">{formatarValor(valor)}</div>
+            <div className="text-2xl font-bold text-foreground">{formatarValor(valor)}</div>
             
             {subvalor && (
-              <p className="text-xs text-gray-600 mt-1">{subvalor}</p>
+              <p className="text-xs text-muted-foreground mt-1">{subvalor}</p>
             )}
           </div>
           
