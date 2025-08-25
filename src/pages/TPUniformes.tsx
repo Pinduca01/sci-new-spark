@@ -1,7 +1,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ShieldCheck, Package } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShieldCheck, Droplets, Package, BarChart3 } from "lucide-react";
+import TPUniformesDashboard from "@/components/TPUniformesDashboard";
+import TPVerificacaoForm from "@/components/TPVerificacaoForm";
+import TPHigienizacaoForm from "@/components/TPHigienizacaoForm";
+import EPIDistribuicaoForm from "@/components/EPIDistribuicaoForm";
 
 const TPUniformes = () => {
   return (
@@ -15,46 +19,82 @@ const TPUniformes = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Trajes de Proteção e Uniformes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <ShieldCheck className="h-12 w-12 mx-auto mb-4" />
-            <p className="text-lg font-medium mb-2">Sistema de TP e Uniformes</p>
-            <p className="text-sm mb-6">
-              Esta seção permitirá o controle completo de:
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto text-left">
-              <div className="space-y-2">
-                <h4 className="font-medium">Trajes de Proteção:</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• Roupas de aproximação</li>
-                  <li>• Equipamentos de proteção individual</li>
-                  <li>• Capacetes e acessórios</li>
-                  <li>• Botas e luvas especiais</li>
-                </ul>
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="dashboard">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="verificacao">
+            <ShieldCheck className="w-4 h-4 mr-2" />
+            Verificação TP
+          </TabsTrigger>
+          <TabsTrigger value="higienizacao">
+            <Droplets className="w-4 h-4 mr-2" />
+            Higienização
+          </TabsTrigger>
+          <TabsTrigger value="distribuicao">
+            <Package className="w-4 h-4 mr-2" />
+            Distribuição EPIs
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Dashboard de TP e Uniformes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TPUniformesDashboard />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="verificacao" className="space-y-4">
+          <TPVerificacaoForm />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Verificações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Funcionalidade de histórico em desenvolvimento</p>
               </div>
-              <div className="space-y-2">
-                <h4 className="font-medium">Uniformes:</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• Uniformes operacionais</li>
-                  <li>• Uniformes administrativos</li>
-                  <li>• Controle por bombeiro</li>
-                  <li>• Histórico de distribuição</li>
-                </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="higienizacao" className="space-y-4">
+          <TPHigienizacaoForm />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Higienizações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Funcionalidade de histórico em desenvolvimento</p>
               </div>
-            </div>
-            <div className="mt-8">
-              <Button variant="outline" className="mr-4">
-                <Package className="w-4 h-4 mr-2" />
-                Funcionalidade em desenvolvimento
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="distribuicao" className="space-y-4">
+          <EPIDistribuicaoForm />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Distribuições</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Funcionalidade de histórico em desenvolvimento</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

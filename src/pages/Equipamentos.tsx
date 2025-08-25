@@ -98,7 +98,7 @@ const Equipamentos = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <MovimentacaoForm tipo="estoque" />
+              <MovimentacaoForm tipo="entrada" />
             </CardContent>
           </Card>
         </TabsContent>
@@ -140,7 +140,7 @@ const Equipamentos = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <HistoricoChecklists tipo="almoxarifado" />
+              <HistoricoChecklists />
             </CardContent>
           </Card>
           <Card>
@@ -151,7 +151,7 @@ const Equipamentos = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <HistoricoOS tipo="geral" />
+              <HistoricoOS />
             </CardContent>
           </Card>
         </TabsContent>

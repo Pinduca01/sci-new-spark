@@ -300,6 +300,85 @@ export type Database = {
           },
         ]
       }
+      epis_uniformes_distribuicao: {
+        Row: {
+          ano_referencia: number
+          bombeiro_id: string | null
+          bombeiro_nome: string
+          created_at: string | null
+          data_entrega: string | null
+          equipe_id: string | null
+          id: string
+          item_descricao: string
+          mes_referencia: number
+          observacoes: string | null
+          quantidade_entregue: number
+          quantidade_prevista: number
+          responsavel_entrega_id: string | null
+          responsavel_entrega_nome: string | null
+          tipo_item: string
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          bombeiro_id?: string | null
+          bombeiro_nome: string
+          created_at?: string | null
+          data_entrega?: string | null
+          equipe_id?: string | null
+          id?: string
+          item_descricao: string
+          mes_referencia: number
+          observacoes?: string | null
+          quantidade_entregue?: number
+          quantidade_prevista?: number
+          responsavel_entrega_id?: string | null
+          responsavel_entrega_nome?: string | null
+          tipo_item: string
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          bombeiro_id?: string | null
+          bombeiro_nome?: string
+          created_at?: string | null
+          data_entrega?: string | null
+          equipe_id?: string | null
+          id?: string
+          item_descricao?: string
+          mes_referencia?: number
+          observacoes?: string | null
+          quantidade_entregue?: number
+          quantidade_prevista?: number
+          responsavel_entrega_id?: string | null
+          responsavel_entrega_nome?: string | null
+          tipo_item?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epis_uniformes_distribuicao_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epis_uniformes_distribuicao_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epis_uniformes_distribuicao_responsavel_entrega_id_fkey"
+            columns: ["responsavel_entrega_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipes: {
         Row: {
           ativa: boolean
@@ -1423,6 +1502,172 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      tp_configuracoes: {
+        Row: {
+          ano_referencia: number
+          base: string
+          created_at: string | null
+          equipe_id: string | null
+          id: string
+          mes_referencia: number
+          quantidade_tp_prevista: number
+          quantidade_uniforme_prevista: number
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          base: string
+          created_at?: string | null
+          equipe_id?: string | null
+          id?: string
+          mes_referencia: number
+          quantidade_tp_prevista?: number
+          quantidade_uniforme_prevista?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          base?: string
+          created_at?: string | null
+          equipe_id?: string | null
+          id?: string
+          mes_referencia?: number
+          quantidade_tp_prevista?: number
+          quantidade_uniforme_prevista?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tp_configuracoes_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tp_higienizacoes: {
+        Row: {
+          ano_referencia: number
+          base: string
+          created_at: string | null
+          data_higienizacao: string
+          id: string
+          mes_referencia: number
+          observacoes: string | null
+          quantidade_higienizada: number
+          quantidade_total: number
+          responsavel_id: string | null
+          responsavel_nome: string
+          tipo_higienizacao: string
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          base: string
+          created_at?: string | null
+          data_higienizacao?: string
+          id?: string
+          mes_referencia: number
+          observacoes?: string | null
+          quantidade_higienizada?: number
+          quantidade_total?: number
+          responsavel_id?: string | null
+          responsavel_nome: string
+          tipo_higienizacao?: string
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          base?: string
+          created_at?: string | null
+          data_higienizacao?: string
+          id?: string
+          mes_referencia?: number
+          observacoes?: string | null
+          quantidade_higienizada?: number
+          quantidade_total?: number
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          tipo_higienizacao?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tp_higienizacoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tp_verificacoes: {
+        Row: {
+          ano_referencia: number
+          base: string
+          created_at: string | null
+          data_verificacao: string
+          equipe_id: string | null
+          id: string
+          mes_referencia: number
+          observacoes: string | null
+          responsavel_id: string | null
+          responsavel_nome: string
+          total_verificados: number
+          tp_conformes: number
+          tp_nao_conformes: number
+          updated_at: string | null
+        }
+        Insert: {
+          ano_referencia: number
+          base: string
+          created_at?: string | null
+          data_verificacao?: string
+          equipe_id?: string | null
+          id?: string
+          mes_referencia: number
+          observacoes?: string | null
+          responsavel_id?: string | null
+          responsavel_nome: string
+          total_verificados?: number
+          tp_conformes?: number
+          tp_nao_conformes?: number
+          updated_at?: string | null
+        }
+        Update: {
+          ano_referencia?: number
+          base?: string
+          created_at?: string | null
+          data_verificacao?: string
+          equipe_id?: string | null
+          id?: string
+          mes_referencia?: number
+          observacoes?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          total_verificados?: number
+          tp_conformes?: number
+          tp_nao_conformes?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tp_verificacoes_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tp_verificacoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       viaturas: {
         Row: {
