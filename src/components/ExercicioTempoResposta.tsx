@@ -1,99 +1,43 @@
-import { Timer, Plus, Zap, Users, TrendingUp, Eye, Edit, Trash2 } from "lucide-react";
+import { Timer, Plus, Zap, Users, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
-import TempoRespostaModal, { FormularioTempoResposta } from "./TempoRespostaModal";
-import TempoRespostaVisualizacao from "./TempoRespostaVisualizacao";
-import { useToast } from "@/hooks/use-toast";
 
 const ExercicioTempoResposta = () => {
-  const { toast } = useToast();
-  const [modalAberto, setModalAberto] = useState(false);
-  const [visualizacaoAberta, setVisualizacaoAberta] = useState(false);
-  const [formularios, setFormularios] = useState<FormularioTempoResposta[]>([]);
-  const [formularioSelecionado, setFormularioSelecionado] = useState<FormularioTempoResposta | null>(null);
-  const [formularioParaEdicao, setFormularioParaEdicao] = useState<FormularioTempoResposta | undefined>(undefined);
-
-  // Carregar formulários do localStorage
-  useEffect(() => {
-    const formulariosStorage = localStorage.getItem('formularios-tempo-resposta');
-    if (formulariosStorage) {
-      try {
-        setFormularios(JSON.parse(formulariosStorage));
-      } catch (error) {
-        console.error('Erro ao carregar formulários:', error);
-      }
+  // Mock data para demonstração
+  const exercicios = [
+    {
+      id: 1,
+      data: "2024-01-15",
+      equipe: "Alfa",
+      chefeEquipe: "Sgt. Santos",
+      tipoSimulacao: "Incêndio Estrutural",
+      tempoResposta: "4:32",
+      tempoChegada: "2:15",
+      status: "Excelente"
+    },
+    {
+      id: 2,
+      data: "2024-01-12", 
+      equipe: "Bravo",
+      chefeEquipe: "Cb. Silva",
+      tipoSimulacao: "Vazamento Químico",
+      tempoResposta: "6:18",
+      tempoChegada: "3:45",
+      status: "Bom"
+    },
+    {
+      id: 3,
+      data: "2024-01-08",
+      equipe: "Charlie",
+      chefeEquipe: "3º Sgt. Costa",
+      tipoSimulacao: "Emergência Médica",
+      tempoResposta: "3:25",
+      tempoChegada: "1:50",
+      status: "Excelente"
     }
-  }, []);
-
-  // Salvar formulários no localStorage
-  const salvarFormularios = (novosFormularios: FormularioTempoResposta[]) => {
-    setFormularios(novosFormularios);
-    localStorage.setItem('formularios-tempo-resposta', JSON.stringify(novosFormularios));
-  };
-
-  const handleSalvarFormulario = (formulario: FormularioTempoResposta) => {
-    const formulariosAtualizados = formularioParaEdicao
-      ? formularios.map(f => f.id === formulario.id ? formulario : f)
-      : [...formularios, formulario];
-    
-    salvarFormularios(formulariosAtualizados);
-    setFormularioParaEdicao(undefined);
-  };
-
-  const handleVisualizarFormulario = (formulario: FormularioTempoResposta) => {
-    setFormularioSelecionado(formulario);
-    setVisualizacaoAberta(true);
-  };
-
-  const handleEditarFormulario = (formulario: FormularioTempoResposta) => {
-    setFormularioParaEdicao(formulario);
-    setModalAberto(true);
-  };
-
-  const handleExcluirFormulario = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este formulário?')) {
-      const formulariosAtualizados = formularios.filter(f => f.id !== id);
-      salvarFormularios(formulariosAtualizados);
-      toast({
-        title: "Sucesso",
-        description: "Formulário excluído com sucesso!"
-      });
-    }
-  };
-
-  const handleNovoFormulario = () => {
-    setFormularioParaEdicao(undefined);
-    setModalAberto(true);
-  };
-
-  // Calcular estatísticas
-  const totalFormularios = formularios.length;
-  const tempoMedio = formularios.length > 0 
-    ? formularios.reduce((acc, f) => {
-        const tempoTotal = f.viaturas.reduce((vAcc, v) => {
-          const tempo = v.tempo.match(/(\d+)min(\d+)seg/);
-          if (tempo) {
-            return vAcc + (parseInt(tempo[1]) * 60) + parseInt(tempo[2]);
-          }
-          return vAcc;
-        }, 0);
-        return acc + (tempoTotal / f.viaturas.length);
-      }, 0) / formularios.length
-    : 0;
-  
-  const formatarTempo = (segundos: number) => {
-    const min = Math.floor(segundos / 60);
-    const seg = Math.floor(segundos % 60);
-    return `${min}:${seg.toString().padStart(2, '0')}`;
-  };
-
-  const equipesAvaliadas = new Set(formularios.map(f => f.equipe)).size;
-  const performanceSatisfatoria = formularios.filter(f => 
-    f.viaturas.some(v => v.performance === 'Satisfatório')
-  ).length;
+  ];
 
   return (
     <div className="space-y-6">
@@ -105,9 +49,9 @@ const ExercicioTempoResposta = () => {
             <Timer className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{totalFormularios}</div>
+            <div className="text-2xl font-bold text-primary">42</div>
             <p className="text-xs text-muted-foreground">
-              Formulários salvos
+              Este mês
             </p>
           </CardContent>
         </Card>
@@ -118,11 +62,9 @@ const ExercicioTempoResposta = () => {
             <Zap className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">
-              {totalFormularios > 0 ? formatarTempo(tempoMedio) : "--:--"}
-            </div>
+            <div className="text-2xl font-bold text-orange-500">4:45</div>
             <p className="text-xs text-muted-foreground">
-              Tempo médio
+              Resposta completa
             </p>
           </CardContent>
         </Card>
@@ -133,9 +75,9 @@ const ExercicioTempoResposta = () => {
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">{equipesAvaliadas}</div>
+            <div className="text-2xl font-bold text-blue-500">10</div>
             <p className="text-xs text-muted-foreground">
-              Equipes diferentes
+              Todas as equipes
             </p>
           </CardContent>
         </Card>
@@ -146,9 +88,9 @@ const ExercicioTempoResposta = () => {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">{performanceSatisfatoria}</div>
+            <div className="text-2xl font-bold text-green-500">-15%</div>
             <p className="text-xs text-muted-foreground">
-              Performance satisfatória
+              Tempo médio reduzido
             </p>
           </CardContent>
         </Card>
@@ -162,7 +104,7 @@ const ExercicioTempoResposta = () => {
             Simulações cronometradas para medir eficiência operacional
           </p>
         </div>
-        <Button onClick={handleNovoFormulario} className="flex items-center gap-2">
+        <Button className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Novo Exercício
         </Button>
@@ -182,125 +124,60 @@ const ExercicioTempoResposta = () => {
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Equipe</TableHead>
-                <TableHead>Aeroporto</TableHead>
-                <TableHead>Local</TableHead>
-                <TableHead>Tempo Médio</TableHead>
-                <TableHead>Hora</TableHead>
-                <TableHead>Performance</TableHead>
+                <TableHead>Chefe de Equipe</TableHead>
+                <TableHead>Tipo de Simulação</TableHead>
+                <TableHead>Tempo Resposta</TableHead>
+                <TableHead>Tempo Chegada</TableHead>
+                <TableHead>Avaliação</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {formularios.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                    Nenhum formulário de tempo de resposta cadastrado.
-                    <br />
-                    Clique em "Novo Exercício" para começar.
+              {exercicios.map((exercicio) => (
+                <TableRow key={exercicio.id}>
+                  <TableCell>{new Date(exercicio.data).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{exercicio.equipe}</Badge>
+                  </TableCell>
+                  <TableCell>{exercicio.chefeEquipe}</TableCell>
+                  <TableCell>{exercicio.tipoSimulacao}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Timer className="h-3 w-3 text-muted-foreground" />
+                      {exercicio.tempoResposta}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-muted-foreground" />
+                      {exercicio.tempoChegada}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        exercicio.status === "Excelente" ? "default" : 
+                        exercicio.status === "Bom" ? "secondary" : "destructive"
+                      }
+                    >
+                      {exercicio.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm">Ver</Button>
+                      <Button variant="ghost" size="sm">Editar</Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        Excluir
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : (
-                formularios.map((formulario) => {
-                  const tempoMedioFormulario = formulario.viaturas.length > 0 
-                    ? formulario.viaturas.reduce((acc, v) => {
-                        const tempo = v.tempo.match(/(\d+)min(\d+)seg/);
-                        if (tempo) {
-                          return acc + (parseInt(tempo[1]) * 60) + parseInt(tempo[2]);
-                        }
-                        return acc;
-                      }, 0) / formulario.viaturas.length
-                    : 0;
-                  
-                  const performanceGeral = formulario.viaturas.every(v => v.performance === 'Satisfatório') 
-                    ? 'Excelente' 
-                    : formulario.viaturas.some(v => v.performance === 'Satisfatório') 
-                    ? 'Bom' 
-                    : 'Regular';
-
-                  return (
-                    <TableRow key={formulario.id}>
-                      <TableCell>{new Date(formulario.data).toLocaleDateString('pt-BR')}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{formulario.equipe}</Badge>
-                      </TableCell>
-                      <TableCell>{formulario.identificacaoAeroporto}</TableCell>
-                      <TableCell>{formulario.local}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Timer className="h-3 w-3 text-muted-foreground" />
-                          {formatarTempo(tempoMedioFormulario)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Zap className="h-3 w-3 text-muted-foreground" />
-                          {formulario.hora}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            performanceGeral === "Excelente" ? "default" : 
-                            performanceGeral === "Bom" ? "secondary" : "destructive"
-                          }
-                        >
-                          {performanceGeral}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleVisualizarFormulario(formulario)}
-                            className="flex items-center gap-1"
-                          >
-                            <Eye className="h-3 w-3" />
-                            Ver
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleEditarFormulario(formulario)}
-                            className="flex items-center gap-1"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Editar
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleExcluirFormulario(formulario.id!)}
-                            className="text-destructive hover:text-destructive flex items-center gap-1"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Excluir
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
+              ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
-
-      {/* Modal para criar/editar formulário */}
-      <TempoRespostaModal
-        open={modalAberto}
-        onOpenChange={setModalAberto}
-        formularioParaEdicao={formularioParaEdicao}
-        onSave={handleSalvarFormulario}
-      />
-
-      {/* Modal para visualizar formulário */}
-      <TempoRespostaVisualizacao
-        open={visualizacaoAberta}
-        onOpenChange={setVisualizacaoAberta}
-        formulario={formularioSelecionado}
-      />
     </div>
   );
 };
