@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserProfileMenu } from "@/components/UserProfileMenu";
 import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { User, Session } from '@supabase/supabase-js';
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Command } from "lucide-react";
@@ -23,9 +23,23 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     // Set up auth state listener
@@ -100,26 +114,38 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         <AppSidebar userRole={profile?.role} />
         
         <div className="flex-1 flex flex-col relative z-50">
-          {/* New Enhanced Header */}
+          {/* Enhanced Compact Header */}
           <header className="border-b border-border/50 backdrop-blur-sm bg-background/80 relative z-50">
-            {/* Top Header Bar */}
-            <div className="flex items-center justify-between p-4">
+            {/* Single Header Bar - Compact Design */}
+            <div className="flex items-center justify-between px-4 py-2 min-h-[60px]">
               {/* Left Section */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <SidebarTrigger className="lg:hidden" />
                 
-                {/* Search Button (Spotlight style) */}
-                <Button variant="outline" className="w-64 justify-start text-muted-foreground hidden md:flex">
+                {/* Breadcrumb */}
+                <div className="hidden sm:block">
+                  <HeaderBreadcrumb />
+                </div>
+              </div>
+
+              {/* Center Section - Search */}
+              <div className="flex-1 max-w-md mx-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start text-muted-foreground h-9 bg-background/60 hover:bg-background/80"
+                  onClick={() => setSearchOpen(true)}
+                >
                   <Search className="mr-2 h-4 w-4" />
-                  <span>Buscar...</span>
-                  <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <span className="hidden sm:inline">Buscar...</span>
+                  <span className="sm:hidden">Buscar</span>
+                  <kbd className="pointer-events-none ml-auto hidden md:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                     <Command className="h-3 w-3" />K
                   </kbd>
                 </Button>
               </div>
 
               {/* Right Section */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
                 {/* Theme Toggle */}
                 <ThemeToggle />
                 
@@ -133,8 +159,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               </div>
             </div>
 
-            {/* Bottom Header Bar - Breadcrumbs */}
-            <div className="px-4 pb-3">
+            {/* Mobile Breadcrumb */}
+            <div className="px-4 pb-2 sm:hidden">
               <HeaderBreadcrumb />
             </div>
           </header>
@@ -145,6 +171,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           </main>
         </div>
       </div>
+
+      {/* Global Search Dialog */}
+      <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </SidebarProvider>
   );
 };
