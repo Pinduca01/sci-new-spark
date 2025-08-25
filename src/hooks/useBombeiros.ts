@@ -13,6 +13,7 @@ export interface Bombeiro {
   turno: string;
   status: string;
   matricula?: string;
+  data_admissao?: string;
 }
 
 export const useBombeiros = () => {

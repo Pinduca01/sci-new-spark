@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,7 +91,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full abstract-bg">
-        <AppSidebar userRole={profile?.role} />
+        <AppSidebar />
         
         <div className="flex-1 flex flex-col relative z-20">
           {/* Header */}
