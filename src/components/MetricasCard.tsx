@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { LucideIcon } from "lucide-react";
+import { SparklineChart } from './SparklineChart';
 
 interface MetricasCardProps {
   titulo: string;
@@ -13,6 +14,7 @@ interface MetricasCardProps {
   cor: string;
   tendencia?: number;
   formato?: 'numero' | 'percentual' | 'tempo';
+  dadosSparkline?: Array<{ value: number }>;
 }
 
 export const MetricasCard: React.FC<MetricasCardProps> = ({
@@ -22,7 +24,8 @@ export const MetricasCard: React.FC<MetricasCardProps> = ({
   icone: Icon,
   cor,
   tendencia = 0,
-  formato = 'numero'
+  formato = 'numero',
+  dadosSparkline
 }) => {
   const formatarValor = (val: number | string) => {
     if (typeof val === 'string') return val;
@@ -49,22 +52,72 @@ export const MetricasCard: React.FC<MetricasCardProps> = ({
     return "text-gray-600 bg-gray-100";
   };
 
+  const getCorIcone = () => {
+    switch (cor) {
+      case 'blue':
+        return 'text-blue-600';
+      case 'green':
+        return 'text-green-600';
+      case 'purple':
+        return 'text-purple-600';
+      case 'orange':
+        return 'text-orange-600';
+      case 'red':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const getCorSparkline = () => {
+    switch (cor) {
+      case 'blue':
+        return '#2563eb';
+      case 'green':
+        return '#059669';
+      case 'purple':
+        return '#9333ea';
+      case 'orange':
+        return '#ea580c';
+      case 'red':
+        return '#dc2626';
+      default:
+        return '#6b7280';
+    }
+  };
+
   return (
-    <Card className="glass-card hover:shadow-lg transition-all duration-300">
+    <Card className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{titulo}</CardTitle>
-        <Icon className={`h-5 w-5 ${cor}`} />
+        <CardTitle className="text-sm font-medium text-gray-700">{titulo}</CardTitle>
+        <Icon className={`h-5 w-5 ${getCorIcone()}`} />
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{formatarValor(valor)}</div>
-        
-        <div className="flex items-center justify-between mt-2">
-          {subvalor && (
-            <p className="text-xs text-muted-foreground">{subvalor}</p>
-          )}
+      <CardContent className="pb-3">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-2xl font-bold text-gray-900">{formatarValor(valor)}</div>
+            
+            {subvalor && (
+              <p className="text-xs text-gray-600 mt-1">{subvalor}</p>
+            )}
+          </div>
           
+          {dadosSparkline && dadosSparkline.length > 0 && (
+            <div className="ml-2">
+              <SparklineChart 
+                dados={dadosSparkline} 
+                cor={getCorSparkline()}
+                altura={32}
+                largura={60}
+              />
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex-1" />
           {tendencia !== 0 && (
-            <Badge variant="outline" className={`text-xs ${getTendenciaCor()}`}>
+            <Badge variant="outline" className={`text-xs ${getTendenciaCor()} border-0`}>
               {getTendenciaIcon()}
               <span className="ml-1">{Math.abs(tendencia)}</span>
             </Badge>
