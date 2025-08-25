@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export interface QuadranteAeroporto {
   id: string;
@@ -71,13 +71,17 @@ export interface InspecaoExtintor {
 
 export const useExtintoresAeroporto = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   // Buscar quadrantes
-  const { data: quadrantes = [], isLoading: isLoadingQuadrantes, error: errorQuadrantes } = useQuery({
+  const { 
+    data: quadrantes = [], 
+    isLoading: isLoadingQuadrantes, 
+    error: errorQuadrantes,
+    refetch: refetchQuadrantes 
+  } = useQuery({
     queryKey: ['quadrantes-aeroporto'],
     queryFn: async () => {
-      console.log('Buscando quadrantes...');
+      console.log('🔍 Buscando quadrantes...');
       const { data, error } = await supabase
         .from('quadrantes_aeroporto')
         .select(`
@@ -91,21 +95,28 @@ export const useExtintoresAeroporto = () => {
         .order('nome_quadrante');
 
       if (error) {
-        console.error('Erro ao buscar quadrantes:', error);
-        throw error;
+        console.error('❌ Erro ao buscar quadrantes:', error);
+        throw new Error(`Erro ao buscar quadrantes: ${error.message}`);
       }
-      console.log('Quadrantes encontrados:', data?.length || 0);
+      
+      console.log('✅ Quadrantes encontrados:', data?.length || 0, data);
       return data as QuadranteAeroporto[];
     },
-    retry: 3,
-    retryDelay: 1000
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000
   });
 
   // Buscar extintores
-  const { data: extintores = [], isLoading: isLoadingExtintores, error: errorExtintores } = useQuery({
+  const { 
+    data: extintores = [], 
+    isLoading: isLoadingExtintores, 
+    error: errorExtintores,
+    refetch: refetchExtintores 
+  } = useQuery({
     queryKey: ['extintores-aeroporto'],
     queryFn: async () => {
-      console.log('Buscando extintores...');
+      console.log('🔍 Buscando extintores...');
       const { data, error } = await supabase
         .from('extintores_aeroporto')
         .select(`
@@ -118,21 +129,28 @@ export const useExtintoresAeroporto = () => {
         .order('codigo_extintor');
 
       if (error) {
-        console.error('Erro ao buscar extintores:', error);
-        throw error;
+        console.error('❌ Erro ao buscar extintores:', error);
+        throw new Error(`Erro ao buscar extintores: ${error.message}`);
       }
-      console.log('Extintores encontrados:', data?.length || 0);
+      
+      console.log('✅ Extintores encontrados:', data?.length || 0, data);
       return data as ExtintorAeroporto[];
     },
-    retry: 3,
-    retryDelay: 1000
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000
   });
 
   // Buscar inspeções
-  const { data: inspecoes = [], isLoading: isLoadingInspecoes, error: errorInspecoes } = useQuery({
+  const { 
+    data: inspecoes = [], 
+    isLoading: isLoadingInspecoes, 
+    error: errorInspecoes,
+    refetch: refetchInspecoes 
+  } = useQuery({
     queryKey: ['inspecoes-extintores'],
     queryFn: async () => {
-      console.log('Buscando inspeções...');
+      console.log('🔍 Buscando inspeções...');
       const { data, error } = await supabase
         .from('inspecoes_extintores')
         .select(`
@@ -149,20 +167,43 @@ export const useExtintoresAeroporto = () => {
         .order('data_inspecao', { ascending: false });
 
       if (error) {
-        console.error('Erro ao buscar inspeções:', error);
-        throw error;
+        console.error('❌ Erro ao buscar inspeções:', error);
+        throw new Error(`Erro ao buscar inspeções: ${error.message}`);
       }
-      console.log('Inspeções encontradas:', data?.length || 0);
+      
+      console.log('✅ Inspeções encontradas:', data?.length || 0, data);
       return data as InspecaoExtintor[];
     },
-    retry: 3,
-    retryDelay: 1000
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 30000
   });
 
   // Criar extintor
   const createExtintor = useMutation({
     mutationFn: async (extintor: Omit<ExtintorAeroporto, 'id' | 'created_at' | 'updated_at' | 'quadrantes_aeroporto'>) => {
-      console.log('Criando extintor:', extintor);
+      console.log('🚀 Criando extintor:', extintor);
+      
+      // Validar dados obrigatórios
+      if (!extintor.codigo_extintor?.trim()) {
+        throw new Error('Código do extintor é obrigatório');
+      }
+      if (!extintor.localizacao_detalhada?.trim()) {
+        throw new Error('Localização detalhada é obrigatória');
+      }
+      if (!extintor.quadrante_id?.trim()) {
+        throw new Error('Quadrante é obrigatório');
+      }
+      if (!extintor.tipo_extintor?.trim()) {
+        throw new Error('Tipo do extintor é obrigatório');
+      }
+      if (!extintor.capacidade || extintor.capacidade <= 0) {
+        throw new Error('Capacidade deve ser maior que zero');
+      }
+      if (!extintor.data_instalacao) {
+        throw new Error('Data de instalação é obrigatória');
+      }
+
       const { data, error } = await supabase
         .from('extintores_aeroporto')
         .insert(extintor)
@@ -170,33 +211,47 @@ export const useExtintoresAeroporto = () => {
         .single();
 
       if (error) {
-        console.error('Erro ao criar extintor:', error);
-        throw error;
+        console.error('❌ Erro ao criar extintor:', error);
+        if (error.code === '23505') {
+          throw new Error('Código do extintor já existe');
+        }
+        throw new Error(`Erro ao criar extintor: ${error.message}`);
       }
-      console.log('Extintor criado com sucesso:', data);
+      
+      console.log('✅ Extintor criado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
+      console.log('🔄 Invalidando cache dos extintores...');
       queryClient.invalidateQueries({ queryKey: ['extintores-aeroporto'] });
-      toast({
-        title: "Sucesso",
-        description: "Extintor cadastrado com sucesso!",
-      });
     },
     onError: (error: any) => {
-      console.error('Erro na mutação de criar extintor:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao cadastrar extintor: " + (error.message || 'Erro desconhecido'),
-        variant: "destructive",
-      });
+      console.error('❌ Erro na mutação de criar extintor:', error);
     }
   });
 
   // Criar inspeção
   const createInspecao = useMutation({
     mutationFn: async (inspecao: Omit<InspecaoExtintor, 'id' | 'created_at' | 'updated_at' | 'extintores_aeroporto' | 'bombeiros'>) => {
-      console.log('Criando inspeção:', inspecao);
+      console.log('🚀 Criando inspeção:', inspecao);
+      
+      // Validar dados obrigatórios
+      if (!inspecao.extintor_id?.trim()) {
+        throw new Error('Extintor é obrigatório');
+      }
+      if (!inspecao.bombeiro_inspetor_id?.trim()) {
+        throw new Error('Bombeiro inspetor é obrigatório');
+      }
+      if (!inspecao.data_inspecao) {
+        throw new Error('Data da inspeção é obrigatória');
+      }
+      if (!inspecao.hora_inspecao) {
+        throw new Error('Hora da inspeção é obrigatória');
+      }
+      if (!inspecao.itens_verificados || inspecao.itens_verificados.length === 0) {
+        throw new Error('É necessário verificar pelo menos um item');
+      }
+
       const { data, error } = await supabase
         .from('inspecoes_extintores')
         .insert(inspecao)
@@ -204,33 +259,27 @@ export const useExtintoresAeroporto = () => {
         .single();
 
       if (error) {
-        console.error('Erro ao criar inspeção:', error);
-        throw error;
+        console.error('❌ Erro ao criar inspeção:', error);
+        throw new Error(`Erro ao criar inspeção: ${error.message}`);
       }
-      console.log('Inspeção criada com sucesso:', data);
+      
+      console.log('✅ Inspeção criada com sucesso:', data);
       return data;
     },
     onSuccess: () => {
+      console.log('🔄 Invalidando cache das inspeções...');
       queryClient.invalidateQueries({ queryKey: ['inspecoes-extintores'] });
-      toast({
-        title: "Sucesso",
-        description: "Inspeção registrada com sucesso!",
-      });
     },
     onError: (error: any) => {
-      console.error('Erro na mutação de criar inspeção:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao registrar inspeção: " + (error.message || 'Erro desconhecido'),
-        variant: "destructive",
-      });
+      console.error('❌ Erro na mutação de criar inspeção:', error);
     }
   });
 
   // Atualizar extintor
   const updateExtintor = useMutation({
     mutationFn: async ({ id, ...extintor }: Partial<ExtintorAeroporto> & { id: string }) => {
-      console.log('Atualizando extintor:', id, extintor);
+      console.log('🔄 Atualizando extintor:', id, extintor);
+      
       const { data, error } = await supabase
         .from('extintores_aeroporto')
         .update(extintor)
@@ -239,36 +288,38 @@ export const useExtintoresAeroporto = () => {
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar extintor:', error);
-        throw error;
+        console.error('❌ Erro ao atualizar extintor:', error);
+        throw new Error(`Erro ao atualizar extintor: ${error.message}`);
       }
-      console.log('Extintor atualizado com sucesso:', data);
+      
+      console.log('✅ Extintor atualizado com sucesso:', data);
       return data;
     },
     onSuccess: () => {
+      console.log('🔄 Invalidando cache dos extintores...');
       queryClient.invalidateQueries({ queryKey: ['extintores-aeroporto'] });
-      toast({
-        title: "Sucesso",
-        description: "Extintor atualizado com sucesso!",
-      });
     },
     onError: (error: any) => {
-      console.error('Erro na mutação de atualizar extintor:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar extintor: " + (error.message || 'Erro desconhecido'),
-        variant: "destructive",
-      });
+      console.error('❌ Erro na mutação de atualizar extintor:', error);
     }
   });
 
-  // Log de erros para debug
-  if (errorQuadrantes) console.error('Erro nos quadrantes:', errorQuadrantes);
-  if (errorExtintores) console.error('Erro nos extintores:', errorExtintores);
-  if (errorInspecoes) console.error('Erro nas inspeções:', errorInspecoes);
-
+  // Log de status geral
   const hasErrors = errorQuadrantes || errorExtintores || errorInspecoes;
   const isLoading = isLoadingQuadrantes || isLoadingExtintores || isLoadingInspecoes;
+
+  console.log('📊 Status geral do hook:', {
+    quadrantes: quadrantes.length,
+    extintores: extintores.length,
+    inspecoes: inspecoes.length,
+    isLoading,
+    hasErrors: !!hasErrors,
+    errors: {
+      quadrantes: errorQuadrantes?.message,
+      extintores: errorExtintores?.message,
+      inspecoes: errorInspecoes?.message
+    }
+  });
 
   return {
     quadrantes,
@@ -278,6 +329,9 @@ export const useExtintoresAeroporto = () => {
     hasErrors,
     createExtintor,
     createInspecao,
-    updateExtintor
+    updateExtintor,
+    refetchQuadrantes,
+    refetchExtintores,
+    refetchInspecoes
   };
 };

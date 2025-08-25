@@ -1,9 +1,10 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { ExtintorAeroporto, InspecaoExtintor } from '@/hooks/useExtintoresAeroporto';
-import { MapPin, Calendar, Shield, Clock, FileText } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, AlertTriangle, Shield } from 'lucide-react';
 
 interface ExtintorDetailsModalProps {
   open: boolean;
@@ -21,73 +22,93 @@ export const ExtintorDetailsModal = ({
   inspecoes 
 }: ExtintorDetailsModalProps) => {
   const extintor = extintores.find(e => e.id === extintorId);
-  const inspecoesExtintor = inspecoes.filter(i => i.extintor_id === extintorId);
+  const extintorInspecoes = inspecoes.filter(i => i.extintor_id === extintorId);
 
-  if (!extintor) return null;
+  if (!extintor) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Extintor não encontrado</DialogTitle>
+          </DialogHeader>
+          <p>O extintor solicitado não foi encontrado.</p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Detalhes do Extintor {extintor.codigo_extintor}
+            Detalhes do Extintor - {extintor.codigo_extintor}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Informações Básicas */}
+          {/* Informações Gerais */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Informações Básicas
-              </CardTitle>
+              <CardTitle className="text-lg">Informações Gerais</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Código</p>
-                  <p className="font-medium">{extintor.codigo_extintor}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Código</label>
+                  <p className="font-mono">{extintor.codigo_extintor}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge variant={extintor.status === 'ativo' ? 'default' : 'secondary'}>
-                    {extintor.status}
-                  </Badge>
+                  <label className="text-sm font-medium text-muted-foreground">Status</label>
+                  <div className="mt-1">
+                    <Badge variant={extintor.status === 'ativo' ? 'default' : 'secondary'}>
+                      {extintor.status}
+                    </Badge>
+                  </div>
                 </div>
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Localização</p>
-                <p className="font-medium">{extintor.localizacao_detalhada}</p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Tipo</p>
-                  <p className="font-medium">{extintor.tipo_extintor}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Capacidade</p>
-                  <p className="font-medium">{extintor.capacidade}{extintor.unidade_capacidade}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Fabricante</p>
-                  <p className="font-medium">{extintor.fabricante || 'N/A'}</p>
+                <label className="text-sm font-medium text-muted-foreground">Localização</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <p>{extintor.localizacao_detalhada}</p>
                 </div>
               </div>
 
               {extintor.quadrantes_aeroporto && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Quadrante</p>
-                  <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-muted-foreground">Quadrante</label>
+                  <div className="flex items-center gap-2 mt-1">
                     <div 
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: extintor.quadrantes_aeroporto.cor_identificacao }}
                     />
-                    <span className="font-medium">{extintor.quadrantes_aeroporto.nome_quadrante}</span>
+                    <p>{extintor.quadrantes_aeroporto.nome_quadrante}</p>
                   </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Tipo</label>
+                  <p>{extintor.tipo_extintor}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Capacidade</label>
+                  <p>{extintor.capacidade}{extintor.unidade_capacidade}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Fabricante</label>
+                  <p>{extintor.fabricante || 'Não informado'}</p>
+                </div>
+              </div>
+
+              {extintor.observacoes && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Observações</label>
+                  <p className="text-sm">{extintor.observacoes}</p>
                 </div>
               )}
             </CardContent>
@@ -96,108 +117,94 @@ export const ExtintorDetailsModal = ({
           {/* Datas Importantes */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Cronograma de Manutenção
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Datas Importantes
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Data de Instalação</p>
-                  <p className="font-medium">
-                    {new Date(extintor.data_instalacao).toLocaleDateString('pt-BR')}
-                  </p>
+                  <label className="text-sm font-medium text-muted-foreground">Data de Instalação</label>
+                  <p>{new Date(extintor.data_instalacao).toLocaleDateString('pt-BR')}</p>
                 </div>
                 {extintor.data_fabricacao && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Data de Fabricação</p>
-                    <p className="font-medium">
-                      {new Date(extintor.data_fabricacao).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                )}
-                {extintor.ultima_recarga && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Última Recarga</p>
-                    <p className="font-medium">
-                      {new Date(extintor.ultima_recarga).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                )}
-                {extintor.proxima_recarga && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Próxima Recarga</p>
-                    <p className="font-medium">
-                      {new Date(extintor.proxima_recarga).toLocaleDateString('pt-BR')}
-                    </p>
+                    <label className="text-sm font-medium text-muted-foreground">Data de Fabricação</label>
+                    <p>{new Date(extintor.data_fabricacao).toLocaleDateString('pt-BR')}</p>
                   </div>
                 )}
               </div>
+
+              {extintor.proxima_recarga && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Próxima Recarga</label>
+                  <p className="flex items-center gap-2">
+                    {new Date(extintor.proxima_recarga).toLocaleDateString('pt-BR')}
+                    {new Date(extintor.proxima_recarga) <= new Date() && (
+                      <Badge variant="destructive" className="text-xs">Vencida</Badge>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {extintor.proximo_teste_hidrostatico && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Próximo Teste Hidrostático</label>
+                  <p>{new Date(extintor.proximo_teste_hidrostatico).toLocaleDateString('pt-BR')}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Histórico de Inspeções */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Histórico de Inspeções ({inspecoesExtintor.length})
-              </CardTitle>
+              <CardTitle className="text-lg">Histórico de Inspeções</CardTitle>
             </CardHeader>
             <CardContent>
-              {inspecoesExtintor.length > 0 ? (
-                <div className="space-y-3">
-                  {inspecoesExtintor.slice(0, 5).map((inspecao) => (
-                    <div key={inspecao.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">
-                            {new Date(inspecao.data_inspecao).toLocaleDateString('pt-BR')}
-                          </p>
+              {extintorInspecoes.length > 0 ? (
+                <div className="space-y-4">
+                  {extintorInspecoes.slice(0, 5).map((inspecao, index) => (
+                    <div key={inspecao.id}>
+                      {index > 0 && <Separator className="mb-4" />}
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            {inspecao.status_extintor === 'conforme' ? (
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <AlertTriangle className="h-4 w-4 text-amber-600" />
+                            )}
+                            <span className="font-medium">
+                              {inspecao.status_extintor === 'conforme' ? 'Conforme' : 'Não Conforme'}
+                            </span>
+                            <Badge variant="outline" className="text-xs">
+                              {inspecao.tipo_inspecao}
+                            </Badge>
+                          </div>
                           <p className="text-sm text-muted-foreground">
-                            {inspecao.bombeiros?.nome} - {inspecao.hora_inspecao}
+                            Inspetor: {inspecao.bombeiros?.nome || 'Não informado'}
                           </p>
+                          {inspecao.observacoes && (
+                            <p className="text-sm">{inspecao.observacoes}</p>
+                          )}
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge 
-                          variant={inspecao.status_extintor === 'conforme' ? 'default' : 'destructive'}
-                        >
-                          {inspecao.status_extintor}
-                        </Badge>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {inspecao.tipo_inspecao}
-                        </p>
+                        <div className="text-right text-sm text-muted-foreground">
+                          <p>{new Date(inspecao.data_inspecao).toLocaleDateString('pt-BR')}</p>
+                          <p>{inspecao.hora_inspecao}</p>
+                        </div>
                       </div>
                     </div>
                   ))}
-                  {inspecoesExtintor.length > 5 && (
-                    <p className="text-center text-sm text-muted-foreground">
-                      ... e mais {inspecoesExtintor.length - 5} inspeções
-                    </p>
-                  )}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhuma inspeção registrada</p>
-                </div>
+                <p className="text-center text-muted-foreground py-4">
+                  Nenhuma inspeção registrada para este extintor
+                </p>
               )}
             </CardContent>
           </Card>
-
-          {extintor.observacoes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Observações</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm">{extintor.observacoes}</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </DialogContent>
     </Dialog>

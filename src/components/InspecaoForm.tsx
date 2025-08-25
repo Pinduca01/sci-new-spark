@@ -13,6 +13,7 @@ import { useExtintoresAeroporto, ExtintorAeroporto } from '@/hooks/useExtintores
 import { Bombeiro } from '@/hooks/useBombeiros';
 import { Plus, Trash2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/hooks/use-toast';
 
 interface ItemVerificacao {
   item: string;
@@ -49,8 +50,11 @@ export const InspecaoForm = ({
 }: InspecaoFormProps) => {
   const { createInspecao } = useExtintoresAeroporto();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedExtintor, setSelectedExtintor] = useState(selectedExtintorId || '');
+  const [selectedBombeiro, setSelectedBombeiro] = useState('');
+  const [selectedTipoInspecao, setSelectedTipoInspecao] = useState('rotina');
 
-  const { register, handleSubmit, reset, setValue, control, watch, formState: { errors } } = useForm<InspecaoFormData>({
+  const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm<InspecaoFormData>({
     defaultValues: {
       extintor_id: selectedExtintorId || '',
       data_inspecao: new Date().toISOString().split('T')[0],
@@ -75,32 +79,74 @@ export const InspecaoForm = ({
   const itensVerificados = watch('itens_verificados');
   const statusGeral = itensVerificados?.every(item => item.conforme) ? 'conforme' : 'nao_conforme';
 
+  console.log('InspecaoForm - Estado atual:', {
+    selectedExtintor,
+    selectedBombeiro,
+    extintores: extintores.length,
+    bombeiros: bombeiros.length,
+    itensVerificados: itensVerificados?.length,
+    statusGeral
+  });
+
   const onSubmit = async (data: InspecaoFormData) => {
-    console.log('Dados do formulário de inspeção:', data);
+    console.log('InspecaoForm - Iniciando envio do formulário:', data);
     
-    if (!data.extintor_id) {
-      alert('Selecione um extintor');
+    if (!selectedExtintor) {
+      toast({
+        title: "Erro",
+        description: "Selecione um extintor",
+        variant: "destructive",
+      });
       return;
     }
     
-    if (!data.bombeiro_inspetor_id) {
-      alert('Selecione um inspetor');
+    if (!selectedBombeiro) {
+      toast({
+        title: "Erro",
+        description: "Selecione um inspetor",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await createInspecao.mutateAsync({
+      const inspecaoData = {
         ...data,
+        extintor_id: selectedExtintor,
+        bombeiro_inspetor_id: selectedBombeiro,
+        tipo_inspecao: selectedTipoInspecao,
         status_extintor: statusGeral
+      };
+
+      console.log('InspecaoForm - Dados finais para envio:', inspecaoData);
+
+      await createInspecao.mutateAsync(inspecaoData);
+      
+      toast({
+        title: "Sucesso",
+        description: "Inspeção registrada com sucesso!",
       });
-      reset();
-      onClose();
+      
+      handleClose();
     } catch (error) {
-      console.error('Erro ao criar inspeção:', error);
+      console.error('InspecaoForm - Erro ao criar inspeção:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar inspeção: " + (error instanceof Error ? error.message : 'Erro desconhecido'),
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleClose = () => {
+    reset();
+    setSelectedExtintor(selectedExtintorId || '');
+    setSelectedBombeiro('');
+    setSelectedTipoInspecao('rotina');
+    onClose();
   };
 
   // Validar se há dados necessários
@@ -147,7 +193,7 @@ export const InspecaoForm = ({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Inspeção de Extintor</DialogTitle>
@@ -157,10 +203,7 @@ export const InspecaoForm = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="extintor_id">Extintor *</Label>
-              <Select 
-                onValueChange={(value) => setValue('extintor_id', value)}
-                defaultValue={selectedExtintorId || ''}
-              >
+              <Select value={selectedExtintor} onValueChange={setSelectedExtintor}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o extintor" />
                 </SelectTrigger>
@@ -172,14 +215,14 @@ export const InspecaoForm = ({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.extintor_id && (
+              {!selectedExtintor && (
                 <p className="text-sm text-red-600 mt-1">Campo obrigatório</p>
               )}
             </div>
 
             <div>
               <Label htmlFor="bombeiro_inspetor_id">Inspetor *</Label>
-              <Select onValueChange={(value) => setValue('bombeiro_inspetor_id', value)}>
+              <Select value={selectedBombeiro} onValueChange={setSelectedBombeiro}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o inspetor" />
                 </SelectTrigger>
@@ -191,7 +234,7 @@ export const InspecaoForm = ({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.bombeiro_inspetor_id && (
+              {!selectedBombeiro && (
                 <p className="text-sm text-red-600 mt-1">Campo obrigatório</p>
               )}
             </div>
@@ -224,7 +267,7 @@ export const InspecaoForm = ({
 
             <div>
               <Label htmlFor="tipo_inspecao">Tipo de Inspeção *</Label>
-              <Select onValueChange={(value) => setValue('tipo_inspecao', value)} defaultValue="rotina">
+              <Select value={selectedTipoInspecao} onValueChange={setSelectedTipoInspecao}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -268,7 +311,9 @@ export const InspecaoForm = ({
                     <Checkbox
                       checked={itensVerificados?.[index]?.conforme || false}
                       onCheckedChange={(checked) => 
-                        setValue(`itens_verificados.${index}.conforme`, checked as boolean)
+                        register(`itens_verificados.${index}.conforme`).onChange({
+                          target: { value: checked }
+                        })
                       }
                     />
                     <Label className="text-sm">Conforme</Label>
@@ -316,7 +361,7 @@ export const InspecaoForm = ({
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>

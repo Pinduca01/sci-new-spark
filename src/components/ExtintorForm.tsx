@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useExtintoresAeroporto, QuadranteAeroporto } from '@/hooks/useExtintoresAeroporto';
+import { toast } from '@/hooks/use-toast';
 
 interface ExtintorFormData {
   codigo_extintor: string;
@@ -31,20 +32,71 @@ interface ExtintorFormProps {
 export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) => {
   const { createExtintor } = useExtintoresAeroporto();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedQuadrante, setSelectedQuadrante] = useState('');
+  const [selectedTipo, setSelectedTipo] = useState('');
+  const [selectedUnidade, setSelectedUnidade] = useState('kg');
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<ExtintorFormData>();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ExtintorFormData>({
+    defaultValues: {
+      unidade_capacidade: 'kg'
+    }
+  });
+
+  console.log('ExtintorForm - Quadrantes disponíveis:', quadrantes);
+  console.log('ExtintorForm - Valores selecionados:', { selectedQuadrante, selectedTipo, selectedUnidade });
 
   const onSubmit = async (data: ExtintorFormData) => {
+    console.log('ExtintorForm - Iniciando envio do formulário:', data);
+    
+    if (!selectedQuadrante) {
+      toast({
+        title: "Erro",
+        description: "Selecione um quadrante",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedTipo) {
+      toast({
+        title: "Erro",
+        description: "Selecione um tipo de extintor",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await createExtintor.mutateAsync({
+      const extintorData = {
         ...data,
+        quadrante_id: selectedQuadrante,
+        tipo_extintor: selectedTipo,
+        unidade_capacidade: selectedUnidade,
         status: 'ativo'
+      };
+
+      console.log('ExtintorForm - Dados finais para envio:', extintorData);
+
+      await createExtintor.mutateAsync(extintorData);
+      
+      toast({
+        title: "Sucesso",
+        description: "Extintor cadastrado com sucesso!",
       });
+      
       reset();
+      setSelectedQuadrante('');
+      setSelectedTipo('');
+      setSelectedUnidade('kg');
       onClose();
     } catch (error) {
-      console.error('Erro ao criar extintor:', error);
+      console.error('ExtintorForm - Erro ao criar extintor:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao cadastrar extintor: " + (error instanceof Error ? error.message : 'Erro desconhecido'),
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -58,8 +110,16 @@ export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) =
     'Pó Químico Especial'
   ];
 
+  const handleClose = () => {
+    reset();
+    setSelectedQuadrante('');
+    setSelectedTipo('');
+    setSelectedUnidade('kg');
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Cadastrar Novo Extintor</DialogTitle>
@@ -81,7 +141,7 @@ export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) =
 
             <div>
               <Label htmlFor="quadrante_id">Quadrante *</Label>
-              <Select onValueChange={(value) => setValue('quadrante_id', value)}>
+              <Select value={selectedQuadrante} onValueChange={setSelectedQuadrante}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o quadrante" />
                 </SelectTrigger>
@@ -99,6 +159,9 @@ export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) =
                   ))}
                 </SelectContent>
               </Select>
+              {!selectedQuadrante && (
+                <p className="text-sm text-red-600 mt-1">Campo obrigatório</p>
+              )}
             </div>
           </div>
 
@@ -117,7 +180,7 @@ export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) =
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="tipo_extintor">Tipo do Extintor *</Label>
-              <Select onValueChange={(value) => setValue('tipo_extintor', value)}>
+              <Select value={selectedTipo} onValueChange={setSelectedTipo}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
@@ -129,6 +192,9 @@ export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) =
                   ))}
                 </SelectContent>
               </Select>
+              {!selectedTipo && (
+                <p className="text-sm text-red-600 mt-1">Campo obrigatório</p>
+              )}
             </div>
 
             <div>
@@ -139,7 +205,8 @@ export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) =
                 step="0.1"
                 {...register('capacidade', { 
                   required: 'Campo obrigatório',
-                  valueAsNumber: true 
+                  valueAsNumber: true,
+                  min: { value: 0.1, message: 'Capacidade deve ser maior que 0' }
                 })}
                 placeholder="Ex: 4"
               />
@@ -150,7 +217,7 @@ export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) =
 
             <div>
               <Label htmlFor="unidade_capacidade">Unidade</Label>
-              <Select onValueChange={(value) => setValue('unidade_capacidade', value)} defaultValue="kg">
+              <Select value={selectedUnidade} onValueChange={setSelectedUnidade}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -205,7 +272,7 @@ export const ExtintorForm = ({ open, onClose, quadrantes }: ExtintorFormProps) =
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
