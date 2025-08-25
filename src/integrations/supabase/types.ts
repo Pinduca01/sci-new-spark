@@ -233,6 +233,56 @@ export type Database = {
           },
         ]
       }
+      estoque_almoxarifado: {
+        Row: {
+          created_at: string
+          data_fabricacao: string | null
+          data_validade: string | null
+          id: string
+          localizacao_fisica: string | null
+          lote: string | null
+          material_id: string
+          observacoes: string | null
+          quantidade_disponivel: number
+          quantidade_minima: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_fabricacao?: string | null
+          data_validade?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          lote?: string | null
+          material_id: string
+          observacoes?: string | null
+          quantidade_disponivel?: number
+          quantidade_minima?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_fabricacao?: string | null
+          data_validade?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          lote?: string | null
+          material_id?: string
+          observacoes?: string | null
+          quantidade_disponivel?: number
+          quantidade_minima?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_almoxarifado_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feristas_escalas: {
         Row: {
           ano_referencia: number
@@ -297,6 +347,216 @@ export type Database = {
             columns: ["equipe_atual_id"]
             isOneToOne: false
             referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiais: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          codigo_material: string
+          created_at: string
+          descricao: string | null
+          especificacoes_tecnicas: Json | null
+          fabricante: string | null
+          id: string
+          nome: string
+          tipo_unidade: string
+          unidade_medida: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          codigo_material: string
+          created_at?: string
+          descricao?: string | null
+          especificacoes_tecnicas?: Json | null
+          fabricante?: string | null
+          id?: string
+          nome: string
+          tipo_unidade: string
+          unidade_medida: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          codigo_material?: string
+          created_at?: string
+          descricao?: string | null
+          especificacoes_tecnicas?: Json | null
+          fabricante?: string | null
+          id?: string
+          nome?: string
+          tipo_unidade?: string
+          unidade_medida?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      materiais_guardados: {
+        Row: {
+          created_at: string
+          data_guarda: string
+          id: string
+          material_id: string
+          motivo_guarda: string
+          observacoes: string | null
+          previsao_liberacao: string | null
+          quantidade: number
+          responsavel_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_guarda?: string
+          id?: string
+          material_id: string
+          motivo_guarda: string
+          observacoes?: string | null
+          previsao_liberacao?: string | null
+          quantidade: number
+          responsavel_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_guarda?: string
+          id?: string
+          material_id?: string
+          motivo_guarda?: string
+          observacoes?: string | null
+          previsao_liberacao?: string | null
+          quantidade?: number
+          responsavel_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_guardados_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiais_guardados_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiais_viaturas: {
+        Row: {
+          created_at: string
+          data_alocacao: string
+          id: string
+          material_id: string
+          observacoes: string | null
+          quantidade_alocada: number
+          status: string
+          updated_at: string
+          viatura_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_alocacao?: string
+          id?: string
+          material_id: string
+          observacoes?: string | null
+          quantidade_alocada?: number
+          status?: string
+          updated_at?: string
+          viatura_id: string
+        }
+        Update: {
+          created_at?: string
+          data_alocacao?: string
+          id?: string
+          material_id?: string
+          observacoes?: string | null
+          quantidade_alocada?: number
+          status?: string
+          updated_at?: string
+          viatura_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiais_viaturas_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiais_viaturas_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movimentacoes_estoque: {
+        Row: {
+          created_at: string
+          data_movimentacao: string
+          destino: string | null
+          id: string
+          material_id: string
+          motivo: string
+          observacoes: string | null
+          origem: string | null
+          quantidade: number
+          responsavel_id: string
+          tipo_movimentacao: string
+        }
+        Insert: {
+          created_at?: string
+          data_movimentacao?: string
+          destino?: string | null
+          id?: string
+          material_id: string
+          motivo: string
+          observacoes?: string | null
+          origem?: string | null
+          quantidade: number
+          responsavel_id: string
+          tipo_movimentacao: string
+        }
+        Update: {
+          created_at?: string
+          data_movimentacao?: string
+          destino?: string | null
+          id?: string
+          material_id?: string
+          motivo?: string
+          observacoes?: string | null
+          origem?: string | null
+          quantidade?: number
+          responsavel_id?: string
+          tipo_movimentacao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_estoque_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
             referencedColumns: ["id"]
           },
         ]
