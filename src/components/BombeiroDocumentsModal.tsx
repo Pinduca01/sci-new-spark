@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Bombeiro {
   id: string;
@@ -21,13 +23,46 @@ export const BombeiroDocumentsModal: React.FC<BombeiroDocumentsModalProps> = ({
   open,
   onOpenChange,
 }) => {
+  const { toast } = useToast();
+
   if (!bombeiro) return null;
 
   const documentos = bombeiro.documentos_certificados || [];
 
-  const handleDownload = (documento: string) => {
-    // Implementar download do documento
-    console.log('Download:', documento);
+  const handleDownload = (docUrl: string, index: number) => {
+    try {
+      // Extrair nome do arquivo da URL
+      const urlParts = docUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const fileExtension = fileName.split('.').pop() || 'pdf';
+      
+      // Nome mais amigável para o download
+      const downloadName = `${bombeiro.nome.replace(/\s+/g, '_')}_Documento_${index + 1}.${fileExtension}`;
+      
+      // Criar elemento temporário para download
+      const link = document.createElement('a');
+      link.href = docUrl;
+      link.download = downloadName;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      // Adicionar ao DOM, clicar e remover
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download iniciado",
+        description: `Download do documento ${index + 1} iniciado com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao fazer download:', error);
+      toast({
+        title: "Erro no download",
+        description: "Não foi possível fazer o download do documento.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -50,14 +85,14 @@ export const BombeiroDocumentsModal: React.FC<BombeiroDocumentsModalProps> = ({
                 >
                   <div className="flex items-center gap-3">
                     <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{documento}</span>
+                    <span className="text-sm font-medium">Documento {index + 1}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">PDF</Badge>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDownload(documento)}
+                      onClick={() => handleDownload(documento, index)}
                     >
                       <Download className="w-4 h-4" />
                     </Button>

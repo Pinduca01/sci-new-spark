@@ -76,7 +76,7 @@ const ControlePessoal: React.FC = () => {
     data_vencimento_credenciamento: '',
     proxima_atualizacao: '',
     data_aso: '',
-        data_vencimento_cve: '',
+    data_vencimento_cve: '',
     documentos_certificados: [] as string[],
   });
 
@@ -483,7 +483,7 @@ const ControlePessoal: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="proxima_atualizacao">Próxima Atualização</Label>
+                    <Label htmlFor="proxima_atualizacao">Próxima Atualização CBA-2</Label>
                     <Input
                       id="proxima_atualizacao"
                       type="date"
