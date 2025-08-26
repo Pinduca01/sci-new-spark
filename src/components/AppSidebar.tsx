@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
@@ -14,8 +15,6 @@ import {
   Target,
   GraduationCap,
   Activity,
-  ChevronDown,
-  ChevronRight,
   Briefcase,
   ShieldCheck,
   Shield
@@ -30,25 +29,47 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-const mainNavItems = [
+// Todos os itens de navegação em uma única lista organizada
+const navigationItems = [
   { 
     title: "Dashboard", 
     url: "/dashboard", 
     icon: BarChart3,
     description: "Visão geral do sistema"
+  },
+  { 
+    title: "Gestão de Bombeiros", 
+    url: "/pessoal", 
+    icon: Users,
+    description: "Gestão da equipe SCI"
+  },
+  { 
+    title: "TAF", 
+    url: "/pessoal/taf", 
+    icon: Activity,
+    description: "Teste de Aptidão Física"
+  },
+  { 
+    title: "Equipamentos Gerais", 
+    url: "/equipamentos", 
+    icon: Radio,
+    description: "Controle de equipamentos"
+  },
+  { 
+    title: "TP e Uniformes", 
+    url: "/equipamentos/tp-uniformes", 
+    icon: ShieldCheck,
+    description: "Trajes de Proteção e Uniformes"
   },
   { 
     title: "Ocorrências", 
@@ -79,40 +100,7 @@ const mainNavItems = [
     url: "/atividades-acessorias", 
     icon: Briefcase,
     description: "Atividades complementares"
-  }
-];
-
-const pessoalSubItems = [
-  {
-    title: "Gestão de Bombeiros",
-    url: "/pessoal",
-    icon: Users,
-    description: "Gestão da equipe SCI"
   },
-  {
-    title: "TAF",
-    url: "/pessoal/taf",
-    icon: Activity,
-    description: "Teste de Aptidão Física"
-  }
-];
-
-const equipamentosSubItems = [
-  {
-    title: "Equipamentos Gerais",
-    url: "/equipamentos",
-    icon: Radio,
-    description: "Controle de equipamentos"
-  },
-  {
-    title: "TP e Uniformes",
-    url: "/equipamentos/tp-uniformes",
-    icon: ShieldCheck,
-    description: "Trajes de Proteção e Uniformes"
-  }
-];
-
-const reportItems = [
   { 
     title: "Relatórios", 
     url: "/relatorios", 
@@ -145,8 +133,6 @@ const adminItems = [
 export function AppSidebar({ userRole }: { userRole?: string }) {
   const { state } = useSidebar();
   const [isHovered, setIsHovered] = useState(false);
-  const [isPessoalOpen, setIsPessoalOpen] = useState(true);
-  const [isEquipamentosOpen, setIsEquipamentosOpen] = useState(true);
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
@@ -156,12 +142,11 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
   const showFull = !collapsed || isHovered;
 
   const isActive = (path: string) => currentPath === path;
-  const isPessoalActive = currentPath.startsWith("/pessoal");
-  const isEquipamentosActive = currentPath.startsWith("/equipamentos");
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
+  
+  const getNavClasses = ({ isActive }: { isActive: boolean }) =>
     isActive 
-      ? "bg-primary/10 text-primary border-r-2 border-primary" 
-      : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
+      ? "bg-primary/15 text-primary border-r-2 border-primary font-medium shadow-sm" 
+      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-all duration-200";
 
   const handleLogout = async () => {
     try {
@@ -190,30 +175,28 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
 
   return (
     <Sidebar 
-      className={`border-r border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-300 ${
+      className={`border-r border-border/40 bg-gradient-to-b from-background to-background/95 backdrop-blur-sm transition-all duration-300 ${
         showFull ? "w-64" : "w-16"
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Header moderno com ícone e texto SCI-Core */}
-      <SidebarHeader className="p-4 border-b border-border/50">
+      {/* Header Moderno */}
+      <SidebarHeader className="p-4 border-b border-border/40">
         <div className="flex items-center justify-center">
           {showFull ? (
             <div className="flex items-center space-x-3">
-              {/* Ícone moderno inspirado na imagem */}
               <div className="relative">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 flex items-center justify-center shadow-lg">
                   <Shield className="w-6 h-6 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
                   <div className="w-2 h-2 rounded-full bg-white"></div>
                 </div>
               </div>
               
-              {/* Texto SCI-Core moderno */}
               <div className="flex flex-col">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 to-blue-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-blue-600 bg-clip-text text-transparent">
                   SCI-Core
                 </h1>
                 <p className="text-xs text-muted-foreground font-medium">
@@ -222,12 +205,11 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
               </div>
             </div>
           ) : (
-            /* Versão compacta - apenas o ícone */
             <div className="relative">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 flex items-center justify-center shadow-lg">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
                 <div className="w-2 h-2 rounded-full bg-white"></div>
               </div>
             </div>
@@ -235,168 +217,35 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-2">
-        {/* Navegação Principal */}
+      <SidebarContent className="p-3">
+        {/* Navegação Principal - Lista Única */}
         <SidebarGroup>
-          <SidebarGroupLabel className={showFull ? "" : "sr-only"}>
-            Navegação Principal
+          <SidebarGroupLabel className={showFull ? "text-xs font-semibold text-muted-foreground/80 mb-2" : "sr-only"}>
+            Navegação
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Dashboard */}
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink 
-                    to="/dashboard" 
-                    className={getNavCls}
-                    title={showFull ? undefined : "Visão geral do sistema"}
-                  >
-                    <BarChart3 className="w-5 h-5 flex-shrink-0" />
-                    {showFull && (
-                      <span className="font-medium transition-opacity duration-200">Dashboard</span>
-                    )}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              {/* Controle de Pessoal com Submenu */}
-              <SidebarMenuItem>
-                <Collapsible open={isPessoalOpen} onOpenChange={setIsPessoalOpen}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton 
-                      className={`w-full ${isPessoalActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"}`}
-                      title={showFull ? undefined : "Controle de Pessoal"}
-                    >
-                      <Users className="w-5 h-5 flex-shrink-0" />
-                      {showFull && (
-                        <>
-                          <span className="font-medium transition-opacity duration-200">Controle de Pessoal</span>
-                          {isPessoalOpen ? (
-                            <ChevronDown className="w-4 h-4 ml-auto" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 ml-auto" />
-                          )}
-                        </>
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  
-                  {showFull && (
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {pessoalSubItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton 
-                              asChild
-                              className={
-                                isActive(subItem.url)
-                                  ? "bg-primary/10 text-primary border-r-2 border-primary font-medium"
-                                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                              }
-                            >
-                              <NavLink to={subItem.url}>
-                                <subItem.icon className="w-4 h-4 flex-shrink-0" />
-                                <span className="font-medium">{subItem.title}</span>
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  )}
-                </Collapsible>
-              </SidebarMenuItem>
-
-              {/* Equipamentos com Submenu */}
-              <SidebarMenuItem>
-                <Collapsible open={isEquipamentosOpen} onOpenChange={setIsEquipamentosOpen}>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton 
-                      className={`w-full ${isEquipamentosActive ? "bg-primary/10 text-primary border-r-2 border-primary" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"}`}
-                      title={showFull ? undefined : "Equipamentos"}
-                    >
-                      <Radio className="w-5 h-5 flex-shrink-0" />
-                      {showFull && (
-                        <>
-                          <span className="font-medium transition-opacity duration-200">Equipamentos</span>
-                          {isEquipamentosOpen ? (
-                            <ChevronDown className="w-4 h-4 ml-auto" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 ml-auto" />
-                          )}
-                        </>
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  
-                  {showFull && (
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {equipamentosSubItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton 
-                              asChild
-                              className={
-                                isActive(subItem.url)
-                                  ? "bg-primary/10 text-primary border-r-2 border-primary font-medium"
-                                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                              }
-                            >
-                              <NavLink to={subItem.url}>
-                                <subItem.icon className="w-4 h-4 flex-shrink-0" />
-                                <span className="font-medium">{subItem.title}</span>
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  )}
-                </Collapsible>
-              </SidebarMenuItem>
-
-              {/* Demais itens do menu principal */}
-              {mainNavItems.slice(1).map((item) => (
+            <SidebarMenu className="space-y-1">
+              {navigationItems.map((item, index) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-10 rounded-lg">
                     <NavLink 
                       to={item.url} 
-                      className={getNavCls}
+                      className={getNavClasses}
                       title={showFull ? undefined : item.description}
                     >
                       <item.icon className="w-5 h-5 flex-shrink-0" />
                       {showFull && (
-                        <span className="font-medium transition-opacity duration-200">{item.title}</span>
+                        <span className="font-medium transition-opacity duration-200">
+                          {item.title}
+                        </span>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Gestão e Relatórios */}
-        <SidebarGroup>
-          <SidebarGroupLabel className={showFull ? "" : "sr-only"}>
-            Gestão & Relatórios
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {reportItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={getNavCls}
-                      title={showFull ? undefined : item.description}
-                    >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
-                      {showFull && (
-                        <span className="font-medium transition-opacity duration-200">{item.title}</span>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  
+                  {/* Separador visual após grupos lógicos */}
+                  {showFull && (index === 0 || index === 4 || index === 9) && (
+                    <Separator className="my-2 bg-border/30" />
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -405,45 +254,50 @@ export function AppSidebar({ userRole }: { userRole?: string }) {
 
         {/* Administração - apenas para admin */}
         {userRole === 'admin' && (
-          <SidebarGroup>
-            <SidebarGroupLabel className={showFull ? "" : "sr-only"}>
-              Administração
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={item.url} 
-                        className={getNavCls}
-                        title={showFull ? undefined : item.description}
-                      >
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        {showFull && (
-                          <span className="font-medium transition-opacity duration-200">{item.title}</span>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <>
+            <Separator className="my-4 bg-border/30" />
+            <SidebarGroup>
+              <SidebarGroupLabel className={showFull ? "text-xs font-semibold text-muted-foreground/80 mb-2" : "sr-only"}>
+                Administração
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-1">
+                  {adminItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild className="h-10 rounded-lg">
+                        <NavLink 
+                          to={item.url} 
+                          className={getNavClasses}
+                          title={showFull ? undefined : item.description}
+                        >
+                          <item.icon className="w-5 h-5 flex-shrink-0" />
+                          {showFull && (
+                            <span className="font-medium transition-opacity duration-200">
+                              {item.title}
+                            </span>
+                          )}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="p-2 border-t border-border/50">
+      <SidebarFooter className="p-3 border-t border-border/40">
         <Button
           variant="ghost"
-          size={showFull ? "sm" : "icon"}
+          size={showFull ? "default" : "icon"}
           onClick={handleLogout}
-          className="w-full justify-start hover:bg-destructive/10 hover:text-destructive"
+          className="w-full justify-start hover:bg-destructive/10 hover:text-destructive transition-all duration-200 h-10 rounded-lg"
           title={showFull ? undefined : "Sair do sistema"}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          {showFull && <span className="ml-2 transition-opacity duration-200">Sair</span>}
+          {showFull && <span className="ml-2 font-medium transition-opacity duration-200">Sair</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>
