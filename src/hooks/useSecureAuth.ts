@@ -3,32 +3,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { rateLimiter } from '@/utils/securityUtils';
 
-export type UserRoleType = 
-  | 'diretoria'
-  | 'gerente_secao' 
-  | 'chefe_equipe'
-  | 'lider_resgate'
-  | 'motorista_condutor'
-  | 'bombeiro_aerodromo';
-
-export interface UserProfile {
-  id: string;
-  user_id: string;
-  email: string;
-  full_name: string | null;
-  role: string;
-  role_type: UserRoleType;
-  contexto_id: string | null;
-  nivel_hierarquico: number;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export const useSecureAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<UserRoleType | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,7 +13,7 @@ export const useSecureAuth = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
       if (session) {
-        fetchUserProfile();
+        fetchUserRole();
       } else {
         setLoading(false);
       }
@@ -48,10 +25,9 @@ export const useSecureAuth = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
       if (session) {
-        fetchUserProfile();
+        fetchUserRole();
       } else {
         setUserRole(null);
-        setUserProfile(null);
         setLoading(false);
       }
     });
@@ -59,43 +35,19 @@ export const useSecureAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async () => {
+  const fetchUserRole = async () => {
     try {
-      console.log('Fetching user profile...');
-      
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('role')
         .single();
 
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('Profile data:', data);
-      
-      // Transformar dados para o formato esperado
-      const profileData: UserProfile = {
-        id: data.id,
-        user_id: data.user_id,
-        email: data.email,
-        full_name: data.full_name,
-        role: data.role || 'user',
-        role_type: data.role_type || 'bombeiro_aerodromo',
-        contexto_id: data.contexto_id,
-        nivel_hierarquico: data.nivel_hierarquico || 6,
-        avatar_url: data.avatar_url,
-        created_at: data.created_at,
-        updated_at: data.updated_at
-      };
-      
-      setUserProfile(profileData);
-      setUserRole(profileData.role_type);
+      setUserRole(data?.role || 'user');
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setUserRole('bombeiro_aerodromo');
-      setUserProfile(null);
+      console.error('Error fetching user role:', error);
+      setUserRole('user');
     } finally {
       setLoading(false);
     }
@@ -113,38 +65,12 @@ export const useSecureAuth = () => {
     if (error) throw error;
   };
 
-  const hasRole = (role: UserRoleType): boolean => {
+  const hasRole = (role: string): boolean => {
     return userRole === role;
   };
 
-  const hasMinimumRole = (minimumRole: UserRoleType): boolean => {
-    if (!userProfile) return false;
-    
-    const roleHierarchy: Record<UserRoleType, number> = {
-      'diretoria': 1,
-      'gerente_secao': 2,
-      'chefe_equipe': 3,
-      'lider_resgate': 4,
-      'motorista_condutor': 5,
-      'bombeiro_aerodromo': 6
-    };
-
-    const userLevel = roleHierarchy[userRole as UserRoleType] || 6;
-    const requiredLevel = roleHierarchy[minimumRole];
-    
-    return userLevel <= requiredLevel;
-  };
-
   const isAdmin = (): boolean => {
-    return hasRole('diretoria');
-  };
-
-  const isManager = (): boolean => {
-    return hasMinimumRole('gerente_secao');
-  };
-
-  const isLeader = (): boolean => {
-    return hasMinimumRole('chefe_equipe');
+    return hasRole('admin');
   };
 
   const requireAuth = (): boolean => {
@@ -154,7 +80,7 @@ export const useSecureAuth = () => {
     return true;
   };
 
-  const requireRole = (role: UserRoleType): boolean => {
+  const requireRole = (role: string): boolean => {
     requireAuth();
     if (!hasRole(role)) {
       throw new Error('Acesso negado. Permissões insuficientes.');
@@ -162,42 +88,14 @@ export const useSecureAuth = () => {
     return true;
   };
 
-  const requireMinimumRole = (minimumRole: UserRoleType): boolean => {
-    requireAuth();
-    if (!hasMinimumRole(minimumRole)) {
-      throw new Error('Acesso negado. Nível hierárquico insuficiente.');
-    }
-    return true;
-  };
-
-  const getRoleName = (role?: UserRoleType): string => {
-    const roleNames: Record<UserRoleType, string> = {
-      'diretoria': 'Diretoria',
-      'gerente_secao': 'Gerente de Seção',
-      'chefe_equipe': 'Chefe de Equipe',
-      'lider_resgate': 'Líder de Resgate',
-      'motorista_condutor': 'Motorista Condutor',
-      'bombeiro_aerodromo': 'Bombeiro de Aeródromo'
-    };
-
-    return roleNames[role || userRole || 'bombeiro_aerodromo'];
-  };
-
   return {
     isAuthenticated,
     userRole,
-    userProfile,
     loading,
     signOut,
     hasRole,
-    hasMinimumRole,
     isAdmin,
-    isManager,
-    isLeader,
     requireAuth,
-    requireRole,
-    requireMinimumRole,
-    getRoleName,
-    refreshProfile: fetchUserProfile
+    requireRole
   };
 };

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserProfileMenu } from "@/components/UserProfileMenu";
 import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { SecurityProvider, useSecurityContext } from "@/components/SecurityProvider";
 import { User, Session } from '@supabase/supabase-js';
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Command } from "lucide-react";
@@ -20,14 +18,15 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-const MainLayoutContent = ({ children }: MainLayoutProps) => {
+const MainLayout = ({ children }: MainLayoutProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { userProfile, loading: authLoading, isAuthenticated } = useSecurityContext();
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -51,6 +50,11 @@ const MainLayoutContent = ({ children }: MainLayoutProps) => {
         
         if (!session?.user) {
           navigate('/login');
+        } else {
+          // Fetch user profile when authenticated
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
         }
       }
     );
@@ -62,13 +66,34 @@ const MainLayoutContent = ({ children }: MainLayoutProps) => {
       
       if (!session?.user) {
         navigate('/login');
+      } else {
+        fetchUserProfile(session.user.id);
       }
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (authLoading) {
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="min-h-screen abstract-bg flex items-center justify-center">
         <Card className="glass-card">
@@ -83,14 +108,10 @@ const MainLayoutContent = ({ children }: MainLayoutProps) => {
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect to login
-  }
-
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full abstract-bg">
-        <AppSidebar userRole={userProfile?.role_type} />
+        <AppSidebar userRole={profile?.role} />
         
         <div className="flex-1 flex flex-col relative z-50">
           {/* Enhanced Compact Header */}
@@ -133,7 +154,7 @@ const MainLayoutContent = ({ children }: MainLayoutProps) => {
                 
                 {/* User Profile Menu */}
                 <div className="hidden md:block">
-                  <UserProfileMenu user={user} profile={userProfile} />
+                  <UserProfileMenu user={user} profile={profile} />
                 </div>
               </div>
             </div>
@@ -154,14 +175,6 @@ const MainLayoutContent = ({ children }: MainLayoutProps) => {
       {/* Global Search Dialog */}
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
     </SidebarProvider>
-  );
-};
-
-const MainLayout = ({ children }: MainLayoutProps) => {
-  return (
-    <SecurityProvider>
-      <MainLayoutContent>{children}</MainLayoutContent>
-    </SecurityProvider>
   );
 };
 
