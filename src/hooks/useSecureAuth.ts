@@ -61,15 +61,37 @@ export const useSecureAuth = () => {
 
   const fetchUserProfile = async () => {
     try {
+      console.log('Fetching user profile...');
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+      }
       
-      setUserProfile(data);
-      setUserRole(data?.role_type || 'bombeiro_aerodromo');
+      console.log('Profile data:', data);
+      
+      // Transformar dados para o formato esperado
+      const profileData: UserProfile = {
+        id: data.id,
+        user_id: data.user_id,
+        email: data.email,
+        full_name: data.full_name,
+        role: data.role || 'user',
+        role_type: data.role_type || 'bombeiro_aerodromo',
+        contexto_id: data.contexto_id,
+        nivel_hierarquico: data.nivel_hierarquico || 6,
+        avatar_url: data.avatar_url,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+      
+      setUserProfile(profileData);
+      setUserRole(profileData.role_type);
     } catch (error) {
       console.error('Error fetching user profile:', error);
       setUserRole('bombeiro_aerodromo');
