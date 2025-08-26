@@ -379,6 +379,90 @@ export type Database = {
           },
         ]
       }
+      equipamentos_estoque: {
+        Row: {
+          codigo_equipamento: string
+          created_at: string
+          data_aquisicao: string | null
+          data_instalacao: string | null
+          fornecedor: string | null
+          fotos: Json | null
+          garantia_ate: string | null
+          id: string
+          localizacao_fisica: string | null
+          material_id: string
+          numero_serie: string | null
+          observacoes: string | null
+          proxima_manutencao: string | null
+          qr_code: string | null
+          responsavel_id: string | null
+          status: string
+          ultima_manutencao: string | null
+          updated_at: string
+          valor_aquisicao: number | null
+          viatura_id: string | null
+        }
+        Insert: {
+          codigo_equipamento: string
+          created_at?: string
+          data_aquisicao?: string | null
+          data_instalacao?: string | null
+          fornecedor?: string | null
+          fotos?: Json | null
+          garantia_ate?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          material_id: string
+          numero_serie?: string | null
+          observacoes?: string | null
+          proxima_manutencao?: string | null
+          qr_code?: string | null
+          responsavel_id?: string | null
+          status?: string
+          ultima_manutencao?: string | null
+          updated_at?: string
+          valor_aquisicao?: number | null
+          viatura_id?: string | null
+        }
+        Update: {
+          codigo_equipamento?: string
+          created_at?: string
+          data_aquisicao?: string | null
+          data_instalacao?: string | null
+          fornecedor?: string | null
+          fotos?: Json | null
+          garantia_ate?: string | null
+          id?: string
+          localizacao_fisica?: string | null
+          material_id?: string
+          numero_serie?: string | null
+          observacoes?: string | null
+          proxima_manutencao?: string | null
+          qr_code?: string | null
+          responsavel_id?: string | null
+          status?: string
+          ultima_manutencao?: string | null
+          updated_at?: string
+          valor_aquisicao?: number | null
+          viatura_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipamentos_estoque_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipamentos_estoque_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipes: {
         Row: {
           ativa: boolean
@@ -638,6 +722,68 @@ export type Database = {
             columns: ["equipe_atual_id"]
             isOneToOne: false
             referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historico_manutencoes_equipamentos: {
+        Row: {
+          certificado_url: string | null
+          created_at: string
+          custo: number | null
+          data_manutencao: string
+          descricao: string
+          empresa_responsavel: string | null
+          equipamento_id: string
+          fotos: Json | null
+          id: string
+          materiais_utilizados: string | null
+          observacoes: string | null
+          proxima_manutencao: string | null
+          responsavel_id: string | null
+          responsavel_nome: string
+          tipo_manutencao: string
+        }
+        Insert: {
+          certificado_url?: string | null
+          created_at?: string
+          custo?: number | null
+          data_manutencao?: string
+          descricao: string
+          empresa_responsavel?: string | null
+          equipamento_id: string
+          fotos?: Json | null
+          id?: string
+          materiais_utilizados?: string | null
+          observacoes?: string | null
+          proxima_manutencao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome: string
+          tipo_manutencao: string
+        }
+        Update: {
+          certificado_url?: string | null
+          created_at?: string
+          custo?: number | null
+          data_manutencao?: string
+          descricao?: string
+          empresa_responsavel?: string | null
+          equipamento_id?: string
+          fotos?: Json | null
+          id?: string
+          materiais_utilizados?: string | null
+          observacoes?: string | null
+          proxima_manutencao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          tipo_manutencao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_manutencoes_equipamentos_equipamento_id_fkey"
+            columns: ["equipamento_id"]
+            isOneToOne: false
+            referencedRelation: "equipamentos_estoque"
             referencedColumns: ["id"]
           },
         ]
