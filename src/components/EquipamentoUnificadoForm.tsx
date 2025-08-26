@@ -21,7 +21,18 @@ export const EquipamentoUnificadoForm = () => {
   const { createEquipamento } = useEquipamentos();
 
   // Formulário para material comum
-  const [materialForm, setMaterialForm] = useState({
+  const [materialForm, setMaterialForm] = useState<{
+    material_id: string;
+    codigo_equipamento: string;
+    numero_serie: string;
+    status: 'ativo' | 'manutencao' | 'inativo' | 'descartado';
+    localizacao_fisica: string;
+    data_aquisicao: string;
+    valor_aquisicao: number;
+    fornecedor: string;
+    observacoes: string;
+    fotos: string[];
+  }>({
     material_id: '',
     codigo_equipamento: '',
     numero_serie: '',
@@ -31,16 +42,30 @@ export const EquipamentoUnificadoForm = () => {
     valor_aquisicao: 0,
     fornecedor: '',
     observacoes: '',
-    fotos: [] as string[]
+    fotos: []
   });
 
   // Formulário para agente extintor
-  const [agenteForm, setAgenteForm] = useState({
+  const [agenteForm, setAgenteForm] = useState<{
+    material_id: string;
+    lote: string;
+    data_fabricacao: string;
+    data_vencimento: string;
+    tipo_agente: 'LGE' | 'PQS';
+    capacidade: number;
+    unidade_capacidade: string;
+    localizacao_fisica: string;
+    status_uso: 'disponivel' | 'em_uso' | 'vencido' | 'descartado';
+    custo_unitario: number;
+    fornecedor: string;
+    numero_serie: string;
+    observacoes: string;
+  }>({
     material_id: '',
     lote: '',
     data_fabricacao: '',
     data_vencimento: '',
-    tipo_agente: 'LGE' as 'LGE' | 'PQS',
+    tipo_agente: 'LGE',
     capacidade: 0,
     unidade_capacidade: 'kg',
     localizacao_fisica: '',
@@ -166,7 +191,12 @@ export const EquipamentoUnificadoForm = () => {
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select value={materialForm.status} onValueChange={(value) => setMaterialForm(prev => ({ ...prev, status: value }))}>
+                  <Select 
+                    value={materialForm.status} 
+                    onValueChange={(value: 'ativo' | 'manutencao' | 'inativo' | 'descartado') => 
+                      setMaterialForm(prev => ({ ...prev, status: value }))
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

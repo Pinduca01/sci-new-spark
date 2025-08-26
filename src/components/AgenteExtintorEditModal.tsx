@@ -18,7 +18,12 @@ interface AgenteExtintorEditModalProps {
 
 export const AgenteExtintorEditModal = ({ agente, open, onClose }: AgenteExtintorEditModalProps) => {
   const { updateAgente } = useAgentesExtintores();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    status_uso: 'disponivel' | 'em_uso' | 'vencido' | 'descartado';
+    localizacao_fisica: string;
+    viatura_id: string;
+    observacoes: string;
+  }>({
     status_uso: 'disponivel',
     localizacao_fisica: '',
     viatura_id: '',
@@ -106,7 +111,12 @@ export const AgenteExtintorEditModal = ({ agente, open, onClose }: AgenteExtinto
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="status_uso">Status de Uso</Label>
-              <Select value={formData.status_uso} onValueChange={(value) => setFormData(prev => ({ ...prev, status_uso: value }))}>
+              <Select 
+                value={formData.status_uso} 
+                onValueChange={(value: 'disponivel' | 'em_uso' | 'vencido' | 'descartado') => 
+                  setFormData(prev => ({ ...prev, status_uso: value }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
