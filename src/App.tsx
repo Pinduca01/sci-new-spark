@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,12 +19,15 @@ import Equipamentos from "./pages/Equipamentos";
 import TPUniformes from "./pages/TPUniformes";
 import AtividadesAcessorias from "./pages/AtividadesAcessorias";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutos
+      gcTime: 10 * 60 * 1000, // 10 minutos
     },
   },
 });
@@ -40,18 +44,80 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
-          <Route path="/pessoal" element={<MainLayout><ControlePessoal /></MainLayout>} />
-          <Route path="/pessoal/taf" element={<MainLayout><TAF /></MainLayout>} />
-          <Route path="/ocorrencias" element={<MainLayout><Ocorrencias /></MainLayout>} />
-          <Route path="/viaturas" element={<MainLayout><Viaturas /></MainLayout>} />
-          <Route path="/veiculos" element={<MainLayout><Viaturas /></MainLayout>} />
-          <Route path="/escalas" element={<MainLayout><Escalas /></MainLayout>} />
-          <Route path="/exercicios" element={<MainLayout><Exercicios /></MainLayout>} />
-          <Route path="/equipamentos" element={<MainLayout><Equipamentos /></MainLayout>} />
-          <Route path="/equipamentos/tp-uniformes" element={<MainLayout><TPUniformes /></MainLayout>} />
-          <Route path="/ptr-ba" element={<MainLayout><PTRBA /></MainLayout>} />
-          <Route path="/atividades-acessorias" element={<MainLayout><AtividadesAcessorias /></MainLayout>} />
+          
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <MainLayout><Dashboard /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/pessoal" element={
+            <ProtectedRoute minimumRole="chefe_equipe">
+              <MainLayout><ControlePessoal /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/pessoal/taf" element={
+            <ProtectedRoute minimumRole="chefe_equipe">
+              <MainLayout><TAF /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/ocorrencias" element={
+            <ProtectedRoute minimumRole="lider_resgate">
+              <MainLayout><Ocorrencias /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/viaturas" element={
+            <ProtectedRoute allowedRoles={['diretoria', 'gerente_secao', 'motorista_condutor']}>
+              <MainLayout><Viaturas /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/veiculos" element={
+            <ProtectedRoute allowedRoles={['diretoria', 'gerente_secao', 'motorista_condutor']}>
+              <MainLayout><Viaturas /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/escalas" element={
+            <ProtectedRoute minimumRole="chefe_equipe">
+              <MainLayout><Escalas /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/exercicios" element={
+            <ProtectedRoute>
+              <MainLayout><Exercicios /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/equipamentos" element={
+            <ProtectedRoute>
+              <MainLayout><Equipamentos /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/equipamentos/tp-uniformes" element={
+            <ProtectedRoute minimumRole="gerente_secao">
+              <MainLayout><TPUniformes /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/ptr-ba" element={
+            <ProtectedRoute minimumRole="lider_resgate">
+              <MainLayout><PTRBA /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/atividades-acessorias" element={
+            <ProtectedRoute>
+              <MainLayout><AtividadesAcessorias /></MainLayout>
+            </ProtectedRoute>
+          } />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

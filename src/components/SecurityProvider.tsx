@@ -1,16 +1,23 @@
 
 import React, { createContext, useContext, useEffect } from 'react';
-import { useSecureAuth } from '@/hooks/useSecureAuth';
+import { useSecureAuth, UserRoleType, UserProfile } from '@/hooks/useSecureAuth';
 import { securityHeaders } from '@/utils/securityUtils';
 
 interface SecurityContextType {
   isAuthenticated: boolean;
-  userRole: string | null;
+  userRole: UserRoleType | null;
+  userProfile: UserProfile | null;
   loading: boolean;
   isAdmin: () => boolean;
-  hasRole: (role: string) => boolean;
+  isManager: () => boolean;
+  isLeader: () => boolean;
+  hasRole: (role: UserRoleType) => boolean;
+  hasMinimumRole: (minimumRole: UserRoleType) => boolean;
   requireAuth: () => boolean;
-  requireRole: (role: string) => boolean;
+  requireRole: (role: UserRoleType) => boolean;
+  requireMinimumRole: (minimumRole: UserRoleType) => boolean;
+  getRoleName: (role?: UserRoleType) => string;
+  refreshProfile: () => Promise<void>;
 }
 
 const SecurityContext = createContext<SecurityContextType | undefined>(undefined);
@@ -91,11 +98,18 @@ export const SecurityProvider: React.FC<SecurityProviderProps> = ({ children }) 
   const value: SecurityContextType = {
     isAuthenticated: auth.isAuthenticated,
     userRole: auth.userRole,
+    userProfile: auth.userProfile,
     loading: auth.loading,
     isAdmin: auth.isAdmin,
+    isManager: auth.isManager,
+    isLeader: auth.isLeader,
     hasRole: auth.hasRole,
+    hasMinimumRole: auth.hasMinimumRole,
     requireAuth: auth.requireAuth,
-    requireRole: auth.requireRole
+    requireRole: auth.requireRole,
+    requireMinimumRole: auth.requireMinimumRole,
+    getRoleName: auth.getRoleName,
+    refreshProfile: auth.refreshProfile
   };
 
   return (

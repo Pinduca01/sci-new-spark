@@ -3,9 +3,32 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { rateLimiter } from '@/utils/securityUtils';
 
+export type UserRoleType = 
+  | 'diretoria'
+  | 'gerente_secao' 
+  | 'chefe_equipe'
+  | 'lider_resgate'
+  | 'motorista_condutor'
+  | 'bombeiro_aerodromo';
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  role_type: UserRoleType;
+  contexto_id: string | null;
+  nivel_hierarquico: number;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useSecureAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<UserRoleType | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,7 +36,7 @@ export const useSecureAuth = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
       if (session) {
-        fetchUserRole();
+        fetchUserProfile();
       } else {
         setLoading(false);
       }
@@ -25,9 +48,10 @@ export const useSecureAuth = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
       if (session) {
-        fetchUserRole();
+        fetchUserProfile();
       } else {
         setUserRole(null);
+        setUserProfile(null);
         setLoading(false);
       }
     });
@@ -35,19 +59,21 @@ export const useSecureAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserRole = async () => {
+  const fetchUserProfile = async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('*')
         .single();
 
       if (error) throw error;
       
-      setUserRole(data?.role || 'user');
+      setUserProfile(data);
+      setUserRole(data?.role_type || 'bombeiro_aerodromo');
     } catch (error) {
-      console.error('Error fetching user role:', error);
-      setUserRole('user');
+      console.error('Error fetching user profile:', error);
+      setUserRole('bombeiro_aerodromo');
+      setUserProfile(null);
     } finally {
       setLoading(false);
     }
@@ -65,12 +91,38 @@ export const useSecureAuth = () => {
     if (error) throw error;
   };
 
-  const hasRole = (role: string): boolean => {
+  const hasRole = (role: UserRoleType): boolean => {
     return userRole === role;
   };
 
+  const hasMinimumRole = (minimumRole: UserRoleType): boolean => {
+    if (!userProfile) return false;
+    
+    const roleHierarchy: Record<UserRoleType, number> = {
+      'diretoria': 1,
+      'gerente_secao': 2,
+      'chefe_equipe': 3,
+      'lider_resgate': 4,
+      'motorista_condutor': 5,
+      'bombeiro_aerodromo': 6
+    };
+
+    const userLevel = roleHierarchy[userRole as UserRoleType] || 6;
+    const requiredLevel = roleHierarchy[minimumRole];
+    
+    return userLevel <= requiredLevel;
+  };
+
   const isAdmin = (): boolean => {
-    return hasRole('admin');
+    return hasRole('diretoria');
+  };
+
+  const isManager = (): boolean => {
+    return hasMinimumRole('gerente_secao');
+  };
+
+  const isLeader = (): boolean => {
+    return hasMinimumRole('chefe_equipe');
   };
 
   const requireAuth = (): boolean => {
@@ -80,7 +132,7 @@ export const useSecureAuth = () => {
     return true;
   };
 
-  const requireRole = (role: string): boolean => {
+  const requireRole = (role: UserRoleType): boolean => {
     requireAuth();
     if (!hasRole(role)) {
       throw new Error('Acesso negado. Permissões insuficientes.');
@@ -88,14 +140,42 @@ export const useSecureAuth = () => {
     return true;
   };
 
+  const requireMinimumRole = (minimumRole: UserRoleType): boolean => {
+    requireAuth();
+    if (!hasMinimumRole(minimumRole)) {
+      throw new Error('Acesso negado. Nível hierárquico insuficiente.');
+    }
+    return true;
+  };
+
+  const getRoleName = (role?: UserRoleType): string => {
+    const roleNames: Record<UserRoleType, string> = {
+      'diretoria': 'Diretoria',
+      'gerente_secao': 'Gerente de Seção',
+      'chefe_equipe': 'Chefe de Equipe',
+      'lider_resgate': 'Líder de Resgate',
+      'motorista_condutor': 'Motorista Condutor',
+      'bombeiro_aerodromo': 'Bombeiro de Aeródromo'
+    };
+
+    return roleNames[role || userRole || 'bombeiro_aerodromo'];
+  };
+
   return {
     isAuthenticated,
     userRole,
+    userProfile,
     loading,
     signOut,
     hasRole,
+    hasMinimumRole,
     isAdmin,
+    isManager,
+    isLeader,
     requireAuth,
-    requireRole
+    requireRole,
+    requireMinimumRole,
+    getRoleName,
+    refreshProfile: fetchUserProfile
   };
 };
