@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,12 +78,15 @@ const TAFForm = () => {
 
     const aprovado = calcularAprovacao();
     
+    // Ajustar mapeamento das faixas etárias para o banco de dados
+    const faixaEtariaBanco = idade < 40 ? 'abaixo_40' : 'acima_40';
+    
     try {
       await createAvaliacao.mutateAsync({
         bombeiro_id: selectedBombeiro,
         data_teste: new Date().toISOString().split('T')[0],
         idade_na_data: idade,
-        faixa_etaria: idade < 40 ? 'menor_40' : 'maior_igual_40',
+        faixa_etaria: faixaEtariaBanco,
         flexoes_realizadas: flexoes,
         abdominais_realizadas: abdominais,
         polichinelos_realizados: polichinelos,
@@ -105,11 +107,7 @@ const TAFForm = () => {
       setMinutos(0);
       setSegundos(0);
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Falha ao registrar TAF",
-        variant: "destructive"
-      });
+      console.error('Erro ao registrar TAF:', error);
     }
   };
 

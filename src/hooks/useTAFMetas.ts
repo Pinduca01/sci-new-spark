@@ -1,5 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface TAFMeta {
   id: string;
@@ -13,51 +14,68 @@ export interface TAFMeta {
 }
 
 export const useTAFMetas = () => {
-  // Dados mockados das metas TAF padrão
-  const mockMetas: TAFMeta[] = [
-    {
-      id: '1',
-      faixa_etaria: 'menor_40',
-      meta_flexoes: 30,
-      meta_abdominais: 45,
-      meta_polichinelos: 45,
-      tempo_limite_minutos: 12,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      faixa_etaria: 'maior_igual_40',
-      meta_flexoes: 25,
-      meta_abdominais: 40,
-      meta_polichinelos: 40,
-      tempo_limite_minutos: 15,
-      created_at: new Date().toISOString()
-    }
-  ];
-
   const {
-    data: metas = mockMetas,
+    data: metas = [],
     isLoading,
     error
   } = useQuery({
     queryKey: ['taf-metas'],
     queryFn: async () => {
-      // Temporariamente retorna dados mockados
-      // Quando a tabela taf_metas for criada, usar:
-      // const { data, error } = await supabase.from('taf_metas').select('*').order('faixa_etaria');
-      return mockMetas;
+      const { data, error } = await supabase
+        .from('taf_metas')
+        .select('*')
+        .order('faixa_etaria');
+
+      if (error) {
+        console.error('Erro ao buscar metas TAF:', error);
+        throw error;
+      }
+
+      // Se não há metas no banco, criar as padrões
+      if (!data || data.length === 0) {
+        const metasPadrao = [
+          {
+            faixa_etaria: 'abaixo_40',
+            meta_flexoes: 30,
+            meta_abdominais: 45,
+            meta_polichinelos: 45,
+            tempo_limite_minutos: 12
+          },
+          {
+            faixa_etaria: 'acima_40',
+            meta_flexoes: 25,
+            meta_abdominais: 40,
+            meta_polichinelos: 40,
+            tempo_limite_minutos: 15
+          }
+        ];
+
+        const { data: novasMetas, error: insertError } = await supabase
+          .from('taf_metas')
+          .insert(metasPadrao)
+          .select();
+
+        if (insertError) {
+          console.error('Erro ao criar metas padrão:', insertError);
+          return [];
+        }
+
+        return novasMetas || [];
+      }
+
+      return data;
     }
   });
 
   const getMetaPorIdade = (idade: number): TAFMeta | undefined => {
-    const faixaEtaria = idade < 40 ? 'menor_40' : 'maior_igual_40';
+    const faixaEtaria = idade < 40 ? 'abaixo_40' : 'acima_40';
     return metas.find(meta => meta.faixa_etaria === faixaEtaria);
   };
 
   return {
     metas,
-    isLoading: false, // Desabilitado loading para dados mockados
-    error: null,
+    isLoading,
+    error,
     getMetaPorIdade
   };
 };
