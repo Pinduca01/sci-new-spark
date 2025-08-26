@@ -199,39 +199,6 @@ export type Database = {
           },
         ]
       }
-      checklist_templates: {
-        Row: {
-          ativo: boolean
-          categoria: string
-          created_at: string
-          id: string
-          itens: Json
-          nome: string
-          tipo_viatura: string
-          updated_at: string
-        }
-        Insert: {
-          ativo?: boolean
-          categoria?: string
-          created_at?: string
-          id?: string
-          itens?: Json
-          nome: string
-          tipo_viatura: string
-          updated_at?: string
-        }
-        Update: {
-          ativo?: boolean
-          categoria?: string
-          created_at?: string
-          id?: string
-          itens?: Json
-          nome?: string
-          tipo_viatura?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       checklists_almoxarifado: {
         Row: {
           assinatura_digital: string | null
@@ -1546,81 +1513,6 @@ export type Database = {
           },
         ]
       }
-      qr_checklists: {
-        Row: {
-          assinatura_digital: string | null
-          bombeiro_id: string
-          bombeiro_nome: string
-          created_at: string
-          data_checklist: string
-          fotos: Json | null
-          hora_conclusao: string | null
-          hora_inicio: string
-          id: string
-          itens_checklist: Json
-          localizacao: Json | null
-          observacoes_gerais: string | null
-          qr_code: string
-          status: string
-          template_id: string
-          updated_at: string
-          viatura_id: string
-        }
-        Insert: {
-          assinatura_digital?: string | null
-          bombeiro_id: string
-          bombeiro_nome: string
-          created_at?: string
-          data_checklist?: string
-          fotos?: Json | null
-          hora_conclusao?: string | null
-          hora_inicio?: string
-          id?: string
-          itens_checklist?: Json
-          localizacao?: Json | null
-          observacoes_gerais?: string | null
-          qr_code: string
-          status?: string
-          template_id: string
-          updated_at?: string
-          viatura_id: string
-        }
-        Update: {
-          assinatura_digital?: string | null
-          bombeiro_id?: string
-          bombeiro_nome?: string
-          created_at?: string
-          data_checklist?: string
-          fotos?: Json | null
-          hora_conclusao?: string | null
-          hora_inicio?: string
-          id?: string
-          itens_checklist?: Json
-          localizacao?: Json | null
-          observacoes_gerais?: string | null
-          qr_code?: string
-          status?: string
-          template_id?: string
-          updated_at?: string
-          viatura_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "qr_checklists_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "checklist_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_checklists_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       quadrantes_aeroporto: {
         Row: {
           ativo: boolean
@@ -2015,7 +1907,6 @@ export type Database = {
           placa: string
           prefixo: string
           proxima_revisao: string | null
-          qr_code: string | null
           status: string
           tipo: string
           updated_at: string
@@ -2031,7 +1922,6 @@ export type Database = {
           placa: string
           prefixo: string
           proxima_revisao?: string | null
-          qr_code?: string | null
           status?: string
           tipo?: string
           updated_at?: string
@@ -2047,7 +1937,6 @@ export type Database = {
           placa?: string
           prefixo?: string
           proxima_revisao?: string | null
-          qr_code?: string | null
           status?: string
           tipo?: string
           updated_at?: string
