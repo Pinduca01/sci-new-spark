@@ -68,7 +68,7 @@ export const useQRChecklists = () => {
         ...template,
         itens: typeof template.itens === 'string' 
           ? JSON.parse(template.itens) 
-          : (template.itens as ChecklistItem[])
+          : (template.itens as unknown as ChecklistItem[])
       })) as ChecklistTemplate[];
     }
   });

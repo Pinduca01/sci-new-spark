@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -57,18 +56,33 @@ export const QRChecklistForm = ({ qrCode, onComplete }: QRChecklistFormProps) =>
       try {
         const existingChecklist = await getChecklistByQR(qrCode);
         if (existingChecklist) {
-          setChecklist({
+          // Separar dados do checklist dos dados de relacionamento
+          const checklistData = {
             ...existingChecklist,
             status: existingChecklist.status as 'em_andamento' | 'concluido' | 'cancelado',
             itens_checklist: typeof existingChecklist.itens_checklist === 'string' 
               ? JSON.parse(existingChecklist.itens_checklist as string)
-              : (existingChecklist.itens_checklist as ChecklistItem[]),
+              : (existingChecklist.itens_checklist as unknown as ChecklistItem[]),
+            localizacao: (() => {
+              if (typeof existingChecklist.localizacao === 'string') {
+                try {
+                  return JSON.parse(existingChecklist.localizacao);
+                } catch {
+                  return undefined;
+                }
+              }
+              return existingChecklist.localizacao as unknown as { lat: number; lng: number } | undefined;
+            })(),
             fotos: existingChecklist.fotos 
               ? (typeof existingChecklist.fotos === 'string' 
                   ? JSON.parse(existingChecklist.fotos as string) 
-                  : (existingChecklist.fotos as string[]))
+                  : (existingChecklist.fotos as unknown as string[]))
               : []
-          });
+          };
+
+          // Remover propriedades de relacionamento
+          const { viaturas, checklist_templates, ...cleanChecklistData } = checklistData as any;
+          setChecklist(cleanChecklistData);
           setViatura(existingChecklist.viaturas);
           setTemplate(existingChecklist.checklist_templates);
           setLoading(false);
@@ -111,7 +125,7 @@ export const QRChecklistForm = ({ qrCode, onComplete }: QRChecklistFormProps) =>
       // Inicializar checklist com template
       const templateItens = typeof templateData.itens === 'string' 
         ? JSON.parse(templateData.itens) 
-        : templateData.itens;
+        : (templateData.itens as unknown as ChecklistItem[]);
       
       setChecklist(prev => ({
         ...prev,
