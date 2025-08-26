@@ -1,12 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Truck } from "lucide-react";
+import { Plus, Truck, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ViaturasGrid } from "@/components/ViaturasGrid";
 import { ViaturasDetails } from "@/components/ViaturasDetails";
 import { AddViatura } from "@/components/AddViatura";
+import { QRGenerator } from "@/components/qr-checklist/QRGenerator";
 
 interface Viatura {
   id: string;
@@ -20,6 +23,7 @@ interface Viatura {
   data_ultima_revisao: string | null;
   proxima_revisao: string | null;
   observacoes: string | null;
+  qr_code?: string;
 }
 
 const Viaturas = () => {
@@ -27,6 +31,7 @@ const Viaturas = () => {
   const [loading, setLoading] = useState(true);
   const [showAddViatura, setShowAddViatura] = useState(false);
   const [selectedViatura, setSelectedViatura] = useState<Viatura | null>(null);
+  const [activeTab, setActiveTab] = useState("viaturas");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,15 +58,6 @@ const Viaturas = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ativo': return 'bg-emerald-500';
-      case 'manutenção': return 'bg-amber-500';
-      case 'inativo': return 'bg-red-500';
-      default: return 'bg-muted';
     }
   };
 
@@ -103,16 +99,41 @@ const Viaturas = () => {
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        <ViaturasGrid 
-          viaturas={viaturas} 
-          onSelectViatura={setSelectedViatura}
-        />
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="viaturas" className="flex items-center gap-2">
+            <Truck className="h-4 w-4" />
+            Viaturas
+          </TabsTrigger>
+          <TabsTrigger value="qr-codes" className="flex items-center gap-2">
+            <QrCode className="h-4 w-4" />
+            QR Codes
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="viaturas">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <ViaturasGrid 
+              viaturas={viaturas} 
+              onSelectViatura={setSelectedViatura}
+            />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="qr-codes">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <QRGenerator viaturas={viaturas} onUpdate={fetchViaturas} />
+          )}
+        </TabsContent>
+      </Tabs>
 
       {showAddViatura && (
         <AddViatura 

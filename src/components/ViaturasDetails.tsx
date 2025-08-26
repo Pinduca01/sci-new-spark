@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,12 +14,14 @@ import {
   ClipboardCheck,
   AlertTriangle,
   CheckCircle,
-  Clock
+  Clock,
+  QrCode
 } from "lucide-react";
 import { ChecklistForm } from "@/components/ChecklistForm";
 import { OrdemServicoForm } from "@/components/OrdemServicoForm";
 import { HistoricoChecklists } from "@/components/HistoricoChecklists";
 import { HistoricoOS } from "@/components/HistoricoOS";
+import { QRGenerator } from "@/components/qr-checklist/QRGenerator";
 
 interface Viatura {
   id: string;
@@ -32,6 +35,7 @@ interface Viatura {
   data_ultima_revisao: string | null;
   proxima_revisao: string | null;
   observacoes: string | null;
+  qr_code?: string;
 }
 
 interface ViaturasDetailsProps {
@@ -123,6 +127,26 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
             </div>
           </div>
 
+          {/* QR Code Status */}
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">QR Code para Checklist</p>
+                {viatura.qr_code ? (
+                  <Badge variant="default" className="flex items-center gap-1">
+                    <QrCode className="h-3 w-3" />
+                    QR Ativo
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <QrCode className="h-3 w-3" />
+                    Sem QR Code
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
           {(viatura.data_ultima_revisao || viatura.proxima_revisao) && (
             <div className="mt-4 pt-4 border-t">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -190,7 +214,7 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
 
       {/* Históricos */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="checklists" className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4" />
             Histórico de Checklists
@@ -198,6 +222,10 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
           <TabsTrigger value="os" className="flex items-center gap-2">
             <Wrench className="h-4 w-4" />
             Histórico de OS
+          </TabsTrigger>
+          <TabsTrigger value="qr-code" className="flex items-center gap-2">
+            <QrCode className="h-4 w-4" />
+            QR Code
           </TabsTrigger>
         </TabsList>
         
@@ -207,6 +235,10 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
         
         <TabsContent value="os">
           <HistoricoOS viaturaId={viatura.id} />
+        </TabsContent>
+        
+        <TabsContent value="qr-code">
+          <QRGenerator viaturas={[viatura]} onUpdate={onUpdate} />
         </TabsContent>
       </Tabs>
 
