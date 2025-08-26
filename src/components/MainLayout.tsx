@@ -1,5 +1,6 @@
+
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -14,11 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Search, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface MainLayoutProps {
-  children: React.ReactNode;
-}
-
-const MainLayout = ({ children }: MainLayoutProps) => {
+const MainLayout = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -167,7 +164,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
           {/* Main Content */}
           <main className="flex-1 relative z-50" style={{ pointerEvents: 'auto' }}>
-            {children}
+            <Outlet />
           </main>
         </div>
       </div>

@@ -31,28 +31,29 @@ function App() {
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Rotas públicas */}
             <Route path="/login" element={<Login />} />
             <Route path="/checklist/qr/:qrCode" element={<QRChecklistViewer />} />
+            
+            {/* Rotas protegidas - aninhadas sob MainLayout */}
             <Route path="/" element={
               <SidebarProvider>
-                <MainLayout>
-                  <Routes>
-                    <Route index element={<Dashboard />} />
-                    <Route path="controle-pessoal" element={<ControlePessoal />} />
-                    <Route path="viaturas" element={<Viaturas />} />
-                    <Route path="equipamentos" element={<Equipamentos />} />
-                    <Route path="escalas" element={<Escalas />} />
-                    <Route path="ocorrencias" element={<Ocorrencias />} />
-                    <Route path="ptr-ba" element={<PTRBA />} />
-                    <Route path="taf" element={<TAF />} />
-                    <Route path="tp-uniformes" element={<TPUniformes />} />
-                    <Route path="atividades-acessorias" element={<AtividadesAcessorias />} />
-                    <Route path="exercicios" element={<Exercicios />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </MainLayout>
+                <MainLayout />
               </SidebarProvider>
-            } />
+            }>
+              <Route index element={<Dashboard />} />
+              <Route path="controle-pessoal" element={<ControlePessoal />} />
+              <Route path="viaturas" element={<Viaturas />} />
+              <Route path="equipamentos" element={<Equipamentos />} />
+              <Route path="escalas" element={<Escalas />} />
+              <Route path="ocorrencias" element={<Ocorrencias />} />
+              <Route path="ptr-ba" element={<PTRBA />} />
+              <Route path="taf" element={<TAF />} />
+              <Route path="tp-uniformes" element={<TPUniformes />} />
+              <Route path="atividades-acessorias" element={<AtividadesAcessorias />} />
+              <Route path="exercicios" element={<Exercicios />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
