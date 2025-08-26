@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import { ChecklistAlmoxarifadoForm } from "@/components/ChecklistAlmoxarifadoFor
 import { HistoricoChecklists } from "@/components/HistoricoChecklists";
 import { HistoricoOS } from "@/components/HistoricoOS";
 import { AgentesExtintoresDashboard } from "@/components/AgentesExtintoresDashboard";
+import { RelatorioEquipamentosGenerator } from "@/components/RelatorioEquipamentosGenerator";
 
 const Equipamentos = () => {
   return (
@@ -33,10 +33,7 @@ const Equipamentos = () => {
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
-            <FileText className="w-4 h-4 mr-2" />
-            Gerar Relatório
-          </Button>
+          <RelatorioEquipamentosGenerator />
           <Button>
             <Plus className="w-4 h-4 mr-2" />
             Adicionar Material
