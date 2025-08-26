@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { MainLayout } from "@/components/MainLayout";
+import MainLayout from "@/components/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import ControlePessoal from "./pages/ControlePessoal";
 import Viaturas from "./pages/Viaturas";

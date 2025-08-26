@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 export interface ChecklistTemplate {
   id: string;
@@ -61,7 +62,14 @@ export const useQRChecklists = () => {
         .order('nome');
 
       if (error) throw error;
-      return data as ChecklistTemplate[];
+      
+      // Converter Json para ChecklistTemplate[]
+      return data.map(template => ({
+        ...template,
+        itens: typeof template.itens === 'string' 
+          ? JSON.parse(template.itens) 
+          : (template.itens as ChecklistItem[])
+      })) as ChecklistTemplate[];
     }
   });
 

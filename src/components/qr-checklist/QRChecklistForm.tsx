@@ -12,6 +12,7 @@ import { ChecklistSignature } from './ChecklistSignature';
 import { ImageUpload } from '@/components/ImageUpload';
 import { useQRChecklists, ChecklistItem, QRChecklist } from '@/hooks/useQRChecklists';
 import { useBombeiros } from '@/hooks/useBombeiros';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -58,8 +59,15 @@ export const QRChecklistForm = ({ qrCode, onComplete }: QRChecklistFormProps) =>
         if (existingChecklist) {
           setChecklist({
             ...existingChecklist,
-            itens_checklist: JSON.parse(existingChecklist.itens_checklist),
-            fotos: existingChecklist.fotos ? JSON.parse(existingChecklist.fotos) : []
+            status: existingChecklist.status as 'em_andamento' | 'concluido' | 'cancelado',
+            itens_checklist: typeof existingChecklist.itens_checklist === 'string' 
+              ? JSON.parse(existingChecklist.itens_checklist as string)
+              : (existingChecklist.itens_checklist as ChecklistItem[]),
+            fotos: existingChecklist.fotos 
+              ? (typeof existingChecklist.fotos === 'string' 
+                  ? JSON.parse(existingChecklist.fotos as string) 
+                  : (existingChecklist.fotos as string[]))
+              : []
           });
           setViatura(existingChecklist.viaturas);
           setTemplate(existingChecklist.checklist_templates);
@@ -101,11 +109,15 @@ export const QRChecklistForm = ({ qrCode, onComplete }: QRChecklistFormProps) =>
       setTemplate(templateData);
       
       // Inicializar checklist com template
+      const templateItens = typeof templateData.itens === 'string' 
+        ? JSON.parse(templateData.itens) 
+        : templateData.itens;
+      
       setChecklist(prev => ({
         ...prev,
         viatura_id: viaturaData.id,
         template_id: templateData.id,
-        itens_checklist: JSON.parse(templateData.itens).map((item: any) => ({
+        itens_checklist: templateItens.map((item: any) => ({
           ...item,
           status: undefined,
           valor: '',
