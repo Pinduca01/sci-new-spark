@@ -1,13 +1,12 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Package, 
   FileText, 
   AlertTriangle, 
-  Plus, 
   Truck,
   Archive,
   History,
@@ -32,13 +31,7 @@ const Equipamentos = () => {
             Gerencie seus equipamentos de forma eficiente
           </p>
         </div>
-        <div className="flex space-x-2">
-          <RelatorioEquipamentosGenerator />
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Material
-          </Button>
-        </div>
+        <RelatorioEquipamentosGenerator />
       </div>
 
       <Tabs defaultValue="estoque" className="space-y-4">
@@ -67,22 +60,16 @@ const Equipamentos = () => {
         <TabsContent value="estoque" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Dashboard de Estoque</CardTitle>
-              <CardDescription>Visão geral do seu estoque atual.</CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Gerenciar Materiais</CardTitle>
+                  <CardDescription>Cadastre novos materiais e visualize o estoque atual.</CardDescription>
+                </div>
+                <MaterialForm />
+              </div>
             </CardHeader>
             <CardContent>
               <EstoqueDashboard />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Adicionar Novo Material</CardTitle>
-              <CardDescription>
-                Formulário para adicionar um novo material ao estoque.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MaterialForm />
             </CardContent>
           </Card>
         </TabsContent>
