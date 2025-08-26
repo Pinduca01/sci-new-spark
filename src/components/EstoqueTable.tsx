@@ -6,16 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit2, Trash2, Search, Package, AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Edit2, Trash2, Search, Package, AlertTriangle, CheckCircle, Plus } from 'lucide-react';
 import { useEstoqueAlmoxarifado } from '@/hooks/useEstoqueAlmoxarifado';
 import { EstoqueEditModal } from './EstoqueEditModal';
+import { EstoqueCreateModal } from './EstoqueCreateModal';
 
 export const EstoqueTable = () => {
-  const { estoque, isLoading, updateEstoque } = useEstoqueAlmoxarifado();
+  const { estoque, isLoading, deleteEstoque } = useEstoqueAlmoxarifado();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selectedItem, setSelectedItem] = useState(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const getStatusInfo = (item: any) => {
     const hoje = new Date();
@@ -57,6 +60,14 @@ export const EstoqueTable = () => {
     setEditModalOpen(true);
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteEstoque.mutateAsync(id);
+    } catch (error) {
+      console.error('Erro ao excluir item:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -69,10 +80,16 @@ export const EstoqueTable = () => {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Gerenciar Itens do Estoque
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Gerenciar Itens do Estoque
+            </CardTitle>
+            <Button onClick={() => setCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Novo Item
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Filtros */}
@@ -164,6 +181,35 @@ export const EstoqueTable = () => {
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir o item "{item.materiais?.nome}" do estoque? 
+                                  Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(item.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deleteEstoque.isPending ? 'Excluindo...' : 'Excluir'}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -177,7 +223,12 @@ export const EstoqueTable = () => {
             <div className="text-center py-8 text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-4" />
               <p className="text-lg font-medium">Nenhum item encontrado</p>
-              <p className="text-sm">Tente ajustar os filtros ou adicione novos itens ao estoque</p>
+              <p className="text-sm">
+                {estoque.length === 0 
+                  ? "Clique em 'Adicionar Novo Item' para começar a gerenciar seu estoque"
+                  : "Tente ajustar os filtros para encontrar os itens desejados"
+                }
+              </p>
             </div>
           )}
         </CardContent>
@@ -193,6 +244,11 @@ export const EstoqueTable = () => {
           }}
         />
       )}
+
+      <EstoqueCreateModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+      />
     </div>
   );
 };

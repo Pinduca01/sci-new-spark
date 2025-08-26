@@ -34,7 +34,6 @@ export const useEstoqueAlmoxarifado = () => {
   } = useQuery({
     queryKey: ['estoque-almoxarifado'],
     queryFn: async () => {
-      // Primeiro, tentar obter o estoque
       const { data, error } = await supabase
         .from('estoque_almoxarifado')
         .select(`
@@ -49,52 +48,6 @@ export const useEstoqueAlmoxarifado = () => {
         .order('quantidade_disponivel', { ascending: true });
 
       if (error) throw error;
-      
-      // Se não há dados no estoque, inserir dados de exemplo automaticamente
-      if (data.length === 0) {
-        console.log('Estoque vazio, inserindo dados de exemplo...');
-        
-        // Obter os materiais cadastrados
-        const { data: materiais } = await supabase
-          .from('materiais')
-          .select('id, codigo_material')
-          .limit(8);
-
-        if (materiais && materiais.length > 0) {
-          // Criar registros de estoque para os materiais
-          const estoqueExemplo = materiais.map((material, index) => ({
-            material_id: material.id,
-            quantidade_disponivel: [50, 25, 15, 8, 100, 200, 75, 30][index] || 10,
-            quantidade_minima: [20, 10, 5, 5, 50, 100, 25, 10][index] || 5,
-            lote: `LOTE${String(index + 1).padStart(3, '0')}`,
-            data_fabricacao: new Date(2024, 0, 1 + index * 15).toISOString().split('T')[0],
-            data_validade: new Date(2025, index % 12, 1 + index * 30).toISOString().split('T')[0],
-            localizacao_fisica: [`Prateleira A${index + 1}`, `Armário B${index + 1}`, `Setor C${index + 1}`][index % 3],
-            observacoes: index < 3 ? 'Estoque baixo - solicitar reposição' : null
-          }));
-
-          await supabase
-            .from('estoque_almoxarifado')
-            .insert(estoqueExemplo);
-
-          // Fazer nova consulta para retornar os dados inseridos
-          const { data: novoEstoque } = await supabase
-            .from('estoque_almoxarifado')
-            .select(`
-              *,
-              materiais:material_id (
-                codigo_material,
-                nome,
-                categoria,
-                unidade_medida
-              )
-            `)
-            .order('quantidade_disponivel', { ascending: true });
-
-          return novoEstoque as EstoqueItem[];
-        }
-      }
-      
       return data as EstoqueItem[];
     }
   });
@@ -116,6 +69,14 @@ export const useEstoqueAlmoxarifado = () => {
         title: "Sucesso",
         description: "Item adicionado ao estoque!",
       });
+    },
+    onError: (error) => {
+      console.error('Erro ao adicionar item:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o item ao estoque.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -133,6 +94,44 @@ export const useEstoqueAlmoxarifado = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['estoque-almoxarifado'] });
+      toast({
+        title: "Sucesso",
+        description: "Item atualizado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      console.error('Erro ao atualizar item:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o item.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteEstoque = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('estoque_almoxarifado')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['estoque-almoxarifado'] });
+      toast({
+        title: "Sucesso",
+        description: "Item excluído com sucesso!",
+      });
+    },
+    onError: (error) => {
+      console.error('Erro ao excluir item:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o item.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -164,6 +163,7 @@ export const useEstoqueAlmoxarifado = () => {
     error,
     addEstoque,
     updateEstoque,
+    deleteEstoque,
     alertas: getAlertas()
   };
 };
