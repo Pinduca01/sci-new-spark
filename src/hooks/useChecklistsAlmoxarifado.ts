@@ -14,6 +14,7 @@ export interface ChecklistItem {
   status: 'pendente' | 'conforme' | 'divergencia' | 'nao_localizado';
   justificativa?: string;
   foto_evidencia?: string;
+  fotos?: string[];
 }
 
 export interface ChecklistAlmoxarifado {
@@ -24,7 +25,6 @@ export interface ChecklistAlmoxarifado {
   bombeiro_responsavel_nome: string;
   status_geral: 'em_andamento' | 'concluido' | 'pendente';
   itens_checklist: ChecklistItem[];
-  assinatura_digital?: string;
   observacoes_gerais?: string;
   total_itens: number;
   itens_conformes: number;

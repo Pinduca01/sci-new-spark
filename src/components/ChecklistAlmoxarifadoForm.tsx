@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { useChecklistsAlmoxarifado, ChecklistItem, ChecklistAlmoxarifado } from '@/hooks/useChecklistsAlmoxarifado';
 import { useBombeiros } from '@/hooks/useBombeiros';
-import { AssinaturaDigital } from './AssinaturaDigital';
+import { ImageUpload } from './ImageUpload';
 import { useToast } from '@/hooks/use-toast';
 import { 
   CheckCircle2, 
@@ -81,12 +81,12 @@ export const ChecklistAlmoxarifadoForm = () => {
     };
   }, []);
 
-  const updateItemStatus = (materialId: string, status: ChecklistItem['status'], quantidadeEncontrada?: number, justificativa?: string) => {
+  const updateItemStatus = (materialId: string, status: ChecklistItem['status'], quantidadeEncontrada?: number, justificativa?: string, fotos?: string[]) => {
     setChecklist(prev => {
       const items = prev.itens_checklist || [];
       const updatedItems = items.map(item => 
         item.material_id === materialId 
-          ? { ...item, status, quantidade_encontrada: quantidadeEncontrada, justificativa }
+          ? { ...item, status, quantidade_encontrada: quantidadeEncontrada, justificativa, fotos }
           : item
       );
 
@@ -107,15 +107,6 @@ export const ChecklistAlmoxarifadoForm = () => {
       toast({
         title: "Erro",
         description: "Selecione o bombeiro responsável",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!checklist.assinatura_digital) {
-      toast({
-        title: "Erro",
-        description: "Assinatura digital é obrigatória",
         variant: "destructive"
       });
       return;
@@ -312,7 +303,7 @@ export const ChecklistAlmoxarifadoForm = () => {
                 </div>
 
                 {(item.status === 'divergencia' || item.status === 'nao_localizado') && (
-                  <div className="space-y-2 pt-2 border-t">
+                  <div className="space-y-4 pt-2 border-t">
                     {item.status === 'divergencia' && (
                       <div>
                         <Label htmlFor={`qtd-${item.material_id}`}>Quantidade Encontrada</Label>
@@ -325,7 +316,8 @@ export const ChecklistAlmoxarifadoForm = () => {
                             item.material_id, 
                             item.status, 
                             Number(e.target.value),
-                            item.justificativa
+                            item.justificativa,
+                            item.fotos
                           )}
                         />
                       </div>
@@ -340,9 +332,25 @@ export const ChecklistAlmoxarifadoForm = () => {
                           item.material_id, 
                           item.status, 
                           item.quantidade_encontrada,
-                          e.target.value
+                          e.target.value,
+                          item.fotos
                         )}
                         rows={2}
+                      />
+                    </div>
+                    
+                    <div>
+                      <ImageUpload
+                        title="Fotos da Evidência"
+                        images={item.fotos || []}
+                        onImagesChange={(fotos) => updateItemStatus(
+                          item.material_id,
+                          item.status,
+                          item.quantidade_encontrada,
+                          item.justificativa,
+                          fotos
+                        )}
+                        maxImages={2}
                       />
                     </div>
                   </div>
@@ -366,11 +374,6 @@ export const ChecklistAlmoxarifadoForm = () => {
           />
         </CardContent>
       </Card>
-
-      <AssinaturaDigital
-        assinatura={checklist.assinatura_digital}
-        onSave={(assinatura) => setChecklist(prev => ({ ...prev, assinatura_digital: assinatura }))}
-      />
 
       <div className="flex gap-4 justify-center">
         <Button
