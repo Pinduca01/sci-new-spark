@@ -47,7 +47,7 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave, exercicioParaEdicao }: 
   const [equipe, setEquipe] = useState("Alfa");
   const [observacoes, setObservacoes] = useState("");
   const [chefeEquipe, setChefeEquipe] = useState("");
-  const [gerenteSCI, setGerenteSCI] = useState("");
+  
   
   const [bombeiros, setBombeiros] = useState<BombeiroTempo[]>([
     {
@@ -135,7 +135,7 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave, exercicioParaEdicao }: 
       setEquipe(exercicioParaEdicao.equipe || "Alfa");
       setChefeEquipe(exercicioParaEdicao.chefeEquipe || "");
       setObservacoes(exercicioParaEdicao.observacoes || "");
-      setGerenteSCI(exercicioParaEdicao.gerenteSCI || "");
+      
       
       // Se o exercício tem dados de bombeiros, carregá-los
       if (exercicioParaEdicao.bombeiros && exercicioParaEdicao.bombeiros.length > 0) {
@@ -147,8 +147,7 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave, exercicioParaEdicao }: 
       setHora(new Date().toTimeString().slice(0, 5));
       setEquipe("Alfa");
       setChefeEquipe("");
-      setObservacoes("");
-      setGerenteSCI("");
+      setObservacoes(""); 
       setBombeiros([{
         nome: "",
         funcao: "",
@@ -184,7 +183,6 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave, exercicioParaEdicao }: 
         bombeiros,
         observacoes,
         chefeEquipe,
-        gerenteSCI,
         tipo: "EPI/EPR",
         status: "Concluído"
       };
@@ -393,14 +391,6 @@ const ExercicioEPIModal = ({ open, onOpenChange, onSave, exercicioParaEdicao }: 
                 id="chefeEquipe"
                 value={chefeEquipe}
                 onChange={(e) => setChefeEquipe(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="gerenteSCI">Gerente SCI</Label>
-              <Input
-                id="gerenteSCI"
-                value={gerenteSCI}
-                onChange={(e) => setGerenteSCI(e.target.value)}
               />
             </div>
           </div>

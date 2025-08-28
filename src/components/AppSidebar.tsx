@@ -78,7 +78,7 @@ const navigationItems = [
     description: "Registro de eventos"
   },
   { 
-    title: "Veículos", 
+    title: "Controle de Viaturas", 
     url: "/viaturas", 
     icon: Truck,
     description: "Gestão da frota"
@@ -90,7 +90,7 @@ const navigationItems = [
     description: "Treinamentos e simulações"
   },
   { 
-    title: "PTR-BA", 
+    title: "Controle de PTR-BA", 
     url: "/ptr-ba", 
     icon: GraduationCap,
     description: "Programa de Treinamento Recorrente"
@@ -113,12 +113,7 @@ const navigationItems = [
     icon: Calendar,
     description: "Gestão de escalas"
   },
-  { 
-    title: "Procedimentos", 
-    url: "/procedimentos", 
-    icon: ClipboardList,
-    description: "Protocolos e SOPs"
-  }
+  
 ];
 
 const adminItems = [

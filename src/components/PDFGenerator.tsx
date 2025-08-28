@@ -1,6 +1,7 @@
 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import DOMPurify from 'dompurify';
 
 interface PTRData {
   data: string;
@@ -34,8 +35,8 @@ export const generatePTRPDF = async (data: PTRData): Promise<void> => {
   tempElement.style.color = 'black';
   tempElement.style.padding = '20mm';
 
-  // HTML do template baseado na imagem
-  tempElement.innerHTML = `
+  // HTML do template baseado na imagem (sanitizado para segurança)
+  const htmlTemplate = `
     <div style="width: 100%; max-width: 170mm;">
       <!-- Cabeçalho -->
       <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px;">
@@ -150,6 +151,9 @@ export const generatePTRPDF = async (data: PTRData): Promise<void> => {
       </div>
     </div>
   `;
+
+  // Sanitizar o HTML antes de inserir no DOM para prevenir XSS
+  tempElement.innerHTML = DOMPurify.sanitize(htmlTemplate);
 
   document.body.appendChild(tempElement);
 

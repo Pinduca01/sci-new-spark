@@ -11,8 +11,7 @@ import { DonutChart } from './DonutChart';
 import { GaugeChart } from './GaugeChart';
 import { QuickStats } from './QuickStats';
 import { ExportadorPDF } from './ExportadorPDF';
-import { ApexDonutChart } from './apex/ApexDonutChart';
-import { ApexGaugeChart } from './apex/ApexGaugeChart';
+import { ApexDonutChart, ApexGaugeChart } from './apex';
 
 const DashboardProfissional = () => {
   const [mesAtual] = useState(new Date().getMonth() + 1);

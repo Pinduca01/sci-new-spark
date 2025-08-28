@@ -26,7 +26,7 @@ interface ChecklistFormProps {
   onSave: () => void;
 }
 
-const checklistItemsBAMC = [
+const checklistItemsBA2 = [
   { id: '1', nome: 'Mochila de emergência completa' },
   { id: '2', nome: 'Oxímetro funcionando' },
   { id: '3', nome: 'Glicosímetro e fitas' },
@@ -39,7 +39,7 @@ const checklistItemsBAMC = [
   { id: '10', nome: 'Cilindro de oxigênio (carga completa)' },
 ];
 
-const checklistItemsBA2 = [
+const checklistItemsBAMC = [
   { id: '1', nome: 'Nível de óleo do motor' },
   { id: '2', nome: 'Nível de água do radiador' },
   { id: '3', nome: 'Pressão dos pneus' },

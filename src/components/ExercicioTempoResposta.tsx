@@ -3,8 +3,41 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import TempoRespostaFormModal from "@/components/TempoRespostaFormModal";
+import HistoricoTempoResposta from "@/components/HistoricoTempoResposta";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ExercicioTempoResposta = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formularios, setFormularios] = useState<any[]>([]);
+
+  // Carregar formulários do localStorage ao inicializar
+  useEffect(() => {
+    const formulariosStorage = localStorage.getItem('formularios-tempo-resposta');
+    if (formulariosStorage) {
+      try {
+        setFormularios(JSON.parse(formulariosStorage));
+      } catch (error) {
+        console.error('Erro ao carregar formulários do localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Salvar formulários no localStorage sempre que a lista mudar
+  useEffect(() => {
+    if (formularios.length > 0) {
+      localStorage.setItem('formularios-tempo-resposta', JSON.stringify(formularios));
+    }
+  }, [formularios]);
+
+  const handleSaveFormulario = (formulario: any) => {
+    setFormularios(prev => {
+      const novosFormularios = [...prev, formulario];
+      return novosFormularios;
+    });
+  };
+
   // Mock data para demonstração
   const exercicios = [
     {
@@ -39,6 +72,35 @@ const ExercicioTempoResposta = () => {
     }
   ];
 
+  // Calcular estatísticas dos formulários
+  const totalFormularios = formularios.length;
+  const tempoMedio = formularios.length > 0 
+    ? formularios.reduce((acc, form) => {
+        const tempoTotal = form.viaturas.reduce((vAcc: number, viatura: any) => {
+          const tempo = viatura.tempo;
+          if (tempo) {
+            const match = tempo.match(/(\d+)min(\d+)seg/);
+            if (match) {
+              return vAcc + (parseInt(match[1]) * 60 + parseInt(match[2]));
+            }
+          }
+          return vAcc;
+        }, 0);
+        return acc + (tempoTotal / form.viaturas.length || 0);
+      }, 0) / formularios.length
+    : 0;
+  
+  const formatarTempoMedio = (segundos: number) => {
+    const min = Math.floor(segundos / 60);
+    const seg = Math.floor(segundos % 60);
+    return `${min}:${seg.toString().padStart(2, '0')}`;
+  };
+
+  const equipesUnicas = new Set(formularios.map(f => f.equipe)).size;
+  const performanceSatisfatoria = formularios.filter(f => 
+    f.viaturas.some((v: any) => v.performance === 'Satisfatório')
+  ).length;
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -49,9 +111,9 @@ const ExercicioTempoResposta = () => {
             <Timer className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">42</div>
+            <div className="text-2xl font-bold text-primary">{totalFormularios}</div>
             <p className="text-xs text-muted-foreground">
-              Este mês
+              Total registrado
             </p>
           </CardContent>
         </Card>
@@ -62,9 +124,9 @@ const ExercicioTempoResposta = () => {
             <Zap className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">4:45</div>
+            <div className="text-2xl font-bold text-orange-500">{formatarTempoMedio(tempoMedio)}</div>
             <p className="text-xs text-muted-foreground">
-              Resposta completa
+              Tempo médio
             </p>
           </CardContent>
         </Card>
@@ -75,9 +137,9 @@ const ExercicioTempoResposta = () => {
             <Users className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-500">10</div>
+            <div className="text-2xl font-bold text-blue-500">{equipesUnicas}</div>
             <p className="text-xs text-muted-foreground">
-              Todas as equipes
+              Equipes diferentes
             </p>
           </CardContent>
         </Card>
@@ -88,9 +150,9 @@ const ExercicioTempoResposta = () => {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">-15%</div>
+            <div className="text-2xl font-bold text-green-500">{performanceSatisfatoria}</div>
             <p className="text-xs text-muted-foreground">
-              Tempo médio reduzido
+              Performance satisfatória
             </p>
           </CardContent>
         </Card>
@@ -104,80 +166,100 @@ const ExercicioTempoResposta = () => {
             Simulações cronometradas para medir eficiência operacional
           </p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button 
+          className="flex items-center gap-2"
+          onClick={() => setModalOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           Novo Exercício
         </Button>
       </div>
 
-      {/* Histórico Table */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle>Histórico de Simulações</CardTitle>
-          <CardDescription>
-            Registro cronometrado das simulações de resposta
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Equipe</TableHead>
-                <TableHead>Chefe de Equipe</TableHead>
-                <TableHead>Tipo de Simulação</TableHead>
-                <TableHead>Tempo Resposta</TableHead>
-                <TableHead>Tempo Chegada</TableHead>
-                <TableHead>Avaliação</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {exercicios.map((exercicio) => (
-                <TableRow key={exercicio.id}>
-                  <TableCell>{new Date(exercicio.data).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{exercicio.equipe}</Badge>
-                  </TableCell>
-                  <TableCell>{exercicio.chefeEquipe}</TableCell>
-                  <TableCell>{exercicio.tipoSimulacao}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Timer className="h-3 w-3 text-muted-foreground" />
-                      {exercicio.tempoResposta}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Zap className="h-3 w-3 text-muted-foreground" />
-                      {exercicio.tempoChegada}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={
-                        exercicio.status === "Excelente" ? "default" : 
-                        exercicio.status === "Bom" ? "secondary" : "destructive"
-                      }
-                    >
-                      {exercicio.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">Ver</Button>
-                      <Button variant="ghost" size="sm">Editar</Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                        Excluir
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Tabs para Histórico Antigo e Novos Formulários */}
+      <Tabs defaultValue="formularios" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="formularios">Formulários de Tempo Resposta</TabsTrigger>
+          <TabsTrigger value="historico-antigo">Histórico Anterior</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="formularios" className="space-y-4">
+          <HistoricoTempoResposta formularios={formularios} />
+        </TabsContent>
+        
+        <TabsContent value="historico-antigo" className="space-y-4">
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle>Histórico de Simulações (Dados Anteriores)</CardTitle>
+              <CardDescription>
+                Registro cronometrado das simulações de resposta
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Equipe</TableHead>
+                    <TableHead>Chefe de Equipe</TableHead>
+                    <TableHead>Tempo Resposta</TableHead>
+                    <TableHead>Avaliação</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {exercicios.map((exercicio) => (
+                    <TableRow key={exercicio.id}>
+                      <TableCell>{new Date(exercicio.data).toLocaleDateString('pt-BR')}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{exercicio.equipe}</Badge>
+                      </TableCell>
+                      <TableCell>{exercicio.chefeEquipe}</TableCell>
+                      <TableCell>{exercicio.tipoSimulacao}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Timer className="h-3 w-3 text-muted-foreground" />
+                          {exercicio.tempoResposta}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Zap className="h-3 w-3 text-muted-foreground" />
+                          {exercicio.tempoChegada}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            exercicio.status === "Excelente" ? "default" : 
+                            exercicio.status === "Bom" ? "secondary" : "destructive"
+                          }
+                        >
+                          {exercicio.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm">Ver</Button>
+                          <Button variant="ghost" size="sm">Editar</Button>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                            Excluir
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <TempoRespostaFormModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSave={handleSaveFormulario}
+      />
     </div>
   );
 };
