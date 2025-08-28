@@ -1,9 +1,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldCheck, Droplets, Package, BarChart3 } from "lucide-react";
+import { ShieldCheck, Droplets, Package, BarChart3, Shirt } from "lucide-react";
 import TPUniformesDashboard from "@/components/TPUniformesDashboard";
 import TPVerificacaoForm from "@/components/TPVerificacaoForm";
+import TPUniformesVerificacaoForm from "@/components/TPUniformesVerificacaoForm";
 import TPHigienizacaoForm from "@/components/TPHigienizacaoForm";
 import EPIDistribuicaoForm from "@/components/EPIDistribuicaoForm";
 
@@ -28,6 +29,10 @@ const TPUniformes = () => {
           <TabsTrigger value="verificacao">
             <ShieldCheck className="w-4 h-4 mr-2" />
             Verificação TP
+          </TabsTrigger>
+          <TabsTrigger value="verificacao-uniformes">
+            <Shirt className="w-4 h-4 mr-2" />
+            Verificação Uniformes
           </TabsTrigger>
           <TabsTrigger value="higienizacao">
             <Droplets className="w-4 h-4 mr-2" />
@@ -55,7 +60,22 @@ const TPUniformes = () => {
           
           <Card>
             <CardHeader>
-              <CardTitle>Histórico de Verificações</CardTitle>
+              <CardTitle>Histórico de Verificações de TP</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Funcionalidade de histórico em desenvolvimento</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="verificacao-uniformes" className="space-y-4">
+          <TPUniformesVerificacaoForm />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Verificações de Uniformes</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-muted-foreground">

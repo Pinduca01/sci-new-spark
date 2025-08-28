@@ -32,24 +32,54 @@ const TAF = () => {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="novo" className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Novo TAF
-          </TabsTrigger>
-          <TabsTrigger value="historico" className="flex items-center gap-2">
-            <History className="w-4 h-4" />
-            Histórico
-          </TabsTrigger>
-          <TabsTrigger value="evolucao" className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Evolução
-          </TabsTrigger>
-        </TabsList>
+        <div className="bg-muted rounded-lg p-1.5 mb-6">
+          <div className="grid w-full grid-cols-4 gap-1">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'dashboard'
+                  ? 'bg-background text-foreground shadow-sm border border-border/50'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('novo')}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'novo'
+                  ? 'bg-background text-foreground shadow-sm border border-border/50'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Novo TAF</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('historico')}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'historico'
+                  ? 'bg-background text-foreground shadow-sm border border-border/50'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              <span className="hidden sm:inline">Histórico</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('evolucao')}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'evolucao'
+                  ? 'bg-background text-foreground shadow-sm border border-border/50'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">Evolução</span>
+            </button>
+          </div>
+        </div>
 
         <TabsContent value="dashboard" className="space-y-6">
           <TAFDashboard />

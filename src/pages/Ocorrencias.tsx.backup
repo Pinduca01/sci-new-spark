@@ -1,0 +1,2480 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Search, Clock, Users, AlertTriangle, BarChart3, List, MapPin, Filter, MoreHorizontal, Eye, Edit, Grid } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+// Tipos de ocorrencia conforme especificado
+const TIPOS_OCORRENCIA = [
+  "Atendimento a Aeronave Presidencial",
+  "Condicoes de Baixa Visibilidade",
+  "Emergencias Medicas em Geral",
+  "Iluminacao de Emergencia em Pista de Pouso e Decolagem",
+  "Incendio em Instalacoes Aeroportuarias",
+  "Incendios Florestais ou em Areas de Cobertura Vegetal Proximas ao Aerodromo",
+  "Incendios ou Vazamentos de Combustiveis no Patio de Aeronaves (PAA)",
+  "Ocorrencias com Artigos Perigosos",
+  "Remocao de Animais e Dispersao de Avifauna"
+];
+
+const EQUIPES = ["Alfa", "Bravo", "Charlie", "Delta"];
+
+const formSchema = z.object({
+  tipo_ocorrencia: z.string().min(1, "Selecione o tipo de ocorrencia"),
+  local_mapa_grade: z.string().optional(),
+  data_ocorrencia: z.string().min(1, "Informe a data da ocorrencia"),
+  hora_acionamento: z.string().min(1, "Informe a hora do acionamento"),
+  hora_chegada_local: z.string().optional(),
+  hora_termino: z.string().optional(),
+  equipe: z.string().min(1, "Selecione a equipe"),
+  bombeiros_envolvidos: z.array(z.string()).default([]),
+  quantidade_vitimas: z.number().min(0).default(0),
+  quantidade_obitos: z.number().min(0).default(0),
+  viaturas: z.string().optional(),
+  equipamentos: z.string().optional(),
+  descricao_inicial: z.string().optional(),
+  descricao_detalhada: z.string().optional(),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+interface Ocorrencia {
+  id: string;
+  tipo_ocorrencia: string;
+  local_mapa_grade?: string;
+  data_ocorrencia: string;
+  hora_acionamento: string;
+  hora_chegada_local?: string;
+  hora_termino?: string;
+  tempo_gasto_minutos?: number;
+  equipe: string;
+  bombeiros_envolvidos: string[];
+  quantidade_bombeiros: number;
+  quantidade_vitimas: number;
+  quantidade_obitos: number;
+  viaturas?: string;
+  equipamentos?: string;
+  descricao_inicial?: string;
+  descricao_detalhada?: string;
+  created_at: string;
+}
+
+interface Bombeiro {
+  id: string;
+  nome: string;
+  equipe: string;
+}
+
+const Ocorrencias = () => {
+  const [ocorrencias, setOcorrencias] = useState<Ocorrencia[]>([]);
+  const [bombeiros, setBombeiros] = useState<Bombeiro[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedOcorrencia, setSelectedOcorrencia] = useState<Ocorrencia | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterEquipe, setFilterEquipe] = useState<string>("all");
+  const [filterTipo, setFilterTipo] = useState<string>("all");
+  
+  // Navegacao
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'ocorrencias'>('ocorrencias');
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      bombeiros_envolvidos: [],
+      quantidade_vitimas: 0,
+      quantidade_obitos: 0,
+    },
+  });
+
+  const selectedEquipe = form.watch("equipe");
+  const horaAcionamento = form.watch("hora_acionamento");
+  const horaTermino = form.watch("hora_termino");
+
+  useEffect(() => {
+    fetchOcorrencias();
+    fetchBombeiros();
+  }, []);
+
+  const fetchOcorrencias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ocorrencias')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOcorrencias(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar ocorrencias:", error);
+      toast({
+        variant: "destructive",
+        description: "Erro ao carregar ocorrencias",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBombeiros = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bombeiros')
+        .select('*')
+        .order('nome');
+
+      if (error) throw error;
+      setBombeiros(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar bombeiros:", error);
+    }
+  };
+
+  const calculateTempoGasto = (acionamento: string, termino?: string) => {
+    if (!termino) return undefined;
+    
+    const [horaA, minA] = acionamento.split(':').map(Number);
+    const [horaT, minT] = termino.split(':').map(Number);
+    
+    const minutosA = horaA * 60 + minA;
+    const minutosT = horaT * 60 + minT;
+    
+    return minutosT - minutosA;
+  };
+
+  const onSubmit = async (values: FormData) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario nao autenticado");
+
+      const tempoGasto = calculateTempoGasto(values.hora_acionamento, values.hora_termino);
+      
+      const ocorrenciaData = {
+        ...values,
+        tempo_gasto_minutos: tempoGasto,
+        quantidade_bombeiros: values.bombeiros_envolvidos.length,
+        user_id: user.id
+      };
+
+      const { error } = await supabase
+        .from('ocorrencias')
+        .insert([ocorrenciaData]);
+
+      if (error) throw error;
+
+      toast({
+        description: "Ocorrencia registrada com sucesso!",
+      });
+
+      form.reset();
+      setIsModalOpen(false);
+      fetchOcorrencias();
+    } catch (error) {
+      console.error("Erro ao registrar ocorrencia:", error);
+      toast({
+        variant: "destructive",
+        description: "Erro ao registrar ocorrencia",
+      });
+    }
+  };
+
+  const handleViewOcorrencia = (ocorrencia: Ocorrencia) => {
+    setSelectedOcorrencia(ocorrencia);
+    setIsViewModalOpen(true);
+  };
+
+  const handleEditOcorrencia = (ocorrencia: Ocorrencia) => {
+    setSelectedOcorrencia(ocorrencia);
+    
+    // Preencher o formulario com os dados da ocorrencia
+    form.reset({
+      tipo_ocorrencia: ocorrencia.tipo_ocorrencia,
+      local_mapa_grade: ocorrencia.local_mapa_grade || "",
+      data_ocorrencia: ocorrencia.data_ocorrencia,
+      hora_acionamento: ocorrencia.hora_acionamento,
+      hora_chegada_local: ocorrencia.hora_chegada_local || "",
+      hora_termino: ocorrencia.hora_termino || "",
+      equipe: ocorrencia.equipe,
+      bombeiros_envolvidos: ocorrencia.bombeiros_envolvidos,
+      quantidade_vitimas: ocorrencia.quantidade_vitimas,
+      quantidade_obitos: ocorrencia.quantidade_obitos,
+      viaturas: ocorrencia.viaturas || "",
+      equipamentos: ocorrencia.equipamentos || "",
+      descricao_inicial: ocorrencia.descricao_inicial || "",
+      descricao_detalhada: ocorrencia.descricao_detalhada || "",
+    });
+    
+    setIsEditModalOpen(true);
+  };
+
+  const onSubmitEdit = async (values: FormData) => {
+    if (!selectedOcorrencia) return;
+    
+    try {
+      const tempoGasto = calculateTempoGasto(values.hora_acionamento, values.hora_termino);
+      
+      const ocorrenciaData = {
+        ...values,
+        tempo_gasto_minutos: tempoGasto,
+        quantidade_bombeiros: values.bombeiros_envolvidos.length,
+      };
+
+      const { error } = await supabase
+        .from('ocorrencias')
+        .update(ocorrenciaData)
+        .eq('id', selectedOcorrencia.id);
+
+      if (error) throw error;
+
+      toast({
+        description: "Ocorrencia atualizada com sucesso!",
+      });
+
+      setIsEditModalOpen(false);
+      setSelectedOcorrencia(null);
+      fetchOcorrencias();
+    } catch (error) {
+      console.error("Erro ao atualizar ocorrencia:", error);
+      toast({
+        variant: "destructive",
+        description: "Erro ao atualizar ocorrencia",
+      });
+    }
+  };
+
+  const filteredOcorrencias = ocorrencias.filter((ocorrencia) => {
+    const matchesSearch = ocorrencia.tipo_ocorrencia.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (ocorrencia.local_mapa_grade && ocorrencia.local_mapa_grade.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         ocorrencia.equipe.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesEquipe = filterEquipe === "all" || ocorrencia.equipe === filterEquipe;
+    const matchesTipo = filterTipo === "all" || ocorrencia.tipo_ocorrencia === filterTipo;
+    
+    return matchesSearch && matchesEquipe && matchesTipo;
+  });
+
+  const bombeirosByEquipe = bombeiros.filter(bombeiro => 
+    selectedEquipe ? bombeiro.equipe === selectedEquipe : true
+  );
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">Carregando...</div>;
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            Sistema de Ocorrencias
+          </CardTitle>
+          <p className="text-muted-foreground">
+            Sistema completo de registro e acompanhamento de emergencias
+          </p>
+        </CardHeader>
+      </Card>
+
+      <div className="bg-muted rounded-lg p-1.5 mb-6">
+        <div className="grid w-full grid-cols-2 gap-1">
+          <button
+            onClick={() => setActiveSection('dashboard')}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              activeSection === 'dashboard'
+                ? 'bg-background text-foreground shadow-sm border border-border/50'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span className="hidden sm:inline">Dashboard</span>
+          </button>
+          <button
+            onClick={() => setActiveSection('ocorrencias')}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              activeSection === 'ocorrencias'
+                ? 'bg-background text-foreground shadow-sm border border-border/50'
+                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4" />
+            <span className="hidden sm:inline">Ocorrencias</span>
+          </button>
+        </div>
+      </div>
+
+      {activeSection === 'dashboard' ? (
+        <div className="space-y-6">
+          {/* SEÇÃO 1: VISÃO GERAL - Cards Superiores */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Total Ocorrências Mês */}
+            <Card className="glass-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Ocorrências</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {ocorrencias.filter(o => {
+                    const ocorrenciaDate = new Date(o.data_ocorrencia);
+                    const currentMonth = new Date().getMonth();
+                    const currentYear = new Date().getFullYear();
+                    return ocorrenciaDate.getMonth() === currentMonth && ocorrenciaDate.getFullYear() === currentYear;
+                  }).length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {(() => {
+                    const currentMonth = ocorrencias.filter(o => {
+                      const ocorrenciaDate = new Date(o.data_ocorrencia);
+                      const currentMonthNum = new Date().getMonth();
+                      const currentYear = new Date().getFullYear();
+                      return ocorrenciaDate.getMonth() === currentMonthNum && ocorrenciaDate.getFullYear() === currentYear;
+                    }).length;
+                    const lastMonth = ocorrencias.filter(o => {
+                      const ocorrenciaDate = new Date(o.data_ocorrencia);
+                      const lastMonthNum = new Date().getMonth() - 1;
+                      const year = lastMonthNum < 0 ? new Date().getFullYear() - 1 : new Date().getFullYear();
+                      const month = lastMonthNum < 0 ? 11 : lastMonthNum;
+                      return ocorrenciaDate.getMonth() === month && ocorrenciaDate.getFullYear() === year;
+                    }).length;
+                    const diff = currentMonth - lastMonth;
+                    const percentage = lastMonth > 0 ? ((diff / lastMonth) * 100).toFixed(1) : '0';
+                    return diff >= 0 ? `+${percentage}% vs mês anterior` : `${percentage}% vs mês anterior`;
+                  })()}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Tempo Médio Resposta */}
+            <Card className="glass-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Tempo Médio Resposta</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {(() => {
+                    const ocorrenciasComTempo = ocorrencias.filter(o => o.hora_acionamento && o.hora_chegada_local);
+                    if (ocorrenciasComTempo.length === 0) return '00:00';
+                    
+                    const totalMinutos = ocorrenciasComTempo.reduce((acc, o) => {
+                      const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                      const [horaC, minC] = o.hora_chegada_local.split(':').map(Number);
+                      const acionamento = horaA * 60 + minA;
+                      const chegada = horaC * 60 + minC;
+                      return acc + (chegada - acionamento);
+                    }, 0);
+                    
+                    const media = Math.round(totalMinutos / ocorrenciasComTempo.length);
+                    const horas = Math.floor(media / 60);
+                    const minutos = media % 60;
+                    return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+                  })()
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Acionamento → Chegada Local
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Tempo Médio Total */}
+            <Card className="glass-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Tempo Médio Total</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {(() => {
+                    const ocorrenciasComTempo = ocorrencias.filter(o => o.hora_acionamento && o.hora_termino);
+                    if (ocorrenciasComTempo.length === 0) return '00:00';
+                    
+                    const totalMinutos = ocorrenciasComTempo.reduce((acc, o) => {
+                      const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                      const [horaT, minT] = o.hora_termino.split(':').map(Number);
+                      const acionamento = horaA * 60 + minA;
+                      const termino = horaT * 60 + minT;
+                      return acc + (termino - acionamento);
+                    }, 0);
+                    
+                    const media = Math.round(totalMinutos / ocorrenciasComTempo.length);
+                    const horas = Math.floor(media / 60);
+                    const minutos = media % 60;
+                    return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+                  })()
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Acionamento → Término
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Ocorrências Ativas */}
+            <Card className="glass-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Ocorrências Ativas</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {ocorrencias.filter(o => !o.hora_termino).length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Em andamento
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* SEÇÃO 2: ANÁLISE POR TIPO DE OCORRÊNCIA */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Tipos Mais Frequentes - Gráfico de Rosca */}
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Tipos Mais Frequentes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(() => {
+                    const tipoCount = ocorrencias.reduce((acc, o) => {
+                      acc[o.tipo_ocorrencia] = (acc[o.tipo_ocorrencia] || 0) + 1;
+                      return acc;
+                    }, {});
+                    
+                    const sortedTipos = Object.entries(tipoCount)
+                      .sort(([,a], [,b]) => b - a)
+                      .slice(0, 5);
+                    
+                    const total = ocorrencias.length;
+                    const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500'];
+                    
+                    return sortedTipos.map(([tipo, count], index) => {
+                      const percentage = ((count / total) * 100).toFixed(1);
+                      return (
+                        <div key={tipo} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-3 h-3 rounded-full ${colors[index]}`}></div>
+                            <span className="text-sm font-medium truncate" title={tipo}>
+                              {tipo.length > 30 ? tipo.substring(0, 30) + '...' : tipo}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold">{count}</div>
+                            <div className="text-xs text-muted-foreground">{percentage}%</div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
+                  }
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Ranking Tipos - Tabela */}
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Ranking Completo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {(() => {
+                    const tipoCount = ocorrencias.reduce((acc, o) => {
+                      acc[o.tipo_ocorrencia] = (acc[o.tipo_ocorrencia] || 0) + 1;
+                      return acc;
+                    }, {});
+                    
+                    const sortedTipos = Object.entries(tipoCount)
+                      .sort(([,a], [,b]) => b - a);
+                    
+                    const total = ocorrencias.length;
+                    
+                    return sortedTipos.map(([tipo, count], index) => {
+                      const percentage = ((count / total) * 100).toFixed(1);
+                      return (
+                        <div key={tipo} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              #{index + 1}
+                            </Badge>
+                            <span className="text-sm truncate" title={tipo}>
+                              {tipo.length > 25 ? tipo.substring(0, 25) + '...' : tipo}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold">{count}</div>
+                            <div className="text-xs text-muted-foreground">{percentage}%</div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
+                  }
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* SEÇÃO 3: ANÁLISE TEMPORAL */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Tempo Resposta por Tipo */}
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Tempo Resposta por Tipo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(() => {
+                    const tipoTempos = {};
+                    
+                    ocorrencias.forEach(o => {
+                      if (o.hora_acionamento && o.hora_chegada_local) {
+                        const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                        const [horaC, minC] = o.hora_chegada_local.split(':').map(Number);
+                        const acionamento = horaA * 60 + minA;
+                        const chegada = horaC * 60 + minC;
+                        const tempo = chegada - acionamento;
+                        
+                        if (!tipoTempos[o.tipo_ocorrencia]) {
+                          tipoTempos[o.tipo_ocorrencia] = [];
+                        }
+                        tipoTempos[o.tipo_ocorrencia].push(tempo);
+                      }
+                    });
+                    
+                    const tipoMedias = Object.entries(tipoTempos)
+                      .map(([tipo, tempos]) => {
+                        const media = tempos.reduce((a, b) => a + b, 0) / tempos.length;
+                        return [tipo, Math.round(media)];
+                      })
+                      .sort(([,a], [,b]) => b - a)
+                      .slice(0, 6);
+                    
+                    const maxTempo = Math.max(...tipoMedias.map(([,tempo]) => tempo));
+                    
+                    return tipoMedias.map(([tipo, tempo]) => {
+                      const horas = Math.floor(tempo / 60);
+                      const minutos = tempo % 60;
+                      const tempoStr = `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+                      const width = (tempo / maxTempo) * 100;
+                      
+                      return (
+                        <div key={tipo} className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="truncate" title={tipo}>
+                              {tipo.length > 25 ? tipo.substring(0, 25) + '...' : tipo}
+                            </span>
+                            <span className="font-mono font-bold">{tempoStr}</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-500 ${
+                                tempo > 10 ? 'bg-red-500' : tempo > 5 ? 'bg-yellow-500' : 'bg-green-500'
+                              }`}
+                              style={{ width: `${width}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
+                  }
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Meta Tempo Resposta - Gauge */}
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Meta Tempo Resposta</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center space-y-4">
+                  {(() => {
+                    const ocorrenciasComTempo = ocorrencias.filter(o => o.hora_acionamento && o.hora_chegada_local);
+                    if (ocorrenciasComTempo.length === 0) {
+                      return (
+                        <div>
+                          <div className="text-3xl font-bold text-muted-foreground">--:--</div>
+                          <p className="text-sm text-muted-foreground">Sem dados suficientes</p>
+                        </div>
+                      );
+                    }
+                    
+                    const totalMinutos = ocorrenciasComTempo.reduce((acc, o) => {
+                      const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                      const [horaC, minC] = o.hora_chegada_local.split(':').map(Number);
+                      const acionamento = horaA * 60 + minA;
+                      const chegada = horaC * 60 + minC;
+                      return acc + (chegada - acionamento);
+                    }, 0);
+                    
+                    const media = Math.round(totalMinutos / ocorrenciasComTempo.length);
+                    const horas = Math.floor(media / 60);
+                    const minutos = media % 60;
+                    const tempoStr = `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+                    
+                    const meta = 8; // Meta de 8 minutos
+                    const percentage = Math.min((media / meta) * 100, 100);
+                    const status = media <= meta ? 'Dentro da Meta' : 'Acima da Meta';
+                    const statusColor = media <= meta ? 'text-green-600' : 'text-red-600';
+                    const gaugeColor = media <= meta ? 'bg-green-500' : 'bg-red-500';
+                    
+                    return (
+                      <div>
+                        <div className="text-4xl font-bold mb-2">{tempoStr}</div>
+                        <div className={`text-sm font-medium mb-4 ${statusColor}`}>{status}</div>
+                        
+                        <div className="relative w-32 h-32 mx-auto mb-4">
+                          <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
+                            <path
+                              className="text-muted stroke-current"
+                              strokeWidth="3"
+                              fill="none"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                            <path
+                              className={`stroke-current ${gaugeColor.replace('bg-', 'text-')}`}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              fill="none"
+                              strokeDasharray={`${percentage}, 100`}
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-xl font-bold">{Math.round(percentage)}%</span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-xs text-muted-foreground">
+                          Meta: 08:00 minutos
+                        </div>
+                      </div>
+                    );
+                  })()
+                  }
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* SEÇÃO 4: ANÁLISE POR LOCAL */}
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+             {/* Locais Mais Críticos */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Locais Mais Críticos</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-3">
+                   {(() => {
+                     const localCount = ocorrencias.reduce((acc, o) => {
+                       const local = o.local_ocorrencia || 'Não informado';
+                       acc[local] = (acc[local] || 0) + 1;
+                       return acc;
+                     }, {});
+                     
+                     const sortedLocais = Object.entries(localCount)
+                       .sort(([,a], [,b]) => b - a)
+                       .slice(0, 8);
+                     
+                     const maxCount = Math.max(...sortedLocais.map(([,count]) => count));
+                     
+                     return sortedLocais.map(([local, count]) => {
+                       const width = (count / maxCount) * 100;
+                       const percentage = ((count / ocorrencias.length) * 100).toFixed(1);
+                       
+                       return (
+                         <div key={local} className="space-y-2">
+                           <div className="flex justify-between items-center">
+                             <div className="flex items-center gap-2">
+                               <MapPin className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-medium truncate" title={local}>
+                                 {local.length > 25 ? local.substring(0, 25) + '...' : local}
+                               </span>
+                             </div>
+                             <div className="text-right">
+                               <span className="text-sm font-bold">{count}</span>
+                               <span className="text-xs text-muted-foreground ml-1">({percentage}%)</span>
+                             </div>
+                           </div>
+                           <div className="w-full bg-muted rounded-full h-2">
+                             <div 
+                               className={`h-2 rounded-full transition-all duration-500 ${
+                                 count >= maxCount * 0.8 ? 'bg-red-500' : 
+                                 count >= maxCount * 0.5 ? 'bg-yellow-500' : 'bg-blue-500'
+                               }`}
+                               style={{ width: `${width}%` }}
+                             ></div>
+                           </div>
+                         </div>
+                       );
+                     });
+                   })()
+                   }
+                 </div>
+               </CardContent>
+             </Card>
+
+             {/* Matriz Tipo vs Local */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Matriz Tipo vs Local</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-3">
+                   {(() => {
+                     // Pegar os 5 tipos mais frequentes
+                     const tipoCount = ocorrencias.reduce((acc, o) => {
+                       acc[o.tipo_ocorrencia] = (acc[o.tipo_ocorrencia] || 0) + 1;
+                       return acc;
+                     }, {});
+                     
+                     const topTipos = Object.entries(tipoCount)
+                       .sort(([,a], [,b]) => b - a)
+                       .slice(0, 4)
+                       .map(([tipo]) => tipo);
+                     
+                     // Pegar os 4 locais mais frequentes
+                     const localCount = ocorrencias.reduce((acc, o) => {
+                       const local = o.local_ocorrencia || 'Não informado';
+                       acc[local] = (acc[local] || 0) + 1;
+                       return acc;
+                     }, {});
+                     
+                     const topLocais = Object.entries(localCount)
+                       .sort(([,a], [,b]) => b - a)
+                       .slice(0, 4)
+                       .map(([local]) => local);
+                     
+                     // Criar matriz
+                     const matriz = {};
+                     topTipos.forEach(tipo => {
+                       matriz[tipo] = {};
+                       topLocais.forEach(local => {
+                         matriz[tipo][local] = 0;
+                       });
+                     });
+                     
+                     // Preencher matriz
+                     ocorrencias.forEach(o => {
+                       const local = o.local_ocorrencia || 'Não informado';
+                       if (topTipos.includes(o.tipo_ocorrencia) && topLocais.includes(local)) {
+                         matriz[o.tipo_ocorrencia][local]++;
+                       }
+                     });
+                     
+                     // Encontrar valor máximo para normalização
+                     let maxValue = 0;
+                     Object.values(matriz).forEach(tipoData => {
+                       Object.values(tipoData).forEach(count => {
+                         if (count > maxValue) maxValue = count;
+                       });
+                     });
+                     
+                     return (
+                       <div className="space-y-2">
+                         {/* Cabeçalho com locais */}
+                         <div className="grid grid-cols-5 gap-1 text-xs">
+                           <div></div>
+                           {topLocais.map(local => (
+                             <div key={local} className="text-center font-medium truncate" title={local}>
+                               {local.length > 8 ? local.substring(0, 8) + '...' : local}
+                             </div>
+                           ))}
+                         </div>
+                         
+                         {/* Linhas da matriz */}
+                         {topTipos.map(tipo => (
+                           <div key={tipo} className="grid grid-cols-5 gap-1 items-center">
+                             <div className="text-xs font-medium truncate pr-2" title={tipo}>
+                               {tipo.length > 15 ? tipo.substring(0, 15) + '...' : tipo}
+                             </div>
+                             {topLocais.map(local => {
+                               const count = matriz[tipo][local];
+                               const intensity = maxValue > 0 ? (count / maxValue) : 0;
+                               const bgColor = intensity > 0.7 ? 'bg-red-500' : 
+                                             intensity > 0.4 ? 'bg-yellow-500' : 
+                                             intensity > 0.1 ? 'bg-blue-500' : 'bg-muted';
+                               
+                               return (
+                                 <div 
+                                   key={`${tipo}-${local}`}
+                                   className={`h-8 rounded flex items-center justify-center text-xs font-bold ${
+                                     intensity > 0.4 ? 'text-white' : 'text-foreground'
+                                   } ${bgColor}`}
+                                   title={`${tipo} em ${local}: ${count} ocorrências`}
+                                 >
+                                   {count > 0 ? count : ''}
+                                 </div>
+                               );
+                             })}
+                           </div>
+                         ))}
+                       </div>
+                     );
+                   })()
+                   }
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+
+           {/* SEÇÃO 5: PERFORMANCE DAS EQUIPES */}
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Ranking de Equipes */}
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Ranking das Equipes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(() => {
+                    const equipeStats = {};
+                    
+                    ocorrencias.forEach(o => {
+                      if (!equipeStats[o.equipe_responsavel || o.equipe]) {
+                        equipeStats[o.equipe_responsavel || o.equipe] = {
+                          count: 0,
+                          temposResposta: [],
+                          temposTotal: [],
+                          concluidas: 0
+                        };
+                      }
+                      
+                      const equipe = o.equipe_responsavel || o.equipe;
+                      equipeStats[equipe].count++;
+                      
+                      if (o.hora_termino) {
+                        equipeStats[equipe].concluidas++;
+                      }
+                      
+                      if (o.hora_acionamento && o.hora_chegada) {
+                        const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                        const [horaC, minC] = o.hora_chegada.split(':').map(Number);
+                        const acionamento = horaA * 60 + minA;
+                        const chegada = horaC * 60 + minC;
+                        equipeStats[equipe].temposResposta.push(chegada - acionamento);
+                      }
+                      
+                      if (o.hora_acionamento && o.hora_termino) {
+                        const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                        const [horaT, minT] = o.hora_termino.split(':').map(Number);
+                        const acionamento = horaA * 60 + minA;
+                        const termino = horaT * 60 + minT;
+                        equipeStats[equipe].temposTotal.push(termino - acionamento);
+                      }
+                    });
+                    
+                    const equipeRanking = Object.entries(equipeStats)
+                      .map(([equipe, stats]) => {
+                        const tempoMedioResposta = stats.temposResposta.length > 0 
+                          ? stats.temposResposta.reduce((a, b) => a + b, 0) / stats.temposResposta.length 
+                          : 0;
+                        const tempoMedioTotal = stats.temposTotal.length > 0 
+                          ? stats.temposTotal.reduce((a, b) => a + b, 0) / stats.temposTotal.length 
+                          : 0;
+                        const taxaConclusao = stats.count > 0 ? (stats.concluidas / stats.count) * 100 : 0;
+                        
+                        return {
+                          equipe,
+                          count: stats.count,
+                          concluidas: stats.concluidas,
+                          taxaConclusao,
+                          tempoMedioResposta: Math.round(tempoMedioResposta),
+                          tempoMedioTotal: Math.round(tempoMedioTotal),
+                          eficiencia: stats.count > 0 ? (stats.concluidas / (tempoMedioTotal / 60)) : 0
+                        };
+                      })
+                      .sort((a, b) => b.count - a.count);
+                    
+                    if (equipeRanking.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>Nenhuma equipe registrada</p>
+                        </div>
+                      );
+                    }
+                    
+                    return equipeRanking.slice(0, 6).map((stats, index) => {
+                      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+                      const completionColor = stats.taxaConclusao >= 90 ? 'text-green-600' : 
+                                            stats.taxaConclusao >= 70 ? 'text-yellow-600' : 'text-red-600';
+                      
+                      return (
+                        <div key={stats.equipe} className={`p-4 rounded-lg border ${
+                          index < 3 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200' : 'bg-card'
+                        }`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg">{medal}</span>
+                              <div>
+                                <div className="font-semibold">Equipe {stats.equipe}</div>
+                                <div className={`text-sm ${completionColor}`}>
+                                  {stats.taxaConclusao.toFixed(1)}% conclusão
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="text-center p-2 rounded bg-blue-50">
+                              <div className="text-lg font-bold text-blue-600">{stats.count}</div>
+                              <div className="text-blue-700">Ocorrências</div>
+                            </div>
+                            <div className="text-center p-2 rounded bg-green-50">
+                              <div className="text-lg font-bold text-green-600">
+                                {stats.tempoMedioResposta > 0 ? `${stats.tempoMedioResposta}min` : '-'}
+                              </div>
+                              <div className="text-green-700">Tempo Resposta</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
+                  }
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Bombeiros Mais Atuantes */}
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Bombeiros Mais Atuantes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(() => {
+                    const bombeiroStats = {};
+                    
+                    ocorrencias.forEach(o => {
+                      if (o.bombeiro_responsavel) {
+                        if (!bombeiroStats[o.bombeiro_responsavel]) {
+                          bombeiroStats[o.bombeiro_responsavel] = {
+                            count: 0,
+                            equipe: o.equipe_responsavel || o.equipe,
+                            temposResposta: [],
+                            concluidas: 0
+                          };
+                        }
+                        
+                        bombeiroStats[o.bombeiro_responsavel].count++;
+                        
+                        if (o.hora_termino) {
+                          bombeiroStats[o.bombeiro_responsavel].concluidas++;
+                        }
+                        
+                        if (o.hora_acionamento && o.hora_chegada) {
+                          const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                          const [horaC, minC] = o.hora_chegada.split(':').map(Number);
+                          const acionamento = horaA * 60 + minA;
+                          const chegada = horaC * 60 + minC;
+                          bombeiroStats[o.bombeiro_responsavel].temposResposta.push(chegada - acionamento);
+                        }
+                      }
+                    });
+                    
+                    const bombeiroRanking = Object.entries(bombeiroStats)
+                      .map(([bombeiro, stats]) => {
+                        const tempoMedioResposta = stats.temposResposta.length > 0 
+                          ? stats.temposResposta.reduce((a, b) => a + b, 0) / stats.temposResposta.length 
+                          : 0;
+                        const taxaConclusao = stats.count > 0 ? (stats.concluidas / stats.count) * 100 : 0;
+                        
+                        return {
+                          bombeiro,
+                          count: stats.count,
+                          equipe: stats.equipe,
+                          concluidas: stats.concluidas,
+                          taxaConclusao,
+                          tempoMedioResposta: Math.round(tempoMedioResposta)
+                        };
+                      })
+                      .sort((a, b) => b.count - a.count);
+                    
+                    if (bombeiroRanking.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>Nenhum bombeiro registrado</p>
+                        </div>
+                      );
+                    }
+                    
+                    const maxCount = Math.max(...bombeiroRanking.map(b => b.count));
+                    
+                    return bombeiroRanking.slice(0, 8).map((bombeiro, index) => {
+                      const percentage = (bombeiro.count / maxCount) * 100;
+                      const performanceLevel = bombeiro.taxaConclusao >= 90 ? 'Excelente' : 
+                                             bombeiro.taxaConclusao >= 75 ? 'Bom' : 'Regular';
+                      const performanceColor = bombeiro.taxaConclusao >= 90 ? 'text-green-600' : 
+                                             bombeiro.taxaConclusao >= 75 ? 'text-blue-600' : 'text-yellow-600';
+                      
+                      return (
+                        <div key={bombeiro.bombeiro} className="p-3 rounded-lg bg-muted/50">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <div className="font-semibold">{bombeiro.bombeiro}</div>
+                              <div className="text-xs text-muted-foreground">
+                                Equipe {bombeiro.equipe} • {performanceLevel}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold">{bombeiro.count}</div>
+                              <div className={`text-xs ${performanceColor}`}>
+                                {bombeiro.taxaConclusao.toFixed(0)}%
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="w-full bg-muted rounded-full h-2 mb-2">
+                            <div 
+                              className="h-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                          
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Tempo médio: {bombeiro.tempoMedioResposta > 0 ? `${bombeiro.tempoMedioResposta}min` : '-'}</span>
+                            <span>{bombeiro.concluidas}/{bombeiro.count} concluídas</span>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()
+                  }
+                </div>
+              </CardContent>
+            </Card>
+           </div>
+
+           {/* SEÇÃO 5.1: EFICIÊNCIA DAS EQUIPES */}
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             {/* Tempo de Resposta por Equipe */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Tempo de Resposta por Equipe</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-3">
+                   {(() => {
+                     const equipeTempos = {};
+                     
+                     ocorrencias.forEach(o => {
+                       const equipe = o.equipe_responsavel || o.equipe;
+                       if (equipe && o.hora_acionamento && o.hora_chegada) {
+                         if (!equipeTempos[equipe]) {
+                           equipeTempos[equipe] = [];
+                         }
+                         
+                         const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                         const [horaC, minC] = o.hora_chegada.split(':').map(Number);
+                         const acionamento = horaA * 60 + minA;
+                         const chegada = horaC * 60 + minC;
+                         equipeTempos[equipe].push(chegada - acionamento);
+                       }
+                     });
+                     
+                     const equipeAnalise = Object.entries(equipeTempos)
+                       .map(([equipe, tempos]) => {
+                         const media = tempos.reduce((a, b) => a + b, 0) / tempos.length;
+                         const min = Math.min(...tempos);
+                         const max = Math.max(...tempos);
+                         
+                         return {
+                           equipe,
+                           media: Math.round(media),
+                           min: Math.round(min),
+                           max: Math.round(max),
+                           count: tempos.length
+                         };
+                       })
+                       .sort((a, b) => a.media - b.media);
+                     
+                     if (equipeAnalise.length === 0) {
+                       return (
+                         <div className="text-center py-8 text-muted-foreground">
+                           <p>Nenhum dado de tempo disponível</p>
+                         </div>
+                       );
+                     }
+                     
+                     const maxMedia = Math.max(...equipeAnalise.map(e => e.media));
+                     
+                     return equipeAnalise.map((equipe, index) => {
+                       const percentage = (equipe.media / maxMedia) * 100;
+                       const performance = equipe.media <= 8 ? 'Excelente' : 
+                                         equipe.media <= 12 ? 'Bom' : 'Precisa Melhorar';
+                       const color = equipe.media <= 8 ? 'bg-green-500' : 
+                                   equipe.media <= 12 ? 'bg-yellow-500' : 'bg-red-500';
+                       
+                       return (
+                         <div key={equipe.equipe} className="p-3 rounded-lg border bg-card">
+                           <div className="flex items-center justify-between mb-2">
+                             <div className="font-semibold">Equipe {equipe.equipe}</div>
+                             <div className="text-sm text-muted-foreground">{performance}</div>
+                           </div>
+                           
+                           <div className="mb-2">
+                             <div className="flex justify-between text-sm mb-1">
+                               <span>Média: {equipe.media}min</span>
+                               <span>{equipe.count} ocorrências</span>
+                             </div>
+                             <div className="w-full bg-muted rounded-full h-2">
+                               <div 
+                                 className={`h-2 ${color} rounded-full transition-all duration-500`}
+                                 style={{ width: `${percentage}%` }}
+                               ></div>
+                             </div>
+                           </div>
+                           
+                           <div className="flex justify-between text-xs text-muted-foreground">
+                             <span>Min: {equipe.min}min</span>
+                             <span>Max: {equipe.max}min</span>
+                           </div>
+                         </div>
+                       );
+                     });
+                   })()
+                   }
+                 </div>
+               </CardContent>
+             </Card>
+
+             {/* Distribuição de Ocorrências */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Distribuição por Equipe</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-4">
+                   {(() => {
+                     const equipeCount = {};
+                     
+                     ocorrencias.forEach(o => {
+                       const equipe = o.equipe_responsavel || o.equipe;
+                       if (equipe) {
+                         equipeCount[equipe] = (equipeCount[equipe] || 0) + 1;
+                       }
+                     });
+                     
+                     const total = Object.values(equipeCount).reduce((a, b) => a + b, 0);
+                     const equipeDistribuicao = Object.entries(equipeCount)
+                       .map(([equipe, count]) => ({
+                         equipe,
+                         count,
+                         percentage: ((count / total) * 100).toFixed(1)
+                       }))
+                       .sort((a, b) => b.count - a.count);
+                     
+                     if (equipeDistribuicao.length === 0) {
+                       return (
+                         <div className="text-center py-8 text-muted-foreground">
+                           <p>Nenhuma equipe registrada</p>
+                         </div>
+                       );
+                     }
+                     
+                     const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
+                     
+                     return (
+                       <div>
+                         <div className="text-center mb-4">
+                           <div className="text-3xl font-bold">{total}</div>
+                           <p className="text-sm text-muted-foreground">Total de Ocorrências</p>
+                         </div>
+                         
+                         <div className="space-y-3">
+                           {equipeDistribuicao.map((equipe, index) => (
+                             <div key={equipe.equipe} className="flex items-center gap-3">
+                               <div className={`w-4 h-4 rounded-full ${colors[index] || 'bg-gray-500'}`}></div>
+                               <div className="flex-1">
+                                 <div className="flex justify-between items-center mb-1">
+                                   <span className="font-semibold">Equipe {equipe.equipe}</span>
+                                   <span className="text-sm">{equipe.percentage}%</span>
+                                 </div>
+                                 <div className="w-full bg-muted rounded-full h-2">
+                                   <div 
+                                     className={`h-2 ${colors[index] || 'bg-gray-500'} rounded-full transition-all duration-500`}
+                                     style={{ width: `${equipe.percentage}%` }}
+                                   ></div>
+                                 </div>
+                                 <div className="text-xs text-muted-foreground mt-1">
+                                   {equipe.count} ocorrências
+                                 </div>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     );
+                   })()
+                   }
+                 </div>
+               </CardContent>
+             </Card>
+
+             {/* Metas e Indicadores */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Metas e Indicadores</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-4">
+                   {(() => {
+                     const temposResposta = [];
+                     const ocorrenciasConcluidas = ocorrencias.filter(o => o.hora_termino).length;
+                     const totalOcorrencias = ocorrencias.length;
+                     
+                     ocorrencias.forEach(o => {
+                       if (o.hora_acionamento && o.hora_chegada) {
+                         const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                         const [horaC, minC] = o.hora_chegada.split(':').map(Number);
+                         const acionamento = horaA * 60 + minA;
+                         const chegada = horaC * 60 + minC;
+                         temposResposta.push(chegada - acionamento);
+                       }
+                     });
+                     
+                     const tempoMedioGeral = temposResposta.length > 0 
+                       ? temposResposta.reduce((a, b) => a + b, 0) / temposResposta.length 
+                       : 0;
+                     
+                     const metaTempo = 8; // 8 minutos
+                     const taxaConclusaoGeral = totalOcorrencias > 0 ? (ocorrenciasConcluidas / totalOcorrencias) * 100 : 0;
+                     const metaConclusao = 95; // 95%
+                     
+                     const temposDentroMeta = temposResposta.filter(t => t <= metaTempo).length;
+                     const percentualDentroMeta = temposResposta.length > 0 ? (temposDentroMeta / temposResposta.length) * 100 : 0;
+                     
+                     return (
+                       <div className="space-y-4">
+                         {/* Meta Tempo de Resposta */}
+                         <div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
+                           <div className="flex items-center justify-between mb-2">
+                             <span className="font-semibold text-blue-800">Tempo de Resposta</span>
+                             <Clock className="h-4 w-4 text-blue-600" />
+                           </div>
+                           <div className="text-2xl font-bold text-blue-600 mb-1">
+                             {Math.round(tempoMedioGeral)}min
+                           </div>
+                           <div className="text-sm text-blue-700 mb-2">
+                             Meta: {metaTempo}min
+                           </div>
+                           <div className="w-full bg-blue-200 rounded-full h-2">
+                             <div 
+                               className={`h-2 rounded-full transition-all duration-500 ${
+                                 tempoMedioGeral <= metaTempo ? 'bg-green-500' : 'bg-red-500'
+                               }`}
+                               style={{ width: `${Math.min((metaTempo / Math.max(tempoMedioGeral, metaTempo)) * 100, 100)}%` }}
+                             ></div>
+                           </div>
+                           <div className="text-xs text-blue-600 mt-1">
+                             {percentualDentroMeta.toFixed(1)}% dentro da meta
+                           </div>
+                         </div>
+                         
+                         {/* Meta Taxa de Conclusão */}
+                         <div className="p-4 rounded-lg border border-green-200 bg-green-50">
+                           <div className="flex items-center justify-between mb-2">
+                             <span className="font-semibold text-green-800">Taxa de Conclusão</span>
+                             <Badge className="bg-green-600">{taxaConclusaoGeral.toFixed(1)}%</Badge>
+                           </div>
+                           <div className="text-2xl font-bold text-green-600 mb-1">
+                             {ocorrenciasConcluidas}/{totalOcorrencias}
+                           </div>
+                           <div className="text-sm text-green-700 mb-2">
+                             Meta: {metaConclusao}%
+                           </div>
+                           <div className="w-full bg-green-200 rounded-full h-2">
+                             <div 
+                               className={`h-2 rounded-full transition-all duration-500 ${
+                                 taxaConclusaoGeral >= metaConclusao ? 'bg-green-500' : 'bg-yellow-500'
+                               }`}
+                               style={{ width: `${Math.min(taxaConclusaoGeral, 100)}%` }}
+                             ></div>
+                           </div>
+                         </div>
+                         
+                         {/* Alertas */}
+                         <div className="space-y-2">
+                           {tempoMedioGeral > metaTempo && (
+                             <div className="p-2 rounded bg-red-50 border border-red-200">
+                               <div className="flex items-center gap-2">
+                                 <AlertTriangle className="h-4 w-4 text-red-600" />
+                                 <span className="text-sm text-red-800">Tempo médio acima da meta</span>
+                               </div>
+                             </div>
+                           )}
+                           
+                           {taxaConclusaoGeral < metaConclusao && (
+                             <div className="p-2 rounded bg-yellow-50 border border-yellow-200">
+                               <div className="flex items-center gap-2">
+                                 <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                                 <span className="text-sm text-yellow-800">Taxa de conclusão abaixo da meta</span>
+                               </div>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     );
+                   })()
+                   }
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+
+            {/* Alertas e Indicadores */}
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Alertas e Indicadores</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Ocorrências > 30min */}
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <span className="font-semibold text-red-800">Tempo Crítico</span>
+                    </div>
+                    <div className="text-2xl font-bold text-red-600">
+                      {(() => {
+                        const ocorrenciasCriticas = ocorrencias.filter(o => {
+                          if (!o.hora_acionamento || !o.hora_termino) return false;
+                          const [horaA, minA] = o.hora_acionamento.split(':').map(Number);
+                          const [horaT, minT] = o.hora_termino.split(':').map(Number);
+                          const acionamento = horaA * 60 + minA;
+                          const termino = horaT * 60 + minT;
+                          return (termino - acionamento) > 30;
+                        });
+                        return ocorrenciasCriticas.length;
+                      })()
+                      }
+                    </div>
+                    <p className="text-sm text-red-700">Ocorrências &gt; 30min</p>
+                  </div>
+
+                  {/* Picos de Atividade */}
+                  <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BarChart3 className="h-4 w-4 text-yellow-600" />
+                      <span className="font-semibold text-yellow-800">Pico de Atividade</span>
+                    </div>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {(() => {
+                        const hoje = new Date().toISOString().split('T')[0];
+                        const ocorrenciasHoje = ocorrencias.filter(o => o.data_ocorrencia === hoje);
+                        return ocorrenciasHoje.length;
+                      })()}
+                    </div>
+                    <p className="text-sm text-yellow-700">Ocorrências hoje</p>
+                  </div>
+
+                  {/* Status Geral */}
+                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-blue-600" />
+                      <span className="font-semibold text-blue-800">Status Geral</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Taxa de Resposta</span>
+                        <span className="font-semibold">
+                          {(() => {
+                            const comTempo = ocorrencias.filter(o => o.hora_acionamento && o.hora_chegada_local).length;
+                            const total = ocorrencias.length;
+                            return total > 0 ? `${Math.round((comTempo / total) * 100)}%` : '0%';
+                          })()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Conclusão</span>
+                        <span className="font-semibold">
+                          {(() => {
+                            const concluidas = ocorrencias.filter(o => o.hora_termino).length;
+                            const total = ocorrencias.length;
+                            return total > 0 ? `${Math.round((concluidas / total) * 100)}%` : '0%';
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+             </Card>
+           </div>
+
+           {/* SEÇÃO 6: RECURSOS UTILIZADOS */}
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+             {/* Veículos Mais Usados */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Veículos Mais Utilizados</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-4">
+                   {(() => {
+                     const veiculoCount = ocorrencias.reduce((acc, o) => {
+                       if (o.veiculo_utilizado) {
+                         acc[o.veiculo_utilizado] = (acc[o.veiculo_utilizado] || 0) + 1;
+                       }
+                       return acc;
+                     }, {});
+                     
+                     const sortedVeiculos = Object.entries(veiculoCount)
+                       .sort(([,a], [,b]) => b - a)
+                       .slice(0, 6);
+                     
+                     const total = Object.values(veiculoCount).reduce((a, b) => a + b, 0);
+                     const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500'];
+                     
+                     if (sortedVeiculos.length === 0) {
+                       return (
+                         <div className="text-center py-8 text-muted-foreground">
+                           <p>Nenhum veículo registrado</p>
+                         </div>
+                       );
+                     }
+                     
+                     return sortedVeiculos.map(([veiculo, count], index) => {
+                       const percentage = ((count / total) * 100).toFixed(1);
+                       const usageLevel = count > total * 0.3 ? 'Alto' : count > total * 0.15 ? 'Médio' : 'Baixo';
+                       const usageColor = count > total * 0.3 ? 'text-red-600' : count > total * 0.15 ? 'text-yellow-600' : 'text-green-600';
+                       
+                       return (
+                         <div key={veiculo} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                           <div className="flex items-center gap-3">
+                             <div className={`w-3 h-3 rounded-full ${colors[index]}`}></div>
+                             <div>
+                               <div className="font-semibold">{veiculo}</div>
+                               <div className={`text-sm ${usageColor}`}>Uso: {usageLevel}</div>
+                             </div>
+                           </div>
+                           <div className="text-right">
+                             <div className="text-lg font-bold">{count}</div>
+                             <div className="text-xs text-muted-foreground">{percentage}%</div>
+                           </div>
+                         </div>
+                       );
+                     });
+                   })()
+                   }
+                 </div>
+               </CardContent>
+             </Card>
+
+             {/* Agentes Extintores */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Agentes Extintores</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-4">
+                   {(() => {
+                     const lgeCount = ocorrencias.filter(o => o.lge_utilizado && parseInt(o.lge_utilizado) > 0).length;
+                     const pqsCount = ocorrencias.filter(o => o.pqs_utilizado && parseInt(o.pqs_utilizado) > 0).length;
+                     const totalAgentes = lgeCount + pqsCount;
+                     
+                     const lgeTotal = ocorrencias.reduce((acc, o) => {
+                       return acc + (parseInt(o.lge_utilizado) || 0);
+                     }, 0);
+                     
+                     const pqsTotal = ocorrencias.reduce((acc, o) => {
+                       return acc + (parseInt(o.pqs_utilizado) || 0);
+                     }, 0);
+                     
+                     return (
+                       <div className="space-y-4">
+                         {/* LGE */}
+                         <div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
+                           <div className="flex items-center justify-between mb-2">
+                             <div className="flex items-center gap-2">
+                               <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                               <span className="font-semibold text-blue-800">LGE (Líquido Gerador de Espuma)</span>
+                             </div>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                             <div>
+                               <div className="text-2xl font-bold text-blue-600">{lgeCount}</div>
+                               <div className="text-sm text-blue-700">Ocorrências</div>
+                             </div>
+                             <div>
+                               <div className="text-2xl font-bold text-blue-600">{lgeTotal}L</div>
+                               <div className="text-sm text-blue-700">Total Utilizado</div>
+                             </div>
+                           </div>
+                           <div className="mt-2">
+                             <div className="text-xs text-blue-600">
+                               Média: {lgeCount > 0 ? (lgeTotal / lgeCount).toFixed(1) : '0'}L por ocorrência
+                             </div>
+                           </div>
+                         </div>
+                         
+                         {/* PQS */}
+                         <div className="p-4 rounded-lg border border-green-200 bg-green-50">
+                           <div className="flex items-center justify-between mb-2">
+                             <div className="flex items-center gap-2">
+                               <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                               <span className="font-semibold text-green-800">PQS (Pó Químico Seco)</span>
+                             </div>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                             <div>
+                               <div className="text-2xl font-bold text-green-600">{pqsCount}</div>
+                               <div className="text-sm text-green-700">Ocorrências</div>
+                             </div>
+                             <div>
+                               <div className="text-2xl font-bold text-green-600">{pqsTotal}kg</div>
+                               <div className="text-sm text-green-700">Total Utilizado</div>
+                             </div>
+                           </div>
+                           <div className="mt-2">
+                             <div className="text-xs text-green-600">
+                               Média: {pqsCount > 0 ? (pqsTotal / pqsCount).toFixed(1) : '0'}kg por ocorrência
+                             </div>
+                           </div>
+                         </div>
+                         
+                         {/* Comparativo */}
+                         {totalAgentes > 0 && (
+                           <div className="p-3 rounded-lg bg-muted/50">
+                             <div className="text-sm font-medium mb-2">Distribuição de Uso</div>
+                             <div className="flex gap-2">
+                               <div className="flex-1">
+                                 <div className="flex justify-between text-xs mb-1">
+                                   <span>LGE</span>
+                                   <span>{((lgeCount / totalAgentes) * 100).toFixed(1)}%</span>
+                                 </div>
+                                 <div className="w-full bg-muted rounded-full h-2">
+                                   <div 
+                                     className="h-2 bg-blue-500 rounded-full transition-all duration-500"
+                                     style={{ width: `${(lgeCount / totalAgentes) * 100}%` }}
+                                   ></div>
+                                 </div>
+                               </div>
+                               <div className="flex-1">
+                                 <div className="flex justify-between text-xs mb-1">
+                                   <span>PQS</span>
+                                   <span>{((pqsCount / totalAgentes) * 100).toFixed(1)}%</span>
+                                 </div>
+                                 <div className="w-full bg-muted rounded-full h-2">
+                                   <div 
+                                     className="h-2 bg-green-500 rounded-full transition-all duration-500"
+                                     style={{ width: `${(pqsCount / totalAgentes) * 100}%` }}
+                                   ></div>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                     );
+                   })()
+                   }
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+
+           {/* SEÇÃO 7: RELATÓRIOS E ESTATÍSTICAS ADICIONAIS */}
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             {/* Eficiência Operacional */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Eficiência Operacional</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-4">
+                   <div className="text-center">
+                     <div className="text-3xl font-bold text-blue-600">
+                       {(() => {
+                         const concluidas = ocorrencias.filter(o => o.hora_termino).length;
+                         const total = ocorrencias.length;
+                         return total > 0 ? Math.round((concluidas / total) * 100) : 0;
+                       })()
+                       }%
+                     </div>
+                     <p className="text-sm text-muted-foreground">Taxa de Conclusão</p>
+                   </div>
+                   
+                   <div className="space-y-2">
+                     <div className="flex justify-between text-sm">
+                       <span>Ocorrências Concluídas</span>
+                       <span className="font-semibold">
+                         {ocorrencias.filter(o => o.hora_termino).length}
+                       </span>
+                     </div>
+                     <div className="flex justify-between text-sm">
+                       <span>Em Andamento</span>
+                       <span className="font-semibold text-orange-600">
+                         {ocorrencias.filter(o => !o.hora_termino).length}
+                       </span>
+                     </div>
+                     <div className="flex justify-between text-sm">
+                       <span>Total Registradas</span>
+                       <span className="font-semibold">
+                         {ocorrencias.length}
+                       </span>
+                     </div>
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+
+             {/* Análise Mensal */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Análise Mensal</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-4">
+                   {(() => {
+                     const currentMonth = new Date().getMonth();
+                     const currentYear = new Date().getFullYear();
+                     
+                     const thisMonth = ocorrencias.filter(o => {
+                       const date = new Date(o.data_ocorrencia);
+                       return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+                     }).length;
+                     
+                     const lastMonth = ocorrencias.filter(o => {
+                       const lastMonthNum = currentMonth - 1;
+                       const year = lastMonthNum < 0 ? currentYear - 1 : currentYear;
+                       const month = lastMonthNum < 0 ? 11 : lastMonthNum;
+                       const date = new Date(o.data_ocorrencia);
+                       return date.getMonth() === month && date.getFullYear() === year;
+                     }).length;
+                     
+                     const diff = thisMonth - lastMonth;
+                     const trend = diff > 0 ? 'Aumento' : diff < 0 ? 'Redução' : 'Estável';
+                     const trendColor = diff > 0 ? 'text-red-600' : diff < 0 ? 'text-green-600' : 'text-blue-600';
+                     
+                     return (
+                       <div>
+                         <div className="text-center mb-4">
+                           <div className="text-3xl font-bold">{thisMonth}</div>
+                           <p className="text-sm text-muted-foreground">Este Mês</p>
+                         </div>
+                         
+                         <div className="space-y-2">
+                           <div className="flex justify-between text-sm">
+                             <span>Mês Anterior</span>
+                             <span className="font-semibold">{lastMonth}</span>
+                           </div>
+                           <div className="flex justify-between text-sm">
+                             <span>Variação</span>
+                             <span className={`font-semibold ${trendColor}`}>
+                               {diff > 0 ? '+' : ''}{diff} ({trend})
+                             </span>
+                           </div>
+                           <div className="flex justify-between text-sm">
+                             <span>Média Diária</span>
+                             <span className="font-semibold">
+                               {(thisMonth / new Date().getDate()).toFixed(1)}
+                             </span>
+                           </div>
+                         </div>
+                       </div>
+                     );
+                   })()
+                   }
+                 </div>
+               </CardContent>
+             </Card>
+
+             {/* Próximas Ações */}
+             <Card className="glass-card">
+               <CardHeader>
+                 <CardTitle className="text-lg font-semibold">Próximas Ações</CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <div className="space-y-3">
+                   <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                     <div className="flex items-center gap-2 mb-1">
+                       <BarChart3 className="h-4 w-4 text-blue-600" />
+                       <span className="text-sm font-semibold text-blue-800">Relatório Mensal</span>
+                     </div>
+                     <p className="text-xs text-blue-700">Gerar análise completa do mês</p>
+                   </div>
+                   
+                   <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                     <div className="flex items-center gap-2 mb-1">
+                       <Users className="h-4 w-4 text-yellow-600" />
+                       <span className="text-sm font-semibold text-yellow-800">Treinamento</span>
+                     </div>
+                     <p className="text-xs text-yellow-700">Revisar procedimentos das equipes</p>
+                   </div>
+                   
+                   <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+                     <div className="flex items-center gap-2 mb-1">
+                       <AlertTriangle className="h-4 w-4 text-green-600" />
+                       <span className="text-sm font-semibold text-green-800">Manutenção</span>
+                     </div>
+                     <p className="text-xs text-green-700">Verificar equipamentos e veículos</p>
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+         </div>
+       ) : (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Ocorrencias</h1>
+              <p className="text-sm text-muted-foreground">
+                Registro e acompanhamento de emergencias
+              </p>
+              <p className="text-muted-foreground">
+                Gerencie relatorios pos-ocorrencia e acompanhe indicadores
+              </p>
+            </div>
+            
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Nova Ocorrencia
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Registrar Nova Ocorrencia</DialogTitle>
+                  <DialogDescription>
+                    Preencha as informacoes da ocorrencia atendida
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <div className="space-y-4 border rounded-lg p-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                        <MapPin className="h-5 w-5" />
+                        Informacoes Iniciais
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="tipo_ocorrencia"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tipo de Ocorrencia</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o tipo" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {TIPOS_OCORRENCIA.map((tipo) => (
+                                    <SelectItem key={tipo} value={tipo}>
+                                      {tipo}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="local_mapa_grade"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Local (Mapa de Grade)</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Ex: Grade A-5, Setor Norte" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="data_ocorrencia"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel>Data da Ocorrencia</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="date" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 border rounded-lg p-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                        <Clock className="h-5 w-5" />
+                        Controle de Horarios
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="hora_acionamento"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hora do Acionamento</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="time" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="hora_chegada_local"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hora da Chegada ao Local</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="time" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="hora_termino"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hora do Termino</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="time" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {horaAcionamento && horaTermino && (
+                        <div className="mt-4 p-3 bg-secondary/20 rounded-lg border border-secondary">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span>Duracao Total da Ocorrencia:</span>
+                            <span className="text-primary font-bold">
+                              {(() => {
+                                const duracao = calculateTempoGasto(horaAcionamento, horaTermino);
+                                if (duracao && duracao > 0) {
+                                  const horas = Math.floor(duracao / 60);
+                                  const minutos = duracao % 60;
+                                  return `${horas}h ${minutos}min`;
+                                }
+                                return "Calcular duracao";
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4 border rounded-lg p-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                        <Users className="h-5 w-5" />
+                        Equipe e Recursos
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="equipe"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Equipe</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione a equipe" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {EQUIPES.map((equipe) => (
+                                    <SelectItem key={equipe} value={equipe}>
+                                      {equipe}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="bombeiros_envolvidos"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bombeiros Envolvidos</FormLabel>
+                              <Select 
+                                onValueChange={(value) => {
+                                  const current = field.value || [];
+                                  if (!current.includes(value)) {
+                                    field.onChange([...current, value]);
+                                  }
+                                }}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione os bombeiros" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {bombeirosByEquipe.map((bombeiro) => (
+                                    <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                                      {bombeiro.nome}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {(field.value || []).map((bombeiroId) => {
+                                  const bombeiro = bombeiros.find(b => b.id === bombeiroId);
+                                  return bombeiro ? (
+                                    <Badge key={bombeiroId} variant="secondary" className="gap-1">
+                                      {bombeiro.nome}
+                                      <button
+                                        type="button"
+                                        onClick={() => field.onChange((field.value || []).filter(id => id !== bombeiroId))}
+                                        className="ml-1 hover:bg-destructive/20 rounded-full"
+                                      >
+                                        ×
+                                      </button>
+                                    </Badge>
+                                  ) : null;
+                                })}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="viaturas"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Viaturas Utilizadas</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Ex: AB-01, AR-02" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="equipamentos"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Equipamentos Utilizados</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Ex: Espuma, Mangueiras, EPIs" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 border rounded-lg p-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                        <AlertTriangle className="h-5 w-5" />
+                        Dados da Ocorrencia
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="quantidade_vitimas"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Quantidade de Vitimas</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  min="0"
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="quantidade_obitos"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Quantidade de Obitos</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  min="0"
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 border rounded-lg p-4">
+                      <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                        <AlertTriangle className="h-5 w-5" />
+                        Descricoes
+                      </h3>
+                      
+                      <FormField
+                        control={form.control}
+                        name="descricao_inicial"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Descricao Inicial</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Descricao inicial da ocorrencia..." />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="descricao_detalhada"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Descricao Detalhada</FormLabel>
+                            <FormControl>
+                              <Textarea {...field} placeholder="Descricao detalhada dos procedimentos realizados..." rows={4} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                      <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit">Registrar Ocorrencia</Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar ocorrencias..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <Select value={filterEquipe} onValueChange={setFilterEquipe}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas Equipes</SelectItem>
+                  {EQUIPES.map((equipe) => (
+                    <SelectItem key={equipe} value={equipe}>{equipe}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={filterTipo} onValueChange={setFilterTipo}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  {TIPOS_OCORRENCIA.map((tipo) => (
+                    <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <div className="flex border rounded-md">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="rounded-r-none"
+                >
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="rounded-l-none"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {filteredOcorrencias.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhuma ocorrencia encontrada</h3>
+                <p className="text-muted-foreground text-center">
+                  {searchTerm || filterEquipe !== "all" || filterTipo !== "all"
+                    ? "Tente ajustar os filtros de busca"
+                    : "Registre a primeira ocorrencia clicando no botao acima"}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+              {filteredOcorrencias.map((ocorrencia) => (
+                viewMode === 'grid' ? (
+                  <Card key={ocorrencia.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-base font-medium line-clamp-2">
+                            {ocorrencia.tipo_ocorrencia}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {ocorrencia.local_mapa_grade || "Local nao informado"}
+                          </p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewOcorrencia(ocorrencia)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Visualizar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditOcorrencia(ocorrencia)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Data:</span>
+                          <span>{format(new Date(ocorrencia.data_ocorrencia), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Equipe:</span>
+                          <Badge variant="outline">{ocorrencia.equipe}</Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Acionamento:</span>
+                          <span>{ocorrencia.hora_acionamento}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                          <div className="text-center">
+                            <div className="text-lg font-semibold">{ocorrencia.quantidade_vitimas}</div>
+                            <p className="text-muted-foreground">Vitimas</p>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-lg font-semibold">{ocorrencia.quantidade_obitos}</div>
+                            <p className="text-muted-foreground">Obitos</p>
+                          </div>
+                        </div>
+                        
+                        {ocorrencia.tempo_gasto_minutos && (
+                          <div className="text-xs text-muted-foreground text-center pt-2 border-t">
+                            <span>Duracao: {Math.floor(ocorrencia.tempo_gasto_minutos / 60)}h {ocorrencia.tempo_gasto_minutos % 60}min</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card key={ocorrencia.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                          <div className="md:col-span-2">
+                            <div className="font-medium line-clamp-1">{ocorrencia.tipo_ocorrencia}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {format(new Date(ocorrencia.data_ocorrencia), 'dd/MM/yyyy', { locale: ptBR })}
+                            </div>
+                          </div>
+                          
+                          <div className="text-center">
+                            <Badge variant="outline">{ocorrencia.equipe}</Badge>
+                          </div>
+                          
+                          <div className="text-center text-sm">
+                            {ocorrencia.hora_acionamento}
+                          </div>
+                          
+                          <div className="text-center">
+                            {ocorrencia.tempo_gasto_minutos ? (
+                              <span className="text-sm">
+                                {Math.floor(ocorrencia.tempo_gasto_minutos / 60)}h {ocorrencia.tempo_gasto_minutos % 60}min
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
+                          </div>
+                          
+                          <div className="text-center text-sm">
+                            <span className="mr-2">V: {ocorrencia.quantidade_vitimas}</span>
+                            <span>O: {ocorrencia.quantidade_obitos}</span>
+                          </div>
+                        </div>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewOcorrencia(ocorrencia)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Visualizar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditOcorrencia(ocorrencia)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              ))}
+            </div>
+          )}
+
+          <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Detalhes da Ocorrencia</DialogTitle>
+                <DialogDescription>
+                  Visualizacao completa dos dados da ocorrencia
+                </DialogDescription>
+              </DialogHeader>
+              
+              {selectedOcorrencia && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Tipo de Ocorrencia</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.tipo_ocorrencia}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Local</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.local_mapa_grade || "Nao informado"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Data</label>
+                        <p className="text-sm mt-1">
+                          {format(new Date(selectedOcorrencia.data_ocorrencia), 'dd/MM/yyyy', { locale: ptBR })}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Equipe</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.equipe}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Acionamento</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.hora_acionamento}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Chegada ao Local</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.hora_chegada_local || "Nao informado"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Termino</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.hora_termino || "Nao informado"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Duracao Total</label>
+                        <p className="text-sm mt-1">
+                          {selectedOcorrencia.tempo_gasto_minutos 
+                            ? `${Math.floor(selectedOcorrencia.tempo_gasto_minutos / 60)}h ${selectedOcorrencia.tempo_gasto_minutos % 60}min`
+                            : "Nao calculado"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Viaturas</label>
+                      <p className="text-sm mt-1">{selectedOcorrencia.viaturas || "Nao informado"}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Equipamentos</label>
+                      <p className="text-sm mt-1">{selectedOcorrencia.equipamentos || "Nao informado"}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Vitimas</label>
+                      <p className="text-sm mt-1">{selectedOcorrencia.quantidade_vitimas}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Obitos</label>
+                      <p className="text-sm mt-1">{selectedOcorrencia.quantidade_obitos}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Descricao Inicial</label>
+                      <p className="text-sm mt-1">{selectedOcorrencia.descricao_inicial || "Nao informado"}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Descricao Detalhada</label>
+                      <p className="text-sm mt-1">{selectedOcorrencia.descricao_detalhada || "Nao informado"}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Editar Ocorrencia</DialogTitle>
+                <DialogDescription>
+                  Atualize as informacoes da ocorrencia
+                </DialogDescription>
+              </DialogHeader>
+              
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmitEdit)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="tipo_ocorrencia"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Ocorrencia</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {TIPOS_OCORRENCIA.map((tipo) => (
+                                <SelectItem key={tipo} value={tipo}>
+                                  {tipo}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="equipe"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Equipe</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a equipe" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {EQUIPES.map((equipe) => (
+                                <SelectItem key={equipe} value={equipe}>
+                                  {equipe}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">Salvar Alteracoes</Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Ocorrencias;

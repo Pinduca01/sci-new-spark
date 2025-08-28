@@ -3,8 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import ExercicioPosicionamentoModal from "@/components/ExercicioPosicionamentoModal";
+import { useToast } from "@/hooks/use-toast";
 
 const ExercicioPosicionamento = () => {
+  const { toast } = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+  
   // Mock data para demonstração
   const exercicios = [
     {
@@ -107,7 +113,10 @@ const ExercicioPosicionamento = () => {
             Treinamentos de posicionamento tático e coordenação de equipes
           </p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button 
+          className="flex items-center gap-2"
+          onClick={() => setModalOpen(true)}
+        >
           <Plus className="h-4 w-4" />
           Novo Exercício
         </Button>
@@ -194,6 +203,18 @@ const ExercicioPosicionamento = () => {
           </Table>
         </CardContent>
       </Card>
+      
+      <ExercicioPosicionamentoModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSave={(formulario) => {
+          console.log('Formulário salvo:', formulario);
+          toast({
+            title: "Sucesso",
+            description: "Exercício de posicionamento criado com sucesso!"
+          });
+        }}
+      />
     </div>
   );
 };

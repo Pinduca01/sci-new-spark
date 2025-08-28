@@ -5,8 +5,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import TempoRespostaFormModal from "@/components/TempoRespostaFormModal";
-import HistoricoTempoResposta from "@/components/HistoricoTempoResposta";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ExercicioTempoResposta = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -175,85 +173,72 @@ const ExercicioTempoResposta = () => {
         </Button>
       </div>
 
-      {/* Tabs para Histórico Antigo e Novos Formulários */}
-      <Tabs defaultValue="formularios" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="formularios">Formulários de Tempo Resposta</TabsTrigger>
-          <TabsTrigger value="historico-antigo">Histórico Anterior</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="formularios" className="space-y-4">
-          <HistoricoTempoResposta formularios={formularios} />
-        </TabsContent>
-        
-        <TabsContent value="historico-antigo" className="space-y-4">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Histórico de Simulações (Dados Anteriores)</CardTitle>
-              <CardDescription>
-                Registro cronometrado das simulações de resposta
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Equipe</TableHead>
-                    <TableHead>Chefe de Equipe</TableHead>
-                    <TableHead>Tempo Resposta</TableHead>
-                    <TableHead>Avaliação</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {exercicios.map((exercicio) => (
-                    <TableRow key={exercicio.id}>
-                      <TableCell>{new Date(exercicio.data).toLocaleDateString('pt-BR')}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{exercicio.equipe}</Badge>
-                      </TableCell>
-                      <TableCell>{exercicio.chefeEquipe}</TableCell>
-                      <TableCell>{exercicio.tipoSimulacao}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Timer className="h-3 w-3 text-muted-foreground" />
-                          {exercicio.tempoResposta}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Zap className="h-3 w-3 text-muted-foreground" />
-                          {exercicio.tempoChegada}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            exercicio.status === "Excelente" ? "default" : 
-                            exercicio.status === "Bom" ? "secondary" : "destructive"
-                          }
-                        >
-                          {exercicio.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">Ver</Button>
-                          <Button variant="ghost" size="sm">Editar</Button>
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                            Excluir
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Histórico */}
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle>Histórico de Simulações (Dados Anteriores)</CardTitle>
+          <CardDescription>
+            Registro cronometrado das simulações de resposta
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead>Equipe</TableHead>
+                <TableHead>Chefe de Equipe</TableHead>
+                <TableHead>Tempo Resposta</TableHead>
+                <TableHead>Avaliação</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {exercicios.map((exercicio) => (
+                <TableRow key={exercicio.id}>
+                  <TableCell>{new Date(exercicio.data).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{exercicio.equipe}</Badge>
+                  </TableCell>
+                  <TableCell>{exercicio.chefeEquipe}</TableCell>
+                  <TableCell>{exercicio.tipoSimulacao}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Timer className="h-3 w-3 text-muted-foreground" />
+                      {exercicio.tempoResposta}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-muted-foreground" />
+                      {exercicio.tempoChegada}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        exercicio.status === "Excelente" ? "default" : 
+                        exercicio.status === "Bom" ? "secondary" : "destructive"
+                      }
+                    >
+                      {exercicio.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm">Ver</Button>
+                      <Button variant="ghost" size="sm">Editar</Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        Excluir
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <TempoRespostaFormModal
         open={modalOpen}
