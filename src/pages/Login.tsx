@@ -196,7 +196,7 @@ const Login = () => {
                     type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={`pl-10 h-12 border-slate-200 focus:border-orange-500 focus:ring-orange-500 relative z-10 ${
+                    className={`pl-10 h-12 bg-white hover:bg-white focus:bg-white border-slate-200 focus:border-orange-500 focus:ring-orange-500 relative z-10 ${
                       emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
                     }`}
                     aria-describedby={emailError ? 'email-error' : undefined}
@@ -220,7 +220,7 @@ const Login = () => {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className={`pl-10 pr-12 h-12 border-slate-200 focus:border-orange-500 focus:ring-orange-500 relative z-10 ${
+                    className={`pl-10 pr-12 h-12 bg-white hover:bg-white focus:bg-white border-slate-200 focus:border-orange-500 focus:ring-orange-500 relative z-10 ${
                       passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
                     }`}
                     aria-describedby={passwordError ? 'password-error' : undefined}
