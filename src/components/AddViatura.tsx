@@ -17,15 +17,11 @@ interface AddViaturaProps {
 export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    nome_viatura: "",
     prefixo: "",
-    placa: "",
     modelo: "",
-    ano: new Date().getFullYear(),
-    tipo: "Ambulância",
+    tipo: "CCI",
     status: "ativo",
-    km_atual: 0,
-    data_ultima_revisao: "",
-    proxima_revisao: "",
     observacoes: "",
   });
 
@@ -42,9 +38,11 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
 
     try {
       const dataToInsert = {
-        ...formData,
-        data_ultima_revisao: formData.data_ultima_revisao || null,
-        proxima_revisao: formData.proxima_revisao || null,
+        nome_viatura: formData.nome_viatura,
+        prefixo: formData.prefixo,
+        modelo: formData.modelo,
+        tipo: formData.tipo,
+        status: formData.status,
         observacoes: formData.observacoes || null,
       };
 
@@ -82,27 +80,26 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="prefixo">Prefixo *</Label>
-              <Input
-                id="prefixo"
-                value={formData.prefixo}
-                onChange={(e) => handleInputChange('prefixo', e.target.value)}
-                placeholder="Ex: BA-01"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="placa">Placa *</Label>
-              <Input
-                id="placa"
-                value={formData.placa}
-                onChange={(e) => handleInputChange('placa', e.target.value)}
-                placeholder="Ex: ABC-1234"
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="nome_viatura">Nome da Viatura *</Label>
+            <Input
+              id="nome_viatura"
+              value={formData.nome_viatura}
+              onChange={(e) => handleInputChange('nome_viatura', e.target.value)}
+              placeholder="Ex: CCI 01, CA, CRS 01"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="prefixo">Prefixo da Viatura *</Label>
+            <Input
+              id="prefixo"
+              value={formData.prefixo}
+              onChange={(e) => handleInputChange('prefixo', e.target.value)}
+              placeholder="Ex: CCR 330, CCR 331, CRS 01"
+              required
+            />
           </div>
 
           <div className="space-y-2">
@@ -111,90 +108,37 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
               id="modelo"
               value={formData.modelo}
               onChange={(e) => handleInputChange('modelo', e.target.value)}
-              placeholder="Ex: Mercedes Sprinter"
+              placeholder="Ex: IVECO MAGIRUS X6"
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="ano">Ano *</Label>
-              <Input
-                id="ano"
-                type="number"
-                value={formData.ano}
-                onChange={(e) => handleInputChange('ano', parseInt(e.target.value))}
-                min="1990"
-                max={new Date().getFullYear() + 1}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo *</Label>
-              <Select value={formData.tipo} onValueChange={(value) => handleInputChange('tipo', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Ambulância">Ambulância</SelectItem>
-                  <SelectItem value="Autobomba">Autobomba</SelectItem>
-                  <SelectItem value="Auto Escada">Auto Escada</SelectItem>
-                  <SelectItem value="Auto Tanque">Auto Tanque</SelectItem>
-                  <SelectItem value="Caminhão">Caminhão</SelectItem>
-                  <SelectItem value="Van">Van</SelectItem>
-                  <SelectItem value="Carro">Carro</SelectItem>
-                  <SelectItem value="Motocicleta">Motocicleta</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="tipo">Tipo da Viatura *</Label>
+            <Select value={formData.tipo} onValueChange={(value) => handleInputChange('tipo', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CCI">CCI - Carro Contra Incêndio</SelectItem>
+                <SelectItem value="CRS">CRS - Carro de Salvamento e Resgate</SelectItem>
+                <SelectItem value="CCI RT">CCI RT - Carro Contra Incêndio Reserva Técnica</SelectItem>
+                <SelectItem value="CA">CA - Carro de Apoio</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="manutenção">Manutenção</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="km_atual">Km Atual</Label>
-              <Input
-                id="km_atual"
-                type="number"
-                value={formData.km_atual}
-                onChange={(e) => handleInputChange('km_atual', parseInt(e.target.value) || 0)}
-                min="0"
-                placeholder="0"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="data_ultima_revisao">Última Revisão</Label>
-              <Input
-                id="data_ultima_revisao"
-                type="date"
-                value={formData.data_ultima_revisao}
-                onChange={(e) => handleInputChange('data_ultima_revisao', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="proxima_revisao">Próxima Revisão</Label>
-              <Input
-                id="proxima_revisao"
-                type="date"
-                value={formData.proxima_revisao}
-                onChange={(e) => handleInputChange('proxima_revisao', e.target.value)}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">Status da Viatura *</Label>
+            <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="baixada">Baixada</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -203,7 +147,7 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
               id="observacoes"
               value={formData.observacoes}
               onChange={(e) => handleInputChange('observacoes', e.target.value)}
-              placeholder="Observações gerais sobre a viatura..."
+              placeholder="Observações sobre a viatura..."
               className="resize-none"
               rows={3}
             />

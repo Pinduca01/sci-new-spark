@@ -7,18 +7,15 @@ import { useToast } from "@/hooks/use-toast";
 import { ViaturasGrid } from "@/components/ViaturasGrid";
 import { ViaturasDetails } from "@/components/ViaturasDetails";
 import { AddViatura } from "@/components/AddViatura";
+import { EditViatura } from "@/components/EditViatura";
 
 interface Viatura {
   id: string;
+  nome_viatura: string;
   prefixo: string;
-  placa: string;
   modelo: string;
-  ano: number;
   tipo: string;
   status: string;
-  km_atual: number;
-  data_ultima_revisao: string | null;
-  proxima_revisao: string | null;
   observacoes: string | null;
 }
 
@@ -27,6 +24,7 @@ const Viaturas = () => {
   const [loading, setLoading] = useState(true);
   const [showAddViatura, setShowAddViatura] = useState(false);
   const [selectedViatura, setSelectedViatura] = useState<Viatura | null>(null);
+  const [editingViatura, setEditingViatura] = useState<Viatura | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -68,10 +66,15 @@ const Viaturas = () => {
   const handleViaturaSaved = () => {
     setShowAddViatura(false);
     fetchViaturas();
-    toast({
-      title: "Sucesso",
-      description: "Viatura salva com sucesso!",
-    });
+  };
+
+  const handleEditViatura = (viatura: Viatura) => {
+    setEditingViatura(viatura);
+  };
+
+  const handleViaturaUpdated = () => {
+    setEditingViatura(null);
+    fetchViaturas();
   };
 
   if (selectedViatura) {
@@ -111,6 +114,8 @@ const Viaturas = () => {
         <ViaturasGrid 
           viaturas={viaturas} 
           onSelectViatura={setSelectedViatura}
+          onViaturasUpdate={fetchViaturas}
+          onEditViatura={handleEditViatura}
         />
       )}
 
@@ -118,6 +123,15 @@ const Viaturas = () => {
         <AddViatura 
           onClose={() => setShowAddViatura(false)}
           onSave={handleViaturaSaved}
+        />
+      )}
+
+      {editingViatura && (
+        <EditViatura 
+          viatura={editingViatura}
+          isOpen={true}
+          onClose={() => setEditingViatura(null)}
+          onViaturaUpdated={handleViaturaUpdated}
         />
       )}
     </div>

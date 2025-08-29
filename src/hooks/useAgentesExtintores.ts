@@ -32,7 +32,7 @@ export interface AgenteExtintor {
   };
   viaturas?: {
     prefixo: string;
-    placa: string;
+    nome_viatura: string;
   };
 }
 
@@ -91,7 +91,7 @@ export const useAgentesExtintores = () => {
           ),
           viaturas:viatura_id (
             prefixo,
-            placa
+            nome_viatura
           )
         `)
         .order('data_vencimento', { ascending: true });
@@ -131,7 +131,7 @@ export const useAgentesExtintores = () => {
           ),
           viaturas:viatura_id (
             prefixo,
-            placa
+            nome_viatura
           ),
           bombeiros:responsavel_id (
             nome

@@ -32,7 +32,7 @@ export interface Equipamento {
   };
   viaturas?: {
     prefixo: string;
-    placa: string;
+    nome_viatura: string;
   };
 }
 
@@ -59,7 +59,7 @@ export const useEquipamentos = () => {
           ),
           viaturas:viatura_id (
             prefixo,
-            placa
+            nome_viatura
           )
         `)
         .order('created_at', { ascending: false });

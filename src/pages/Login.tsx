@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Lock, Mail, Shield } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Shield, Loader2 } from "lucide-react";
 import { User, Session } from '@supabase/supabase-js';
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -15,22 +16,48 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Mouse tracking for interactive background
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth) * 100,
-        y: (e.clientY / window.innerHeight) * 100,
-      });
-    };
+  // Email validation
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError("Email é obrigatório");
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError("Formato de email inválido");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  // Password validation
+  const validatePassword = (password: string) => {
+    if (!password) {
+      setPasswordError("Senha é obrigatória");
+      return false;
+    }
+    if (password.length < 6) {
+      setPasswordError("Senha deve ter pelo menos 6 caracteres");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    if (email) validateEmail(email);
+  }, [email]);
+
+  useEffect(() => {
+    if (password) validatePassword(password);
+  }, [password]);
 
   useEffect(() => {
     // Check if the user is already logged in
@@ -55,6 +82,14 @@ const Login = () => {
   }, [navigate, toast]);
 
   const handleLogin = async () => {
+    // Validate before submitting
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+    
+    if (!isEmailValid || !isPasswordValid) {
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -88,12 +123,13 @@ const Login = () => {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen login-3d-bg flex items-center justify-center">
-        <Card className="glass-card-3d animate-scale-in">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <AnimatedBackground />
+        <Card className="w-full max-w-md mx-4 shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
           <CardContent className="p-8">
             <div className="text-center">
-              <div className="loading-spinner-3d mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Verificando autenticação...</p>
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-500" />
+              <p className="mt-4 text-slate-600">Verificando autenticação...</p>
             </div>
           </CardContent>
         </Card>
@@ -102,123 +138,153 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen login-3d-bg overflow-hidden">
-      {/* Interactive Background Elements */}
-      <div className="floating-particles">
-        {[...Array(12)].map((_, i) => (
-          <div key={i} className={`particle particle-${i + 1}`}></div>
-        ))}
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 relative overflow-hidden">
+      <AnimatedBackground />
       
-      {/* Geometric Shapes */}
-      <div className="geometric-shapes">
-        <div className="shape shape-1"></div>
-        <div className="shape shape-2"></div>
-        <div className="shape shape-3"></div>
-        <div className="shape shape-4"></div>
-      </div>
-
-      {/* Dynamic Gradient Overlay */}
-      <div 
-        className="dynamic-gradient"
-        style={{
-          transform: `translate(${mousePosition.x * 0.1}px, ${mousePosition.y * 0.1}px)`,
-        }}
-      ></div>
-
       {/* Main Content */}
-      <div className="login-container">
-        {/* Login Card with 3D Effects */}
-        <Card className="login-card-3d animate-card-entrance">
-          <CardHeader className="text-center space-y-6 pb-8">
-            {/* Logo moderno consistente com sidebar */}
-            <div className="logo-container-3d">
-              <div className="flex items-center justify-center space-x-4">
-                {/* Ícone 3D */}
-                <div className="logo-icon-3d">
-                  <div className="icon-base">
-                    <Shield className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="icon-accent">
-                    <div className="accent-dot"></div>
-                  </div>
+      <div className="flex w-full max-w-6xl mx-auto px-4 items-center justify-between relative z-10">
+        {/* Left Side - Branding */}
+        <div className="hidden lg:flex flex-col space-y-8 flex-1 pr-16">
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl flex items-center justify-center shadow-lg">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold text-slate-800">
+                  SCI-Core <span className="text-orange-500 font-black">Controle</span>
+                </h1>
+              </div>
+            </div>
+            <p className="text-lg text-slate-600 leading-relaxed max-w-md">
+              Sistema integrado de gestão para Seção Contraincêndio com controle completo de operações e recursos.
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="w-full max-w-md">
+          <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+            <CardHeader className="text-center pb-6">
+              {/* Mobile Logo */}
+              <div className="lg:hidden flex items-center justify-center space-x-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-900 rounded-lg flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-white" />
                 </div>
-                
-                {/* Texto com gradiente */}
-                <div className="logo-text-3d">
-                  <h1 className="text-4xl font-black bg-gradient-to-r from-primary via-orange-500 to-blue-600 bg-clip-text text-transparent">
-                    SCI-Core
-                  </h1>
-                  <p className="text-sm text-muted-foreground font-medium -mt-1">
-                    Sistema Integrado
+                <h1 className="text-2xl font-bold text-slate-800">
+                  SCI-Core <span className="text-orange-500">Controle</span>
+                </h1>
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-slate-800">Bem-vindo(a) de volta</h2>
+                <CardDescription className="text-slate-600">
+                  Por favor, insira seus dados para continuar.
+                </CardDescription>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-6 px-6 pb-6">
+              {/* Email Field */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-slate-700">Email</Label>
+                <div className="relative group">
+                  <Mail className="input-icon absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500 transition-colors duration-200 group-focus-within:text-orange-500 z-20" />
+                  <Input 
+                    id="email" 
+                    placeholder="Digite seu email" 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={`pl-10 h-12 border-slate-200 focus:border-orange-500 focus:ring-orange-500 relative z-10 ${
+                      emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
+                    aria-describedby={emailError ? 'email-error' : undefined}
+                  />
+                </div>
+                {emailError && (
+                  <p id="email-error" className="text-sm text-red-600" role="alert">
+                    {emailError}
                   </p>
+                )}
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-slate-700">Senha</Label>
+                <div className="relative group">
+                  <Lock className="input-icon absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500 transition-colors duration-200 group-focus-within:text-orange-500 z-20" />
+                  <Input
+                    id="password"
+                    placeholder="Digite sua senha"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`pl-10 pr-12 h-12 border-slate-200 focus:border-orange-500 focus:ring-orange-500 relative z-10 ${
+                      passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
+                    aria-describedby={passwordError ? 'password-error' : undefined}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="password-toggle-enhanced absolute right-1 top-1/2 transform -translate-y-1/2 h-10 w-10 text-slate-500 hover:text-orange-500 transition-all duration-200 hover:bg-orange-50 rounded-lg z-30"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5 stroke-2" /> : <Eye className="h-5 w-5 stroke-2" />}
+                  </Button>
                 </div>
+                {passwordError && (
+                  <p id="password-error" className="text-sm text-red-600" role="alert">
+                    {passwordError}
+                  </p>
+                )}
               </div>
-            </div>
 
-            <div className="text-center">
-              <CardDescription className="text-base text-muted-foreground">
-                Sistema de Gestão para Seção Contraincêndio
-              </CardDescription>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-6 px-8 pb-8">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-              <div className="input-container-3d">
-                <Mail className="input-icon" />
-                <Input 
-                  id="email" 
-                  placeholder="seuemail@dominio.com" 
-                  type="email" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-3d"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
-              <div className="input-container-3d">
-                <Lock className="input-icon" />
-                <Input
-                  id="password"
-                  placeholder="••••••••"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-3d"
-                />
-                <Button
+              {/* Remember Me & Forgot Password */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-500" />
+                  <span className="text-sm text-slate-600">Lembrar-me</span>
+                </label>
+                <button 
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="password-toggle-3d"
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+                  onClick={() => {
+                    toast({
+                      title: "Funcionalidade em desenvolvimento",
+                      description: "A recuperação de senha estará disponível em breve.",
+                    });
+                  }}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
+                  Esqueci minha senha
+                </button>
               </div>
-            </div>
 
-            <Button 
-              className="button-3d w-full"
-              onClick={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <div className="loading-spinner-3d-small mr-2"></div>
-                  Entrando...
-                </>
-              ) : (
-                "Entrar"
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+              {/* Login Button */}
+              <Button 
+                className={`w-full h-12 text-white font-medium transition-all duration-200 ${
+                  isLoading 
+                    ? 'bg-slate-400 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 hover:shadow-lg transform hover:-translate-y-0.5'
+                }`}
+                onClick={handleLogin}
+                disabled={isLoading || !!emailError || !!passwordError || !email || !password}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Entrando...
+                  </>
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

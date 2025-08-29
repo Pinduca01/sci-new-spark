@@ -1,156 +1,163 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, Calendar, Wrench, AlertTriangle, CheckCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { MoreVertical, Calendar, Gauge, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface Viatura {
   id: string;
+  nome_viatura: string;
   prefixo: string;
-  placa: string;
   modelo: string;
-  ano: number;
   tipo: string;
   status: string;
-  km_atual: number;
-  data_ultima_revisao: string | null;
-  proxima_revisao: string | null;
   observacoes: string | null;
 }
 
 interface ViaturasGridProps {
   viaturas: Viatura[];
   onSelectViatura: (viatura: Viatura) => void;
+  onViaturasUpdate: () => void;
+  onEditViatura: (viatura: Viatura) => void;
 }
 
-export const ViaturasGrid = ({ viaturas, onSelectViatura }: ViaturasGridProps) => {
+export const ViaturasGrid = ({ viaturas, onSelectViatura, onViaturasUpdate, onEditViatura }: ViaturasGridProps) => {
+  const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [viatureToDelete, setViatureToDelete] = useState<string | null>(null);
+
+  const handleDeleteClick = (id: string) => {
+    setViatureToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!viatureToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('viaturas')
+        .delete()
+        .eq('id', viatureToDelete);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Viatura excluída com sucesso!",
+      });
+
+      onViaturasUpdate();
+    } catch (error) {
+      console.error('Erro ao excluir viatura:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir viatura. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setViatureToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setViatureToDelete(null);
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ativo': return 'bg-emerald-500';
-      case 'manutenção': return 'bg-amber-500';
+    switch (status.toLowerCase()) {
+      case 'ativo': return 'bg-green-500';
+      case 'manutencao': return 'bg-yellow-500';
       case 'inativo': return 'bg-red-500';
       default: return 'bg-muted';
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'ativo': return 'default';
-      case 'manutenção': return 'secondary';
-      case 'inativo': return 'destructive';
-      default: return 'outline';
-    }
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
-
-  const isRevisaoVencida = (proximaRevisao: string | null) => {
-    if (!proximaRevisao) return false;
-    return new Date(proximaRevisao) < new Date();
-  };
-
-  const formatKm = (km: number) => {
-    return new Intl.NumberFormat('pt-BR').format(km);
-  };
-
-  if (viaturas.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-muted-foreground mb-2">
-          Nenhuma viatura cadastrada
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          Clique em "Adicionar Nova Viatura" para começar.
-        </p>
-      </div>
-    );
-  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {viaturas.map((viatura) => (
-        <Card 
-          key={viatura.id} 
-          className="glass-card hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer border-l-4 border-l-primary"
-          onClick={() => onSelectViatura(viatura)}
-        >
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg font-semibold">
-                  {viatura.prefixo}
-                </CardTitle>
-              </div>
-              <div className="flex items-center gap-2">
-                <div 
-                  className={`w-3 h-3 rounded-full ${getStatusColor(viatura.status)}`}
-                  title={`Status: ${viatura.status}`}
-                />
-                {isRevisaoVencida(viatura.proxima_revisao) && (
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                )}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground font-medium">
-                {viatura.placa}
-              </p>
-              <Badge variant={getStatusBadgeVariant(viatura.status)} className="w-fit">
-                {viatura.status.charAt(0).toUpperCase() + viatura.status.slice(1)}
+        <Card key={viatura.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-lg font-semibold">
+              {viatura.prefixo}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge 
+                className={`${getStatusColor(viatura.status)} text-white`}
+              >
+                {viatura.status}
               </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEditViatura(viatura)}>
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteClick(viatura.id)}
+                    className="text-red-600"
+                  >
+                    Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </CardHeader>
-          
-          <CardContent className="space-y-3">
+          <CardContent onClick={() => onSelectViatura(viatura)}>
             <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Modelo:</span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Nome:</span>
+                <span className="font-medium">{viatura.nome_viatura}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Modelo:</span>
                 <span className="font-medium">{viatura.modelo}</span>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Ano:</span>
-                <span className="font-medium">{viatura.ano}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Tipo:</span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Tipo:</span>
                 <span className="font-medium">{viatura.tipo}</span>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Km Atual:</span>
-                <span className="font-medium">{formatKm(viatura.km_atual)} km</span>
-              </div>
-            </div>
-
-            {viatura.proxima_revisao && (
-              <div className="pt-2 border-t">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="text-muted-foreground">Próxima Revisão:</p>
-                    <p className={`font-medium ${isRevisaoVencida(viatura.proxima_revisao) ? 'text-destructive' : 'text-foreground'}`}>
-                      {new Date(viatura.proxima_revisao).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="pt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full"
-                onClick={(e) => {
-                  console.log('Ver Detalhes clicked for viatura:', viatura.prefixo);
-                  e.stopPropagation();
-                  onSelectViatura(viatura);
-                }}
-              >
-                Ver Detalhes
-              </Button>
             </div>
           </CardContent>
         </Card>
       ))}
+      
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta viatura? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -212,7 +212,6 @@ export type Database = {
           itens_conformes: number | null
           itens_divergentes: number | null
           observacoes_gerais: string | null
-          status_geral: string
           total_itens: number | null
           updated_at: string
         }
@@ -228,7 +227,6 @@ export type Database = {
           itens_conformes?: number | null
           itens_divergentes?: number | null
           observacoes_gerais?: string | null
-          status_geral?: string
           total_itens?: number | null
           updated_at?: string
         }
@@ -244,7 +242,6 @@ export type Database = {
           itens_conformes?: number | null
           itens_divergentes?: number | null
           observacoes_gerais?: string | null
-          status_geral?: string
           total_itens?: number | null
           updated_at?: string
         }
@@ -259,7 +256,6 @@ export type Database = {
           id: string
           itens_checklist: Json
           observacoes_gerais: string | null
-          status_geral: string
           tipo_checklist: string
           updated_at: string
           viatura_id: string
@@ -272,7 +268,6 @@ export type Database = {
           id?: string
           itens_checklist?: Json
           observacoes_gerais?: string | null
-          status_geral?: string
           tipo_checklist: string
           updated_at?: string
           viatura_id: string
@@ -285,7 +280,6 @@ export type Database = {
           id?: string
           itens_checklist?: Json
           observacoes_gerais?: string | null
-          status_geral?: string
           tipo_checklist?: string
           updated_at?: string
           viatura_id?: string
@@ -1897,46 +1891,34 @@ export type Database = {
       }
       viaturas: {
         Row: {
-          ano: number
           created_at: string
-          data_ultima_revisao: string | null
           id: string
-          km_atual: number | null
           modelo: string
+          nome_viatura: string
           observacoes: string | null
-          placa: string
           prefixo: string
-          proxima_revisao: string | null
           status: string
           tipo: string
           updated_at: string
         }
         Insert: {
-          ano: number
           created_at?: string
-          data_ultima_revisao?: string | null
           id?: string
-          km_atual?: number | null
           modelo: string
+          nome_viatura: string
           observacoes?: string | null
-          placa: string
           prefixo: string
-          proxima_revisao?: string | null
           status?: string
           tipo?: string
           updated_at?: string
         }
         Update: {
-          ano?: number
           created_at?: string
-          data_ultima_revisao?: string | null
           id?: string
-          km_atual?: number | null
           modelo?: string
+          nome_viatura?: string
           observacoes?: string | null
-          placa?: string
           prefixo?: string
-          proxima_revisao?: string | null
           status?: string
           tipo?: string
           updated_at?: string

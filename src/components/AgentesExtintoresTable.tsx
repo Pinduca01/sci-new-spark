@@ -163,7 +163,7 @@ export const AgentesExtintoresTable = () => {
                           <div>
                             <div className="font-medium">{agente.viaturas.prefixo}</div>
                             <div className="text-sm text-muted-foreground">
-                              {agente.viaturas.placa}
+                              {agente.viaturas.nome_viatura}
                             </div>
                           </div>
                         ) : (

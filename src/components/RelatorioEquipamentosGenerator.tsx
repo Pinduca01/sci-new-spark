@@ -192,7 +192,9 @@ export const RelatorioEquipamentosGenerator = () => {
       const checklistsPeriodo = checklists.filter(c => 
         new Date(c.data_checklist) >= dataInicio
       );
-      const checklistsConcluidos = checklistsPeriodo.filter(c => c.status_geral === 'concluido');
+      const checklistsConcluidos = checklistsPeriodo.filter(c => 
+        c.itens && c.itens.length > 0 && c.itens.every(item => item.status && item.status !== '')
+      );
       const totalItensVerificados = checklistsPeriodo.reduce((acc, c) => acc + (c.total_itens || 0), 0);
       const totalItensConformes = checklistsPeriodo.reduce((acc, c) => acc + (c.itens_conformes || 0), 0);
       const taxaConformidade = totalItensVerificados > 0 ? (totalItensConformes / totalItensVerificados * 100).toFixed(1) : '0';

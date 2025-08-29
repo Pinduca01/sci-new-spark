@@ -301,7 +301,7 @@ export const TempoRespostaFormModal: React.FC<TempoRespostaFormModalProps> = ({
                   id="equipe"
                   value={formData.equipe}
                   onChange={(e) => setFormData(prev => ({ ...prev, equipe: e.target.value }))}
-                  placeholder="Ex: Equipe Alpha"
+                  placeholder="Ex: Alfa"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">

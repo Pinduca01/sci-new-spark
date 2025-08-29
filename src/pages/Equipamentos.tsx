@@ -19,7 +19,6 @@ import { MaterialForm } from "@/components/MaterialForm";
 import { MovimentacaoForm } from "@/components/MovimentacaoForm";
 import { ChecklistAlmoxarifadoForm } from "@/components/ChecklistAlmoxarifadoForm";
 import { HistoricoChecklists } from "@/components/HistoricoChecklists";
-import { HistoricoOS } from "@/components/HistoricoOS";
 import { AgentesExtintoresDashboard } from "@/components/AgentesExtintoresDashboard";
 import { RelatorioEquipamentosGenerator } from "@/components/RelatorioEquipamentosGenerator";
 import { EstoqueTable } from "@/components/EstoqueTable";
@@ -208,25 +207,25 @@ const Equipamentos = () => {
             
             <Card>
               <CardHeader>
-                <CardTitle>Histórico de Checklists</CardTitle>
+                <CardTitle>Histórico checklist BA-MC</CardTitle>
                 <CardDescription>
-                  Visualize o histórico de checklists preenchidos.
+                  Visualize o histórico de checklists BA-MC preenchidos.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <HistoricoChecklists />
+                <HistoricoChecklists tipoFiltro="BA-MC" />
               </CardContent>
             </Card>
             
             <Card>
               <CardHeader>
-                <CardTitle>Histórico de Ordens de Serviço</CardTitle>
+                <CardTitle>Histórico checklist BA-2</CardTitle>
                 <CardDescription>
-                  Acompanhe o histórico de ordens de serviço.
+                  Visualize o histórico de checklists BA-2 preenchidos.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <HistoricoOS />
+                <HistoricoChecklists tipoFiltro="BA-2" />
               </CardContent>
             </Card>
           </div>

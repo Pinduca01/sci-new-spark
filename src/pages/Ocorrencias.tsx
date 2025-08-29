@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Clock, Users, AlertTriangle, BarChart3, List, MapPin, Filter, MoreHorizontal, Eye, Edit, Grid } from "lucide-react";
+import { Plus, Search, Clock, Users, AlertTriangle, BarChart3, List, MapPin, Filter, MoreHorizontal, Eye, Edit, Grid, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,6 +17,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import OcorrenciasDashboard from "@/components/OcorrenciasDashboard";
+
+// Função para calcular duração entre dois horários
+const calculateDuration = (horaInicio?: string, horaFim?: string): string => {
+  if (!horaInicio || !horaFim) return "--";
+  
+  const [horaInicioH, horaInicioM] = horaInicio.split(":").map(Number);
+  const [horaFimH, horaFimM] = horaFim.split(":").map(Number);
+  
+  const inicioMinutos = horaInicioH * 60 + horaInicioM;
+  const fimMinutos = horaFimH * 60 + horaFimM;
+  
+  let diferencaMinutos = fimMinutos - inicioMinutos;
+  
+  // Se a diferença for negativa, assumir que passou para o próximo dia
+  if (diferencaMinutos < 0) {
+    diferencaMinutos += 24 * 60;
+  }
+  
+  const horas = Math.floor(diferencaMinutos / 60);
+  const minutos = diferencaMinutos % 60;
+  
+  return `${horas.toString().padStart(2, "0")}:${minutos.toString().padStart(2, "0")}`;
+};
 
 // Tipos de ocorrencia conforme especificado
 const TIPOS_OCORRENCIA = [
@@ -95,14 +118,25 @@ const Ocorrencias = () => {
   const [filterTipo, setFilterTipo] = useState<string>("all");
   
   // Navegacao
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'ocorrencias'>('ocorrencias');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'ocorrencias'>('dashboard');
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      tipo_ocorrencia: "",
+      local_mapa_grade: "",
+      data_ocorrencia: "",
+      hora_acionamento: "",
+      hora_chegada_local: "",
+      hora_termino: "",
+      equipe: "",
       bombeiros_envolvidos: [],
       quantidade_vitimas: 0,
       quantidade_obitos: 0,
+      viaturas: "",
+      equipamentos: "",
+      descricao_inicial: "",
+      descricao_detalhada: "",
     },
   });
 
@@ -177,7 +211,25 @@ const Ocorrencias = () => {
 
       const { error } = await supabase
         .from('ocorrencias')
-        .insert([ocorrenciaData]);
+        .insert({
+          tipo_ocorrencia: values.tipo_ocorrencia,
+          local_mapa_grade: values.local_mapa_grade,
+          data_ocorrencia: values.data_ocorrencia,
+          hora_acionamento: values.hora_acionamento,
+          hora_chegada_local: values.hora_chegada_local,
+          hora_termino: values.hora_termino,
+          tempo_gasto_minutos: tempoGasto,
+          equipe: values.equipe,
+          bombeiros_envolvidos: values.bombeiros_envolvidos,
+          quantidade_bombeiros: values.bombeiros_envolvidos.length,
+          quantidade_vitimas: values.quantidade_vitimas,
+          quantidade_obitos: values.quantidade_obitos,
+          viaturas: values.viaturas,
+          equipamentos: values.equipamentos,
+          descricao_inicial: values.descricao_inicial,
+          descricao_detalhada: values.descricao_detalhada,
+          user_id: user.id
+        });
 
       if (error) throw error;
 
@@ -224,6 +276,46 @@ const Ocorrencias = () => {
     });
     
     setIsEditModalOpen(true);
+  };
+
+  const handleDeleteOcorrencia = async (ocorrencia: Ocorrencia) => {
+    const confirmDelete = window.confirm(
+      `Tem certeza que deseja excluir a ocorrência "${ocorrencia.tipo_ocorrencia}" do dia ${format(new Date(ocorrencia.data_ocorrencia), 'dd/MM/yyyy', { locale: ptBR })}?\n\nEsta ação não pode ser desfeita.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('ocorrencias')
+        .delete()
+        .eq('id', ocorrencia.id);
+
+      if (error) {
+        console.error('Erro ao excluir ocorrência:', error);
+        toast({
+          title: "Erro ao excluir",
+          description: "Não foi possível excluir a ocorrência. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Atualizar a lista de ocorrências
+      await fetchOcorrencias();
+      
+      toast({
+        title: "Ocorrência excluída",
+        description: "A ocorrência foi excluída com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir ocorrência:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const onSubmitEdit = async (values: FormData) => {
@@ -790,6 +882,13 @@ const Ocorrencias = () => {
                               <Edit className="h-4 w-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteOcorrencia(ocorrencia)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -996,27 +1095,300 @@ const Ocorrencias = () => {
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmitEdit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                      <AlertTriangle className="h-5 w-5" />
+                      Informacoes Iniciais
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="tipo_ocorrencia"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tipo de Ocorrencia</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o tipo" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {TIPOS_OCORRENCIA.map((tipo) => (
+                                  <SelectItem key={tipo} value={tipo}>
+                                    {tipo}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="local_mapa_grade"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Local (Mapa/Grade)</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Ex: Pista 11L/29R, Terminal 1" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="data_ocorrencia"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data da Ocorrencia</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="date" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                      <Clock className="h-5 w-5" />
+                      Controle de Horarios
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="hora_acionamento"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Hora do Acionamento</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="time" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="hora_chegada_local"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Hora da Chegada ao Local</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="time" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="hora_termino"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Hora do Termino</FormLabel>
+                            <FormControl>
+                              <Input {...field} type="time" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    
+                    {form.watch("hora_acionamento") && form.watch("hora_termino") && (
+                      <div className="bg-muted p-3 rounded-md">
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Duracao Total:</strong> {calculateDuration(form.watch("hora_acionamento"), form.watch("hora_termino"))}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                      <Users className="h-5 w-5" />
+                      Equipe e Recursos
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="equipe"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Equipe</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione a equipe" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {EQUIPES.map((equipe) => (
+                                  <SelectItem key={equipe} value={equipe}>
+                                    {equipe}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="bombeiros_envolvidos"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Bombeiros Envolvidos</FormLabel>
+                            <Select 
+                              onValueChange={(value) => {
+                                const current = field.value || [];
+                                if (!current.includes(value)) {
+                                  field.onChange([...current, value]);
+                                }
+                              }}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione os bombeiros" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {bombeirosByEquipe.map((bombeiro) => (
+                                  <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                                    {bombeiro.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {(field.value || []).map((bombeiroId) => {
+                                const bombeiro = bombeiros.find(b => b.id === bombeiroId);
+                                return bombeiro ? (
+                                  <Badge key={bombeiroId} variant="secondary" className="gap-1">
+                                    {bombeiro.nome}
+                                    <button
+                                      type="button"
+                                      onClick={() => field.onChange((field.value || []).filter(id => id !== bombeiroId))}
+                                      className="ml-1 hover:bg-destructive/20 rounded-full"
+                                    >
+                                      ×
+                                    </button>
+                                  </Badge>
+                                ) : null;
+                              })}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="viaturas"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Viaturas Utilizadas</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Ex: ABT-01, ABT-02" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="equipamentos"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Equipamentos Utilizados</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Ex: Espuma, Mangueiras, EPIs" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                      <AlertTriangle className="h-5 w-5" />
+                      Dados da Ocorrencia
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="quantidade_vitimas"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Quantidade de Vitimas</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="number" 
+                                min="0"
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="quantidade_obitos"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Quantidade de Obitos</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...field} 
+                                type="number" 
+                                min="0"
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 border rounded-lg p-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-primary">
+                      <AlertTriangle className="h-5 w-5" />
+                      Descricoes
+                    </h3>
+                    
                     <FormField
                       control={form.control}
-                      name="tipo_ocorrencia"
+                      name="descricao_inicial"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tipo de Ocorrencia</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {TIPOS_OCORRENCIA.map((tipo) => (
-                                <SelectItem key={tipo} value={tipo}>
-                                  {tipo}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormLabel>Descricao Inicial</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Descricao inicial da ocorrencia..." />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1024,24 +1396,13 @@ const Ocorrencias = () => {
 
                     <FormField
                       control={form.control}
-                      name="equipe"
+                      name="descricao_detalhada"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Equipe</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione a equipe" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {EQUIPES.map((equipe) => (
-                                <SelectItem key={equipe} value={equipe}>
-                                  {equipe}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormLabel>Descricao Detalhada</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder="Descricao detalhada dos procedimentos realizados..." rows={4} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

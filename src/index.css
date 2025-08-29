@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Import Tailwind base styles */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
@@ -130,11 +131,13 @@ All colors MUST be HSL.
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: sans-serif;
     font-feature-settings: 'rlig' 1, 'calt' 1;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
@@ -449,6 +452,7 @@ All colors MUST be HSL.
     border-radius: 12px;
     transition: var(--transition-smooth);
     transform: translateZ(0);
+    z-index: 1;
   }
 
   .input-3d:focus {
@@ -458,18 +462,110 @@ All colors MUST be HSL.
       0 0 0 3px hsl(var(--radiant-orange) / 0.2),
       var(--shadow-3d-soft);
     border-color: hsl(var(--radiant-orange) / 0.5);
+    z-index: 1;
   }
 
   .input-icon {
     position: absolute;
     left: 12px;
     top: 50%;
-    transform: translateY(-50%) translateZ(5px);
+    transform: translateY(-50%);
     width: 20px;
     height: 20px;
-    color: hsl(var(--muted-foreground));
-    transition: var(--transition-smooth);
-    z-index: 2;
+    color: #64748b;
+    transition: all 0.2s ease-in-out;
+    z-index: 20;
+    pointer-events: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Enhanced icon visibility - No blur effects */
+  .group:focus-within .input-icon,
+  .group:hover .input-icon {
+    color: #ff6600;
+    transform: translateY(-50%) scale(1.02);
+  }
+  
+  /* Specific icon improvements - Sharp and clear */
+  svg[data-lucide="mail"],
+  svg[data-lucide="lock"] {
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    shape-rendering: geometricPrecision;
+  }
+  
+  .group:focus-within svg[data-lucide="mail"],
+  .group:focus-within svg[data-lucide="lock"],
+  .group:hover svg[data-lucide="mail"],
+  .group:hover svg[data-lucide="lock"] {
+    stroke-width: 2.5;
+  }
+  
+  /* Password toggle button improvements - Crystal clear */
+  svg[data-lucide="eye"],
+  svg[data-lucide="eye-off"] {
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    shape-rendering: geometricPrecision;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  button:hover svg[data-lucide="eye"],
+  button:hover svg[data-lucide="eye-off"] {
+    stroke-width: 2.5;
+    transform: scale(1.02);
+  }
+  
+  /* Enhanced button states - Clean design */
+  .password-toggle-enhanced {
+    border: 1px solid transparent;
+    transition: all 0.2s ease-in-out;
+    border-radius: 6px;
+  }
+  
+  .password-toggle-enhanced:hover {
+    border-color: rgba(255, 102, 0, 0.2);
+    background-color: rgba(255, 102, 0, 0.05);
+  }
+  
+  /* Ultra-sharp icon rendering */
+  svg {
+    shape-rendering: geometricPrecision;
+    text-rendering: geometricPrecision;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Prevent icon blur on transforms */
+  .input-icon,
+  .password-toggle-enhanced svg {
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  
+  /* High DPI icon optimization */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    svg[data-lucide] {
+      stroke-width: 1.8;
+    }
+    
+    .group:focus-within svg[data-lucide="mail"],
+    .group:focus-within svg[data-lucide="lock"],
+    .group:hover svg[data-lucide="mail"],
+    .group:hover svg[data-lucide="lock"] {
+      stroke-width: 2.2;
+    }
+    
+    button:hover svg[data-lucide="eye"],
+    button:hover svg[data-lucide="eye-off"] {
+      stroke-width: 2.2;
+    }
   }
 
   .input-container-3d:focus-within .input-icon {
@@ -682,10 +778,44 @@ All colors MUST be HSL.
     transition-duration: 200ms;
   }
 
-  /* Responsive 3D */
-  @media (max-width: 768px) {
+  /* Responsive Design - Mobile First */
+  
+  /* Mobile (320px - 767px) */
+  @media (max-width: 767px) {
+    .login-container {
+      padding: 1rem;
+      min-height: 100vh;
+    }
+    
+    .login-card-3d {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    
     .login-card-3d:hover {
       transform: translateY(-2px);
+    }
+    
+    .login-branding h1 {
+      font-size: 1.75rem;
+      line-height: 1.2;
+    }
+    
+    .login-branding p {
+      font-size: 0.875rem;
+    }
+    
+    .input-3d {
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+    }
+    
+    .button-3d {
+      padding: 0.875rem 1.5rem;
+      font-size: 1rem;
     }
     
     .floating-particles {
@@ -693,7 +823,132 @@ All colors MUST be HSL.
     }
     
     .geometric-shapes {
-      opacity: 0.3;
+      opacity: 0.2;
+      transform: scale(0.8);
+    }
+    
+    .login-grid {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    
+    .login-branding {
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    
+    .login-form-section {
+      padding: 2rem 1rem;
+    }
+  }
+  
+  /* Tablet (768px - 1023px) */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .login-container {
+      padding: 2rem;
+    }
+    
+    .login-card-3d {
+      max-width: 600px;
+      padding: 2rem;
+    }
+    
+    .login-branding h1 {
+      font-size: 2rem;
+    }
+    
+    .login-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .floating-particles {
+      opacity: 0.6;
+    }
+    
+    .geometric-shapes {
+      opacity: 0.4;
+    }
+  }
+  
+  /* Desktop (1024px+) */
+  @media (min-width: 1024px) {
+    .login-container {
+      padding: 3rem;
+    }
+    
+    .login-card-3d {
+      max-width: 900px;
+      padding: 3rem;
+    }
+    
+    .login-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+    
+    .login-branding {
+      padding: 3rem;
+    }
+    
+    .login-form-section {
+      padding: 3rem;
+    }
+  }
+  
+  /* Large Desktop (1440px+) */
+  @media (min-width: 1440px) {
+    .login-container {
+      padding: 4rem;
+    }
+    
+    .login-card-3d {
+      max-width: 1000px;
+      padding: 4rem;
+    }
+  }
+  
+  /* Touch devices - Improve touch targets */
+  @media (hover: none) and (pointer: coarse) {
+    .button-3d,
+    .input-3d,
+    .password-toggle-3d {
+      min-height: 44px;
+    }
+    
+    .login-card-3d:hover {
+      transform: none;
+    }
+    
+    .button-3d:hover {
+      transform: translateY(-1px);
+    }
+  }
+  
+  /* High DPI displays */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .login-branding h1 {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  }
+  
+  /* Landscape orientation on mobile */
+  @media (max-width: 767px) and (orientation: landscape) {
+    .login-container {
+      padding: 1rem;
+    }
+    
+    .login-card-3d {
+      padding: 1rem;
+    }
+    
+    .login-branding {
+      padding: 1rem;
+    }
+    
+    .login-form-section {
+      padding: 1rem;
     }
   }
 }

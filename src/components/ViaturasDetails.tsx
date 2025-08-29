@@ -18,19 +18,14 @@ import {
 import { ChecklistForm } from "@/components/ChecklistForm";
 import { OrdemServicoForm } from "@/components/OrdemServicoForm";
 import { HistoricoChecklists } from "@/components/HistoricoChecklists";
-import { HistoricoOS } from "@/components/HistoricoOS";
 
 interface Viatura {
   id: string;
+  nome_viatura: string;
   prefixo: string;
-  placa: string;
   modelo: string;
-  ano: number;
   tipo: string;
   status: string;
-  km_atual: number;
-  data_ultima_revisao: string | null;
-  proxima_revisao: string | null;
   observacoes: string | null;
 }
 
@@ -44,7 +39,7 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
   const [showChecklistBAMC, setShowChecklistBAMC] = useState(false);
   const [showChecklistBA2, setShowChecklistBA2] = useState(false);
   const [showOS, setShowOS] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("ba-mc");
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -85,7 +80,7 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
           <Truck className="h-6 w-6 text-primary" />
           <div>
             <h1 className="text-2xl font-bold">{viatura.prefixo}</h1>
-            <p className="text-muted-foreground">{viatura.placa} • {viatura.modelo}</p>
+            <p className="text-muted-foreground">{viatura.nome_viatura} • {viatura.modelo}</p>
           </div>
         </div>
       </div>
@@ -99,7 +94,7 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Status</p>
               <div className="flex items-center gap-2">
@@ -114,40 +109,10 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
               <p className="font-medium">{viatura.tipo}</p>
             </div>
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Ano</p>
-              <p className="font-medium">{viatura.ano}</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Km Atual</p>
-              <p className="font-medium">{formatKm(viatura.km_atual)} km</p>
+              <p className="text-sm text-muted-foreground">Prefixo</p>
+              <p className="font-medium">{viatura.prefixo}</p>
             </div>
           </div>
-
-          {(viatura.data_ultima_revisao || viatura.proxima_revisao) && (
-            <div className="mt-4 pt-4 border-t">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {viatura.data_ultima_revisao && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Última Revisão</p>
-                    <p className="font-medium">{new Date(viatura.data_ultima_revisao).toLocaleDateString('pt-BR')}</p>
-                  </div>
-                )}
-                {viatura.proxima_revisao && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Próxima Revisão</p>
-                    <div className="flex items-center gap-2">
-                      <p className={`font-medium ${isRevisaoVencida(viatura.proxima_revisao) ? 'text-destructive' : ''}`}>
-                        {new Date(viatura.proxima_revisao).toLocaleDateString('pt-BR')}
-                      </p>
-                      {isRevisaoVencida(viatura.proxima_revisao) && (
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {viatura.observacoes && (
             <div className="mt-4 pt-4 border-t">
@@ -159,54 +124,47 @@ export const ViaturasDetails = ({ viatura, onBack, onUpdate }: ViaturasDetailsPr
       </Card>
 
       {/* Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02]" 
-              onClick={() => setShowChecklistBAMC(true)}>
-          <CardContent className="p-6 text-center">
-            <ClipboardCheck className="h-8 w-8 text-primary mx-auto mb-3" />
-            <h3 className="font-semibold mb-2">Checklist BA-MC</h3>
-            <p className="text-sm text-muted-foreground">Iniciar checklist de materiais médicos</p>
-          </CardContent>
-        </Card>
+      <div className="flex justify-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full">
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02]" 
+                onClick={() => setShowChecklistBAMC(true)}>
+            <CardContent className="p-6 text-center">
+              <ClipboardCheck className="h-8 w-8 text-primary mx-auto mb-3" />
+              <h3 className="font-semibold mb-2">Checklist BA-MC</h3>
+              <p className="text-sm text-muted-foreground">Iniciar checklist de materiais médicos</p>
+            </CardContent>
+          </Card>
 
-        <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02]" 
-              onClick={() => setShowChecklistBA2(true)}>
-          <CardContent className="p-6 text-center">
-            <ClipboardCheck className="h-8 w-8 text-primary mx-auto mb-3" />
-            <h3 className="font-semibold mb-2">Checklist BA-2</h3>
-            <p className="text-sm text-muted-foreground">Iniciar checklist da viatura</p>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02]" 
-              onClick={() => setShowOS(true)}>
-          <CardContent className="p-6 text-center">
-            <Wrench className="h-8 w-8 text-primary mx-auto mb-3" />
-            <h3 className="font-semibold mb-2">Gerar OS</h3>
-            <p className="text-sm text-muted-foreground">Criar ordem de serviço</p>
-          </CardContent>
-        </Card>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02]" 
+                onClick={() => setShowChecklistBA2(true)}>
+            <CardContent className="p-6 text-center">
+              <ClipboardCheck className="h-8 w-8 text-primary mx-auto mb-3" />
+              <h3 className="font-semibold mb-2">Checklist BA-2</h3>
+              <p className="text-sm text-muted-foreground">Iniciar checklist da viatura</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Históricos */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="checklists" className="flex items-center gap-2">
+          <TabsTrigger value="ba-mc" className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4" />
-            Histórico de Checklists
+            Histórico checklist BA-MC
           </TabsTrigger>
-          <TabsTrigger value="os" className="flex items-center gap-2">
-            <Wrench className="h-4 w-4" />
-            Histórico de OS
+          <TabsTrigger value="ba-2" className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            Histórico checklist BA-2
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="checklists">
-          <HistoricoChecklists viaturaId={viatura.id} />
+        <TabsContent value="ba-mc">
+          <HistoricoChecklists viaturaId={viatura.id} tipoFiltro="BA-MC" />
         </TabsContent>
         
-        <TabsContent value="os">
-          <HistoricoOS viaturaId={viatura.id} />
+        <TabsContent value="ba-2">
+          <HistoricoChecklists viaturaId={viatura.id} tipoFiltro="BA-2" />
         </TabsContent>
       </Tabs>
 

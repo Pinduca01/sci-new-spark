@@ -1,41 +1,69 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-// Interfaces para TAF
 export interface TAFAvaliacao {
   id: string;
   bombeiro_id: string;
   data_teste: string;
-  idade_na_data: number;
+  avaliador_nome: string;
   faixa_etaria: string;
+  idade_na_data: number;
   flexoes_realizadas: number;
   abdominais_realizadas: number;
   polichinelos_realizados: number;
-  tempo_limite_minutos: number;
   tempo_total_segundos: number;
+  tempo_limite_minutos: number;
   aprovado: boolean;
-  avaliador_nome: string;
   observacoes?: string;
-  created_at: string;
+  created_at?: string;
   updated_at?: string;
+  bombeiros?: {
+    nome: string;
+    email: string;
+    funcao: string;
+    equipe: string;
+  };
+}
+
+export interface NovaAvaliacaoTAF {
+  bombeiro_id: string;
+  data_teste: string;
+  avaliador_nome: string;
+  faixa_etaria: string;
+  idade_na_data: number;
+  flexoes_realizadas: number;
+  abdominais_realizadas: number;
+  polichinelos_realizados: number;
+  tempo_total_segundos: number;
+  tempo_limite_minutos: number;
+  aprovado: boolean;
+  observacoes?: string;
 }
 
 export const useTAFAvaliacoes = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
+  // Buscar todas as avaliações
   const {
     data: avaliacoes = [],
     isLoading,
-    error
+    error,
+    refetch
   } = useQuery({
     queryKey: ['taf-avaliacoes'],
-    queryFn: async () => {
+    queryFn: async (): Promise<TAFAvaliacao[]> => {
       const { data, error } = await supabase
         .from('taf_avaliacoes')
-        .select('*')
+        .select(`
+          *,
+          bombeiros!inner(
+            nome,
+            email,
+            funcao,
+            equipe
+          )
+        `)
         .order('data_teste', { ascending: false });
 
       if (error) {
@@ -44,15 +72,85 @@ export const useTAFAvaliacoes = () => {
       }
 
       return data || [];
-    }
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutos
   });
 
-  const createAvaliacao = useMutation({
-    mutationFn: async (avaliacao: Omit<TAFAvaliacao, 'id' | 'created_at' | 'updated_at'>) => {
+  // Buscar avaliação por ID
+  const buscarPorId = (id: string) => {
+    return useQuery({
+      queryKey: ['taf-avaliacao', id],
+      queryFn: async (): Promise<TAFAvaliacao | null> => {
+        const { data, error } = await supabase
+          .from('taf_avaliacoes')
+          .select(`
+            *,
+            bombeiros!inner(
+              nome,
+              email,
+              funcao,
+              equipe
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (error) {
+          console.error('Erro ao buscar avaliação TAF:', error);
+          throw error;
+        }
+
+        return data;
+      },
+      enabled: !!id,
+    });
+  };
+
+  // Buscar avaliações por bombeiro
+  const buscarPorBombeiro = (bombeiroId: string) => {
+    return useQuery({
+      queryKey: ['taf-avaliacoes-bombeiro', bombeiroId],
+      queryFn: async (): Promise<TAFAvaliacao[]> => {
+        const { data, error } = await supabase
+          .from('taf_avaliacoes')
+          .select(`
+            *,
+            bombeiros!inner(
+              nome,
+              email,
+              funcao,
+              equipe
+            )
+          `)
+          .eq('bombeiro_id', bombeiroId)
+          .order('data_teste', { ascending: false });
+
+        if (error) {
+          console.error('Erro ao buscar avaliações do bombeiro:', error);
+          throw error;
+        }
+
+        return data || [];
+      },
+      enabled: !!bombeiroId,
+    });
+  };
+
+  // Criar nova avaliação
+  const criarAvaliacao = useMutation({
+    mutationFn: async (novaAvaliacao: NovaAvaliacaoTAF): Promise<TAFAvaliacao> => {
       const { data, error } = await supabase
         .from('taf_avaliacoes')
-        .insert([avaliacao])
-        .select()
+        .insert([novaAvaliacao])
+        .select(`
+          *,
+          bombeiros!inner(
+            nome,
+            email,
+            funcao,
+            equipe
+          )
+        `)
         .single();
 
       if (error) {
@@ -62,32 +160,34 @@ export const useTAFAvaliacoes = () => {
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes'] });
       queryClient.invalidateQueries({ queryKey: ['taf-estatisticas'] });
-      
-      toast({
-        title: "Sucesso",
-        description: "TAF registrado com sucesso!",
-      });
+      queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes-bombeiro', data.bombeiro_id] });
+      toast.success('Avaliação TAF criada com sucesso!');
     },
     onError: (error) => {
-      console.error('Erro na mutação:', error);
-      toast({
-        title: "Erro",
-        description: "Falha ao registrar TAF. Tente novamente.",
-        variant: "destructive",
-      });
-    }
+      console.error('Erro ao criar avaliação:', error);
+      toast.error('Erro ao criar avaliação TAF');
+    },
   });
 
-  const updateAvaliacao = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<TAFAvaliacao> & { id: string }) => {
+  // Atualizar avaliação
+  const atualizarAvaliacao = useMutation({
+    mutationFn: async ({ id, dados }: { id: string; dados: Partial<NovaAvaliacaoTAF> }): Promise<TAFAvaliacao> => {
       const { data, error } = await supabase
         .from('taf_avaliacoes')
-        .update(updates)
+        .update({ ...dados, updated_at: new Date().toISOString() })
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          bombeiros!inner(
+            nome,
+            email,
+            funcao,
+            equipe
+          )
+        `)
         .single();
 
       if (error) {
@@ -97,36 +197,55 @@ export const useTAFAvaliacoes = () => {
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes'] });
       queryClient.invalidateQueries({ queryKey: ['taf-estatisticas'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ['taf-avaliacao', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes-bombeiro', data.bombeiro_id] });
+      toast.success('Avaliação TAF atualizada com sucesso!');
+    },
+    onError: (error) => {
+      console.error('Erro ao atualizar avaliação:', error);
+      toast.error('Erro ao atualizar avaliação TAF');
+    },
   });
 
-  const deleteAvaliacao = useMutation({
-    mutationFn: async (id: string) => {
+  // Excluir avaliação
+  const excluirAvaliacao = useMutation({
+    mutationFn: async (id: string): Promise<void> => {
       const { error } = await supabase
         .from('taf_avaliacoes')
         .delete()
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao deletar avaliação TAF:', error);
+        console.error('Erro ao excluir avaliação TAF:', error);
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes'] });
       queryClient.invalidateQueries({ queryKey: ['taf-estatisticas'] });
-    }
+      toast.success('Avaliação TAF excluída com sucesso!');
+    },
+    onError: (error) => {
+      console.error('Erro ao excluir avaliação:', error);
+      toast.error('Erro ao excluir avaliação TAF');
+    },
   });
 
   return {
     avaliacoes,
     isLoading,
     error,
-    createAvaliacao,
-    updateAvaliacao,
-    deleteAvaliacao
+    refetch,
+    buscarPorId,
+    buscarPorBombeiro,
+    criarAvaliacao,
+    atualizarAvaliacao,
+    excluirAvaliacao,
+    isCreating: criarAvaliacao.isPending,
+    isUpdating: atualizarAvaliacao.isPending,
+    isDeleting: excluirAvaliacao.isPending,
   };
 };

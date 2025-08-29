@@ -25,7 +25,6 @@ export const ChecklistAlmoxarifadoForm = () => {
   const [checklist, setChecklist] = useState<Partial<ChecklistAlmoxarifado>>({
     data_checklist: new Date().toISOString().split('T')[0],
     hora_checklist: new Date().toTimeString().slice(0, 5),
-    status_geral: 'em_andamento',
     itens_checklist: [],
     total_itens: 0,
     itens_conformes: 0,
@@ -379,7 +378,7 @@ export const ChecklistAlmoxarifadoForm = () => {
         <Button
           type="button"
           variant="outline"
-          onClick={() => setChecklist(prev => ({ ...prev, status_geral: 'em_andamento' }))}
+          onClick={handleSave}
           disabled={createChecklist.isPending || updateChecklist.isPending}
         >
           <Save className="h-4 w-4 mr-2" />
@@ -387,10 +386,7 @@ export const ChecklistAlmoxarifadoForm = () => {
         </Button>
         <Button
           type="button"
-          onClick={() => {
-            setChecklist(prev => ({ ...prev, status_geral: 'concluido' }));
-            handleSave();
-          }}
+          onClick={handleSave}
           disabled={createChecklist.isPending || updateChecklist.isPending}
         >
           <FileCheck className="h-4 w-4 mr-2" />

@@ -36,7 +36,7 @@ export const AgenteExtintorEditModal = ({ agente, open, onClose }: AgenteExtinto
     queryFn: async () => {
       const { data, error } = await supabase
         .from('viaturas')
-        .select('id, prefixo, placa')
+        .select('id, prefixo, nome_viatura')
         .order('prefixo');
       
       if (error) throw error;
@@ -141,7 +141,7 @@ export const AgenteExtintorEditModal = ({ agente, open, onClose }: AgenteExtinto
                   <SelectItem value="">Nenhuma viatura</SelectItem>
                   {viaturas.map((viatura) => (
                     <SelectItem key={viatura.id} value={viatura.id}>
-                      {viatura.prefixo} - {viatura.placa}
+                      {viatura.prefixo} - {viatura.nome_viatura}
                     </SelectItem>
                   ))}
                 </SelectContent>

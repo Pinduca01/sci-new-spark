@@ -77,15 +77,13 @@ export const InspecaoForm = ({
   });
 
   const itensVerificados = watch('itens_verificados');
-  const statusGeral = itensVerificados?.every(item => item.conforme) ? 'conforme' : 'nao_conforme';
 
   console.log('InspecaoForm - Estado atual:', {
     selectedExtintor,
     selectedBombeiro,
     extintores: extintores.length,
     bombeiros: bombeiros.length,
-    itensVerificados: itensVerificados?.length,
-    statusGeral
+    itensVerificados: itensVerificados?.length
   });
 
   const onSubmit = async (data: InspecaoFormData) => {
@@ -111,12 +109,14 @@ export const InspecaoForm = ({
 
     setIsSubmitting(true);
     try {
+      const statusExtintor = data.itens_verificados?.every(item => item.conforme) ? 'conforme' : 'nao_conforme';
+      
       const inspecaoData = {
         ...data,
         extintor_id: selectedExtintor,
         bombeiro_inspetor_id: selectedBombeiro,
         tipo_inspecao: selectedTipoInspecao,
-        status_extintor: statusGeral
+        status_extintor: statusExtintor
       };
 
       console.log('InspecaoForm - Dados finais para envio:', inspecaoData);

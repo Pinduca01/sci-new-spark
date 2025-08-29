@@ -23,7 +23,6 @@ export interface ChecklistAlmoxarifado {
   hora_checklist: string;
   bombeiro_responsavel_id: string;
   bombeiro_responsavel_nome: string;
-  status_geral: 'em_andamento' | 'concluido' | 'pendente';
   itens_checklist: ChecklistItem[];
   observacoes_gerais?: string;
   total_itens: number;
