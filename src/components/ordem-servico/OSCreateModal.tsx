@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Save, X, Loader2 } from 'lucide-react';
-import { TipoOS, OrdemServico, MaterialSolicitado } from '@/types/ordem-servico';
+import { TipoOS, OrdemServico, MaterialSolicitado, OrdemServicoBase, OSEstrutural, OSViatura, OSEquipamento, OSCombustivel, OSMateriais } from '@/types/ordem-servico';
+import { gerarProximoNumeroOS, validarDadosOS } from '@/data/mock-ordem-servico';
 import { useBombeiros } from '@/hooks/useBombeiros';
-import { useOrdemServico } from '@/hooks/useOrdemServico';
 
 interface OSCreateModalProps {
   isOpen: boolean;
@@ -21,29 +21,40 @@ interface OSCreateModalProps {
 
 const OSCreateModal: React.FC<OSCreateModalProps> = ({ isOpen, onClose, tipoInicial, onSave }) => {
   const { bombeiros, isLoading: loadingBombeiros } = useBombeiros();
-  const { gerarProximoNumeroOS } = useOrdemServico();
-  
   useEffect(() => {
     if (isOpen) {
-      const gerarNumero = async () => {
-        try {
-          const numeroOS = await gerarProximoNumeroOS();
-          setFormData(prev => ({
-            ...prev,
-            numero_chamado: numeroOS,
-            cod_id: parseInt(numeroOS.split('-')[1]) || 0,
-            tipo_chamado: tipoInicial || 'Estrutural',
-            data_solicitacao: new Date().toLocaleDateString('pt-BR')
-          }));
-        } catch (error) {
-          console.error('Erro ao gerar número da OS:', error);
-        }
-      };
-      gerarNumero();
+      const numeroOS = gerarProximoNumeroOS();
+      setFormData(prev => ({
+        ...prev,
+        numero_chamado: numeroOS,
+        cod_id: parseInt(numeroOS.split('-')[2]) || 0,
+        tipo_chamado: tipoInicial || 'Estrutural',
+        data_solicitacao: new Date().toLocaleDateString('pt-BR')
+      }));
     }
-  }, [isOpen, tipoInicial, gerarProximoNumeroOS]);
-  
-  const [formData, setFormData] = useState<Partial<OrdemServico>>({
+  }, [isOpen, tipoInicial]);
+  // Tipo para o formulário que inclui todos os campos possíveis
+  type FormDataType = Partial<OrdemServicoBase> & {
+    local_instalacao?: string;
+    tipo_estrutura?: string;
+    veiculo_identificacao?: string;
+    tipo_veiculo?: 'CCI' | 'CRS' | 'CCI RT' | 'CA';
+    quilometragem_atual?: number;
+    tipo_manutencao?: 'Preventiva' | 'Corretiva' | 'Emergencial' | 'Calibração';
+    equipamento_identificacao?: string;
+    numero_serie?: string;
+    modelo?: string;
+    fabricante?: string;
+    localizacao_equipamento?: string;
+    tipo_combustivel?: 'Gasolina' | 'Diesel' | 'Etanol';
+    quantidade_solicitada?: number;
+    quantidade_atual?: number;
+    urgencia?: 'Baixa' | 'Média' | 'Alta' | 'Crítica';
+    lista_materiais?: MaterialSolicitado[];
+    justificativa?: string;
+  };
+
+  const [formData, setFormData] = useState<FormDataType>({
     numero_chamado: '',
     cod_id: 0,
     tipo_chamado: tipoInicial || 'Estrutural' as TipoOS,
@@ -106,22 +117,88 @@ const OSCreateModal: React.FC<OSCreateModalProps> = ({ isOpen, onClose, tipoInic
   };
 
   const handleSave = () => {
-    // Validação simples
-    if (!formData.nome_solicitante || !formData.descricao) {
-      alert('Por favor, preencha os campos obrigatórios: Nome do Solicitante e Descrição');
+    // Validação usando a função do sistema
+    const validacao = validarDadosOS(formData);
+    
+    if (!validacao.valido) {
+      alert('Erros encontrados:\n' + validacao.erros.join('\n'));
       return;
     }
 
-    const novaOS: Partial<OrdemServico> = {
-      ...formData,
+    // Criar objeto baseado no tipo de chamado
+    let novaOS: Partial<OrdemServico>;
+    
+    const baseData = {
+      cod_id: formData.cod_id || 0,
+      numero_chamado: formData.numero_chamado || '',
+      data_solicitacao: formData.data_solicitacao || '',
+      nome_solicitante: formData.nome_solicitante || '',
+      descricao: formData.descricao || '',
+      status: formData.status || 'Pendente' as const,
+      item_operacional: formData.item_operacional || 'NÃO' as const,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      observacoes_manutencao: formData.observacoes_manutencao
     };
 
-    if (formData.tipo_chamado === 'Materiais') {
-      if ('lista_materiais' in novaOS) {
-        novaOS.lista_materiais = materiais.filter(m => m.nome_material.trim() !== '');
-      }
+    switch (formData.tipo_chamado) {
+      case 'Estrutural':
+        novaOS = {
+          ...baseData,
+          tipo_chamado: 'Estrutural' as const,
+          local_instalacao: formData.local_instalacao || '',
+          tipo_estrutura: formData.tipo_estrutura,
+          urgencia: formData.urgencia
+        } as Partial<OSEstrutural>;
+        break;
+        
+      case 'Viatura':
+        novaOS = {
+          ...baseData,
+          tipo_chamado: 'Viatura' as const,
+          veiculo_identificacao: formData.veiculo_identificacao || '',
+          tipo_veiculo: formData.tipo_veiculo,
+          quilometragem_atual: formData.quilometragem_atual,
+          tipo_manutencao: formData.tipo_manutencao
+        } as Partial<OSViatura>;
+        break;
+        
+      case 'Equipamento':
+        novaOS = {
+          ...baseData,
+          tipo_chamado: 'Equipamento' as const,
+          equipamento_identificacao: formData.equipamento_identificacao || '',
+          numero_serie: formData.numero_serie,
+          modelo: formData.modelo,
+          fabricante: formData.fabricante,
+          localizacao_equipamento: formData.localizacao_equipamento,
+          tipo_manutencao: formData.tipo_manutencao
+        } as Partial<OSEquipamento>;
+        break;
+        
+      case 'Combustível':
+        novaOS = {
+          ...baseData,
+          tipo_chamado: 'Combustível' as const,
+          veiculo_identificacao: formData.veiculo_identificacao || '',
+          tipo_combustivel: formData.tipo_combustivel || 'Diesel',
+          quantidade_solicitada: formData.quantidade_solicitada || 0,
+          quantidade_atual: formData.quantidade_atual,
+          urgencia: formData.urgencia || 'Média'
+        } as Partial<OSCombustivel>;
+        break;
+        
+      case 'Materiais':
+        novaOS = {
+          ...baseData,
+          tipo_chamado: 'Materiais' as const,
+          lista_materiais: materiais.filter(m => m.nome_material.trim() !== ''),
+          justificativa: formData.justificativa || ''
+        } as Partial<OSMateriais>;
+        break;
+        
+      default:
+        novaOS = { ...baseData, tipo_chamado: formData.tipo_chamado } as Partial<OrdemServico>;
     }
 
     onSave(novaOS);

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Edit, Save, X, Eye, Calendar, User, FileText, MapPin, Wrench, Fuel, Package, Loader2 } from 'lucide-react';
 import { OrdemServico, StatusOS, MaterialSolicitado } from '@/types/ordem-servico';
-import { useOrdemServico } from '@/hooks/useOrdemServico';
+import { atualizarStatusOS, validarDadosOS } from '@/data/mock-ordem-servico';
 import { useBombeiros } from '@/hooks/useBombeiros';
 
 interface OSViewModalProps {
@@ -23,7 +23,6 @@ interface OSViewModalProps {
 
 const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, readOnly = false }) => {
   const { bombeiros, isLoading: loadingBombeiros } = useBombeiros();
-  const { atualizarOrdemServico } = useOrdemServico();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<OrdemServico | null>(null);
 
@@ -35,31 +34,26 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
 
   if (!os || !formData) return null;
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof OrdemServico, value: any) => {
     setFormData(prev => prev ? { ...prev, [field]: value } : null);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (formData && onSave) {
-      // Validação simples
-      if (!formData.nome_solicitante || !formData.descricao) {
-        alert('Por favor, preencha os campos obrigatórios: Nome do Solicitante e Descrição');
+      // Validar dados antes de salvar
+      const validacao = validarDadosOS(formData);
+      if (!validacao.valido) {
+        alert(`Erro de validação: ${validacao.erros.join(', ')}`);
         return;
       }
       
-      try {
-        await atualizarOrdemServico(formData.cod_id, formData);
-        const osAtualizada = {
-          ...formData,
-          updated_at: new Date().toISOString()
-        };
-        
-        onSave(osAtualizada);
-        setIsEditing(false);
-      } catch (error) {
-        console.error('Erro ao atualizar OS:', error);
-        alert('Erro ao salvar as alterações');
-      }
+      const osAtualizada = {
+        ...formData,
+        updated_at: new Date().toISOString()
+      };
+      
+      onSave(osAtualizada);
+      setIsEditing(false);
     }
   };
 
@@ -93,19 +87,19 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
               <Label>Local da Instalação</Label>
               {isEditing ? (
                 <Input
-                  value={('local_instalacao' in formData ? formData.local_instalacao : '') || ''}
-                  onChange={(e) => handleInputChange('local_instalacao', e.target.value)}
+                  value={(formData as any).local_instalacao || ''}
+                  onChange={(e) => handleInputChange('local_instalacao' as any, e.target.value)}
                 />
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('local_instalacao' in formData ? formData.local_instalacao : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).local_instalacao || 'Não informado'}</p>
               )}
             </div>
             <div>
               <Label>Tipo de Estrutura</Label>
               {isEditing ? (
                 <Select 
-                  value={('tipo_estrutura' in formData ? formData.tipo_estrutura : '') || ''} 
-                  onValueChange={(value) => handleInputChange('tipo_estrutura', value)}
+                  value={(formData as any).tipo_estrutura || ''} 
+                  onValueChange={(value) => handleInputChange('tipo_estrutura' as any, value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
@@ -121,7 +115,7 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('tipo_estrutura' in formData ? formData.tipo_estrutura : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).tipo_estrutura || 'Não informado'}</p>
               )}
             </div>
           </div>
@@ -134,11 +128,11 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
               <Label>Identificação do Veículo</Label>
               {isEditing ? (
                 <Input
-                  value={('veiculo_identificacao' in formData ? formData.veiculo_identificacao : '') || ''}
-                  onChange={(e) => handleInputChange('veiculo_identificacao', e.target.value)}
+                  value={(formData as any).veiculo_identificacao || ''}
+                  onChange={(e) => handleInputChange('veiculo_identificacao' as any, e.target.value)}
                 />
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('veiculo_identificacao' in formData ? formData.veiculo_identificacao : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).veiculo_identificacao || 'Não informado'}</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -146,8 +140,8 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                 <Label>Tipo de Veículo</Label>
                 {isEditing ? (
                   <Select 
-                    value={('tipo_veiculo' in formData ? formData.tipo_veiculo : '') || ''} 
-                    onValueChange={(value) => handleInputChange('tipo_veiculo', value)}
+                    value={(formData as any).tipo_veiculo || ''} 
+                    onValueChange={(value) => handleInputChange('tipo_veiculo' as any, value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -160,7 +154,7 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                     </SelectContent>
                   </Select>
                 ) : (
-                  <p className="text-sm text-gray-600 mt-1">{('tipo_veiculo' in formData ? formData.tipo_veiculo : '') || 'Não informado'}</p>
+                  <p className="text-sm text-gray-600 mt-1">{(formData as any).tipo_veiculo || 'Não informado'}</p>
                 )}
               </div>
               <div>
@@ -168,11 +162,11 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                 {isEditing ? (
                   <Input
                     type="number"
-                    value={('quilometragem_atual' in formData ? formData.quilometragem_atual : 0) || 0}
-                    onChange={(e) => handleInputChange('quilometragem_atual', parseInt(e.target.value) || 0)}
+                    value={(formData as any).quilometragem_atual || 0}
+                    onChange={(e) => handleInputChange('quilometragem_atual' as any, parseInt(e.target.value) || 0)}
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 mt-1">{('quilometragem_atual' in formData ? formData.quilometragem_atual : 0) || 0} km</p>
+                  <p className="text-sm text-gray-600 mt-1">{(formData as any).quilometragem_atual || 0} km</p>
                 )}
               </div>
             </div>
@@ -180,8 +174,8 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
               <Label>Tipo de Manutenção</Label>
               {isEditing ? (
                 <Select 
-                  value={('tipo_manutencao' in formData ? formData.tipo_manutencao : '') || ''}
-                    onValueChange={(value) => handleInputChange('tipo_manutencao', value)}
+                  value={(formData as any).tipo_manutencao || ''} 
+                  onValueChange={(value) => handleInputChange('tipo_manutencao' as any, value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -193,7 +187,7 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('tipo_manutencao' in formData ? formData.tipo_manutencao : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).tipo_manutencao || 'Não informado'}</p>
               )}
             </div>
           </div>
@@ -206,11 +200,11 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
               <Label>Identificação do Equipamento</Label>
               {isEditing ? (
                 <Input
-                  value={('equipamento_identificacao' in formData ? formData.equipamento_identificacao : '') || ''}
-                  onChange={(e) => handleInputChange('equipamento_identificacao', e.target.value)}
+                  value={(formData as any).equipamento_identificacao || ''}
+                  onChange={(e) => handleInputChange('equipamento_identificacao' as any, e.target.value)}
                 />
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('equipamento_identificacao' in formData ? formData.equipamento_identificacao : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).equipamento_identificacao || 'Não informado'}</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -218,22 +212,22 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                 <Label>Número de Série</Label>
                 {isEditing ? (
                   <Input
-                    value={('numero_serie' in formData ? formData.numero_serie : '') || ''}
-                  onChange={(e) => handleInputChange('numero_serie', e.target.value)}
+                    value={(formData as any).numero_serie || ''}
+                    onChange={(e) => handleInputChange('numero_serie' as any, e.target.value)}
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 mt-1">{('numero_serie' in formData ? formData.numero_serie : '') || 'Não informado'}</p>
+                  <p className="text-sm text-gray-600 mt-1">{(formData as any).numero_serie || 'Não informado'}</p>
                 )}
               </div>
               <div>
                 <Label>Modelo</Label>
                 {isEditing ? (
                   <Input
-                    value={('modelo' in formData ? formData.modelo : '') || ''}
-                  onChange={(e) => handleInputChange('modelo', e.target.value)}
+                    value={(formData as any).modelo || ''}
+                    onChange={(e) => handleInputChange('modelo' as any, e.target.value)}
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 mt-1">{('modelo' in formData ? formData.modelo : '') || 'Não informado'}</p>
+                  <p className="text-sm text-gray-600 mt-1">{(formData as any).modelo || 'Não informado'}</p>
                 )}
               </div>
             </div>
@@ -241,22 +235,22 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
               <Label>Fabricante</Label>
               {isEditing ? (
                 <Input
-                  value={('fabricante' in formData ? formData.fabricante : '') || ''}
-                  onChange={(e) => handleInputChange('fabricante', e.target.value)}
+                  value={(formData as any).fabricante || ''}
+                  onChange={(e) => handleInputChange('fabricante' as any, e.target.value)}
                 />
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('fabricante' in formData ? formData.fabricante : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).fabricante || 'Não informado'}</p>
               )}
             </div>
             <div>
               <Label>Localização do Equipamento</Label>
               {isEditing ? (
                 <Input
-                  value={('localizacao_equipamento' in formData ? formData.localizacao_equipamento : '') || ''}
-                  onChange={(e) => handleInputChange('localizacao_equipamento', e.target.value)}
+                  value={(formData as any).localizacao_equipamento || ''}
+                  onChange={(e) => handleInputChange('localizacao_equipamento' as any, e.target.value)}
                 />
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('localizacao_equipamento' in formData ? formData.localizacao_equipamento : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).localizacao_equipamento || 'Não informado'}</p>
               )}
             </div>
           </div>
@@ -269,19 +263,19 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
               <Label>Identificação do Veículo</Label>
               {isEditing ? (
                 <Input
-                  value={('veiculo_identificacao' in formData ? formData.veiculo_identificacao : '') || ''}
-                  onChange={(e) => handleInputChange('veiculo_identificacao', e.target.value)}
+                  value={(formData as any).veiculo_identificacao || ''}
+                  onChange={(e) => handleInputChange('veiculo_identificacao' as any, e.target.value)}
                 />
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('veiculo_identificacao' in formData ? formData.veiculo_identificacao : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).veiculo_identificacao || 'Não informado'}</p>
               )}
             </div>
             <div>
               <Label>Tipo de Combustível</Label>
               {isEditing ? (
                 <Select 
-                  value={('tipo_combustivel' in formData ? formData.tipo_combustivel : '') || ''} 
-                  onValueChange={(value) => handleInputChange('tipo_combustivel', value)}
+                  value={(formData as any).tipo_combustivel || ''} 
+                  onValueChange={(value) => handleInputChange('tipo_combustivel' as any, value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -293,7 +287,7 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                   </SelectContent>
                 </Select>
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('tipo_combustivel' in formData ? formData.tipo_combustivel : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).tipo_combustivel || 'Não informado'}</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -304,11 +298,11 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                     type="number"
                     min="0"
                     max="100"
-                    value={('quantidade_solicitada' in formData ? formData.quantidade_solicitada : 0) || 0}
-                    onChange={(e) => handleInputChange('quantidade_solicitada', parseInt(e.target.value) || 0)}
+                    value={(formData as any).quantidade_solicitada || 0}
+                    onChange={(e) => handleInputChange('quantidade_solicitada' as any, parseInt(e.target.value) || 0)}
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 mt-1">{('quantidade_solicitada' in formData ? formData.quantidade_solicitada : 0) || 0}%</p>
+                  <p className="text-sm text-gray-600 mt-1">{(formData as any).quantidade_solicitada || 0}%</p>
                 )}
               </div>
               <div>
@@ -318,11 +312,11 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
                     type="number"
                     min="0"
                     max="100"
-                    value={('quantidade_atual' in formData ? formData.quantidade_atual : 0) || 0}
-                    onChange={(e) => handleInputChange('quantidade_atual', parseInt(e.target.value) || 0)}
+                    value={(formData as any).quantidade_atual || 0}
+                    onChange={(e) => handleInputChange('quantidade_atual' as any, parseInt(e.target.value) || 0)}
                   />
                 ) : (
-                  <p className="text-sm text-gray-600 mt-1">{('quantidade_atual' in formData ? formData.quantidade_atual : 0) || 0}%</p>
+                  <p className="text-sm text-gray-600 mt-1">{(formData as any).quantidade_atual || 0}%</p>
                 )}
               </div>
             </div>
@@ -331,19 +325,19 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
         );
 
       case 'Materiais':
-        const materiais = ('lista_materiais' in formData ? formData.lista_materiais : []) || [];
+        const materiais = (formData as any).lista_materiais || [];
         return (
           <div className="space-y-4">
             <div>
               <Label>Justificativa</Label>
               {isEditing ? (
                 <Textarea
-                  value={('justificativa' in formData ? formData.justificativa : '') || ''}
-                  onChange={(e) => handleInputChange('justificativa', e.target.value)}
+                  value={(formData as any).justificativa || ''}
+                  onChange={(e) => handleInputChange('justificativa' as any, e.target.value)}
                   rows={3}
                 />
               ) : (
-                <p className="text-sm text-gray-600 mt-1">{('justificativa' in formData ? formData.justificativa : '') || 'Não informado'}</p>
+                <p className="text-sm text-gray-600 mt-1">{(formData as any).justificativa || 'Não informado'}</p>
               )}
             </div>
             
@@ -505,7 +499,7 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
           </Card>
           
           {/* Observações */}
-          {('observacoes_manutencao' in formData && formData.observacoes_manutencao) && (
+          {(formData as any).observacoes_manutencao && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Observações da Manutenção</CardTitle>
@@ -513,12 +507,12 @@ const OSViewModal: React.FC<OSViewModalProps> = ({ isOpen, onClose, os, onSave, 
               <CardContent>
                 {isEditing ? (
                   <Textarea
-                    value={('observacoes_manutencao' in formData ? formData.observacoes_manutencao : '') || ''}
-                  onChange={(e) => handleInputChange('observacoes_manutencao', e.target.value)}
+                    value={(formData as any).observacoes_manutencao || ''}
+                    onChange={(e) => handleInputChange('observacoes_manutencao' as any, e.target.value)}
                     rows={3}
                   />
                 ) : (
-                  <p className="text-sm text-gray-600">{('observacoes_manutencao' in formData ? formData.observacoes_manutencao : '') || ''}</p>
+                  <p className="text-sm text-gray-600">{(formData as any).observacoes_manutencao}</p>
                 )}
               </CardContent>
             </Card>

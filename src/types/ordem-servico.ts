@@ -87,26 +87,13 @@ export interface FiltrosOS {
   data_fim?: string;
   solicitante?: string;
   busca_geral?: string;
-  numeroChamado?: string;
-  dataInicio?: string;
-  dataFim?: string;
 }
 
 // Estatísticas do dashboard
 export interface EstatisticasOS {
-  total: number;
-  pendentes: number;
-  em_andamento: number;
-  concluidas: number;
-  porTipo: {
-    Estrutural: number;
-    Viatura: number;
-    Equipamento: number;
-    Combustivel: number;
-    Materiais: number;
-  };
   total_os: number;
   abertas: number;
+  concluidas: number;
   por_tipo: Record<TipoOS, number>;
   tempo_medio_conclusao: number; // em dias
 }
