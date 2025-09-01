@@ -1696,6 +1696,7 @@ export type Database = {
           base: string
           created_at: string | null
           data_higienizacao: string
+          equipe_id: string | null
           id: string
           mes_referencia: number
           observacoes: string | null
@@ -1711,6 +1712,7 @@ export type Database = {
           base: string
           created_at?: string | null
           data_higienizacao?: string
+          equipe_id?: string | null
           id?: string
           mes_referencia: number
           observacoes?: string | null
@@ -1726,6 +1728,7 @@ export type Database = {
           base?: string
           created_at?: string | null
           data_higienizacao?: string
+          equipe_id?: string | null
           id?: string
           mes_referencia?: number
           observacoes?: string | null

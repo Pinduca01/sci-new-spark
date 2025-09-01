@@ -23,6 +23,9 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useTAFAvaliacoes } from '@/hooks/useTAFAvaliacoes';
+import { useBombeiros } from '@/hooks/useBombeiros';
+import { toast } from 'sonner';
 
 interface TAFDetailsModalProps {
   avaliacaoId: string;
@@ -38,6 +41,9 @@ const TAFDetailsModal: React.FC<TAFDetailsModalProps> = ({
   const [avaliacao, setAvaliacao] = useState<any>(null);
   const [bombeiro, setBombeiro] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const { buscarPorId } = useTAFAvaliacoes();
+  const { bombeiros } = useBombeiros();
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -45,36 +51,22 @@ const TAFDetailsModal: React.FC<TAFDetailsModalProps> = ({
       
       try {
         setIsLoading(true);
-        // Aqui você implementaria a busca dos dados da avaliação e bombeiro
-        // Por enquanto, vamos simular os dados
-        const avaliacaoMock = {
-          id: avaliacaoId,
-          data_teste: new Date().toISOString(),
-          faixa_etaria: 'abaixo_40',
-          flexoes_realizadas: 25,
-          flexoes_minimo: 20,
-          abdominais_realizadas: 30,
-          abdominais_minimo: 25,
-          corrida_tempo: '12:30',
-          corrida_tempo_maximo: '15:00',
-          corrida_aprovado: true,
-          natacao_tempo: '2:45',
-          natacao_tempo_maximo: '3:00',
-          natacao_aprovado: true,
-          observacoes: 'Avaliação realizada com sucesso.',
-          status: 'aprovado',
-        };
+        const result = await buscarPorId.mutateAsync(avaliacaoId);
         
-        const bombeiroMock = {
-          id: '1',
-          nome_completo: 'João Silva Santos',
-          matricula: '12345',
-        };
-        
-        setAvaliacao(avaliacaoMock);
-        setBombeiro(bombeiroMock);
+        if (result) {
+          setAvaliacao(result);
+          
+          // Buscar dados do bombeiro
+          const bombeiroEncontrado = bombeiros?.find(b => b.id === result.bombeiro_id);
+          if (bombeiroEncontrado) {
+            setBombeiro(bombeiroEncontrado);
+          } else if (result.bombeiros) {
+            setBombeiro(result.bombeiros);
+          }
+        }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
+        toast.error('Erro ao carregar dados da avaliação');
       } finally {
         setIsLoading(false);
       }

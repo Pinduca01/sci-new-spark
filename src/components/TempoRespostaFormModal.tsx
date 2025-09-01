@@ -119,7 +119,7 @@ export const TempoRespostaFormModal: React.FC<TempoRespostaFormModalProps> = ({
         dataExercicio: '',
         hora: '',
         equipe: '',
-        local: '',
+        local: 'Santa Genoveva - GYN', // Valor padrão temporário
         viaturas: [],
         observacoes: '',
         resumoExercicio: '',

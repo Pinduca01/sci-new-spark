@@ -169,7 +169,8 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                                           value === 'BA-CE' ? 'Chefe de Equipe (BA-CE)' :
                                           value === 'BA-LR' ? 'Líder de Resgate (BA-LR)' :
                                           value === 'BA-MC' ? 'Motorista Condutor (BA-MC)' :
-                                          value === 'BA-2' ? 'Bombeiro de Aeródromo (BA-2)' : value;
+                                          value === 'BA-2' ? 'Bombeiro de Aeródromo (BA-2)' :
+                                          value === 'BA-1' ? 'Bombeiro Auxiliar 1ª Classe (BA-1)' : value;
                     handleInputChange('funcao_completa', funcaoCompleta);
                   }}
                 >
@@ -182,6 +183,7 @@ export const BombeiroEditModal: React.FC<BombeiroEditModalProps> = ({
                     <SelectItem value="BA-LR">BA-LR - Líder de Resgate</SelectItem>
                     <SelectItem value="BA-MC">BA-MC - Motorista Condutor</SelectItem>
                     <SelectItem value="BA-2">BA-2 - Bombeiro de Aeródromo</SelectItem>
+                    <SelectItem value="BA-1">BA-1 - Bombeiro Auxiliar 1ª Classe</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

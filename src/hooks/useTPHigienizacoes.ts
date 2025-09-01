@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export type TPHigienizacao = {
   id: string;
+  equipe_id?: string | null;
   base: string;
   mes_referencia: number;
   ano_referencia: number;

@@ -37,6 +37,8 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useTAFAvaliacoes } from '@/hooks/useTAFAvaliacoes';
+import { useBombeiros } from '@/hooks/useBombeiros';
 
 interface TAFEditModalProps {
   avaliacaoId: string;
@@ -54,6 +56,9 @@ const TAFEditModal: React.FC<TAFEditModalProps> = ({
   const [avaliacao, setAvaliacao] = useState<any>(null);
   const [bombeiro, setBombeiro] = useState<any>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  
+  const { buscarPorId, atualizarAvaliacao } = useTAFAvaliacoes();
+  const { bombeiros } = useBombeiros();
   const [formData, setFormData] = useState({
     data_teste: '',
     faixa_etaria: '',
@@ -76,33 +81,22 @@ const TAFEditModal: React.FC<TAFEditModalProps> = ({
       
       try {
         setIsLoadingData(true);
-        // Aqui você implementaria a busca dos dados da avaliação e bombeiro
-        // Por enquanto, vamos simular os dados
-        const avaliacaoMock = {
-          id: avaliacaoId,
-          data_teste: new Date().toISOString(),
-          faixa_etaria: 'abaixo_40',
-          flexoes_realizadas: 25,
-          flexoes_minimo: 20,
-          abdominais_realizadas: 30,
-          abdominais_minimo: 25,
-          polichinelos_realizados: 40,
-          polichinelos_minimo: 35,
-          tempo_total_segundos: 165,
-          observacoes: 'Avaliação realizada com sucesso.',
-          status: 'aprovado',
-        };
+        const result = await buscarPorId.mutateAsync(avaliacaoId);
         
-        const bombeiroMock = {
-          id: '1',
-          nome_completo: 'João Silva Santos',
-          matricula: '12345',
-        };
-        
-        setAvaliacao(avaliacaoMock);
-        setBombeiro(bombeiroMock);
+        if (result) {
+          setAvaliacao(result);
+          
+          // Buscar dados do bombeiro
+          const bombeiroEncontrado = bombeiros?.find(b => b.id === result.bombeiro_id);
+          if (bombeiroEncontrado) {
+            setBombeiro(bombeiroEncontrado);
+          } else if (result.bombeiros) {
+            setBombeiro(result.bombeiros);
+          }
+        }
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
+        toast.error('Erro ao carregar dados da avaliação');
       } finally {
         setIsLoadingData(false);
       }
@@ -157,19 +151,20 @@ const TAFEditModal: React.FC<TAFEditModalProps> = ({
       
       const statusCalculado = calcularStatus();
       const dadosAtualizados = {
-        ...formData,
-        status: statusCalculado,
+        data_teste: formData.data_teste,
+        faixa_etaria: formData.faixa_etaria,
         flexoes_realizadas: Number(formData.flexoes_realizadas),
-        flexoes_minimo: Number(formData.flexoes_minimo),
         abdominais_realizadas: Number(formData.abdominais_realizadas),
-        abdominais_minimo: Number(formData.abdominais_minimo),
         polichinelos_realizados: Number(formData.polichinelos_realizados),
-        polichinelos_minimo: Number(formData.polichinelos_minimo),
         tempo_total_segundos: Number(formData.tempo_total_segundos),
+        observacoes: formData.observacoes,
+        aprovado: statusCalculado === 'aprovado'
       };
 
-      // Aqui você implementaria a função de salvar no backend
-      console.log('Dados atualizados:', dadosAtualizados);
+      await atualizarAvaliacao.mutateAsync({ 
+        id: avaliacaoId, 
+        dados: dadosAtualizados 
+      });
       
       onSuccess();
       onClose();
