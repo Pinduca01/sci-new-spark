@@ -77,34 +77,30 @@ export const useTAFAvaliacoes = () => {
   });
 
   // Buscar avaliação por ID
-  const buscarPorId = (id: string) => {
-    return useQuery({
-      queryKey: ['taf-avaliacao', id],
-      queryFn: async (): Promise<TAFAvaliacao | null> => {
-        const { data, error } = await supabase
-          .from('taf_avaliacoes')
-          .select(`
-            *,
-            bombeiros!inner(
-              nome,
-              email,
+  const buscarPorId = useMutation({
+    mutationFn: async (id: string): Promise<TAFAvaliacao | null> => {
+      const { data, error } = await supabase
+        .from('taf_avaliacoes')
+        .select(`
+          *,
+          bombeiros!inner(
+            nome,
+            email,
               funcao,
-              equipe
-            )
-          `)
-          .eq('id', id)
-          .single();
+            equipe
+          )
+        `)
+        .eq('id', id)
+        .single();
 
-        if (error) {
-          console.error('Erro ao buscar avaliação TAF:', error);
-          throw error;
-        }
+      if (error) {
+        console.error('Erro ao buscar avaliação TAF:', error);
+        throw error;
+      }
 
-        return data;
-      },
-      enabled: !!id,
-    });
-  };
+      return data;
+    },
+  });
 
   // Buscar avaliações por bombeiro
   const buscarPorBombeiro = (bombeiroId: string) => {

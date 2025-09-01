@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface Bombeiro {
   id: string;
   nome: string;
+  nome_completo?: string | null;
   funcao: string;
   funcao_completa: string;
   email: string;

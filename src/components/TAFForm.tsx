@@ -40,12 +40,12 @@ const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
     abdominais_realizadas: '',
     polichinelos_realizados: '',
     tempo_total_segundos: '',
-    tempo_limite_minutos: ''
+    tempo_limite_minutos: '3'
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [aprovado, setAprovado] = useState<boolean | null>(null);
-  const [tempoFormatado, setTempoFormatado] = useState({ minutos: '', segundos: '' });
+  const [tempoFormatado, setTempoFormatado] = useState({ minutos: '3', segundos: '0' });
 
   const { bombeiros, isLoading: loadingBombeiros } = useBombeiros();
   const { metas, isLoading: loadingMetas } = useTAFMetas();
@@ -54,18 +54,19 @@ const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
   // Carregar dados da avaliação se estiver editando
   useEffect(() => {
     if (avaliacaoId) {
-      buscarPorId.mutate(avaliacaoId, {
-        onSuccess: (avaliacao) => {
+      const carregarAvaliacao = async () => {
+        try {
+          const avaliacao = await buscarPorId.mutateAsync(avaliacaoId);
           if (avaliacao) {
             setFormData({
               bombeiro_id: avaliacao.bombeiro_id,
               data_teste: format(new Date(avaliacao.data_teste), 'yyyy-MM-dd'),
-              faixa_etaria: avaliacao.faixa_etaria,
+              faixa_etaria: avaliacao.faixa_etaria as 'abaixo_40' | 'acima_40',
               flexoes_realizadas: avaliacao.flexoes_realizadas.toString(),
               abdominais_realizadas: avaliacao.abdominais_realizadas.toString(),
               polichinelos_realizados: avaliacao.polichinelos_realizados.toString(),
               tempo_total_segundos: avaliacao.tempo_total_segundos.toString(),
-              tempo_limite_minutos: avaliacao.tempo_limite_minutos.toString()
+              tempo_limite_minutos: '3'
             });
             
             const minutos = Math.floor(avaliacao.tempo_total_segundos / 60);
@@ -75,8 +76,13 @@ const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
               segundos: segundos.toString() 
             });
           }
+        } catch (error) {
+          console.error('Erro ao carregar avaliação:', error);
+          toast.error('Erro ao carregar dados da avaliação');
         }
-      });
+      };
+      
+      carregarAvaliacao();
     }
   }, [avaliacaoId, buscarPorId]);
 
@@ -137,7 +143,9 @@ const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
     const dadosAvaliacao = {
       bombeiro_id: formData.bombeiro_id,
       data_teste: formData.data_teste,
+      avaliador_nome: 'Sistema', // Valor padrão temporário
       faixa_etaria: formData.faixa_etaria,
+      idade_na_data: 30, // Valor padrão temporário - deve ser calculado baseado na data de nascimento
       flexoes_realizadas: parseInt(formData.flexoes_realizadas),
       abdominais_realizadas: parseInt(formData.abdominais_realizadas),
       polichinelos_realizados: parseInt(formData.polichinelos_realizados),
@@ -208,7 +216,7 @@ const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
                     <SelectItem key={bombeiro.id} value={bombeiro.id}>
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4" />
-                        {bombeiro.nome_completo} - {bombeiro.matricula}
+                        {bombeiro.nome_completo || bombeiro.nome}
                       </div>
                     </SelectItem>
                   ))}
@@ -340,33 +348,21 @@ const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
 
           <Separator />
 
-          {/* Tempo */}
+          {/* Tempo Total */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Timer className="w-5 h-5" />
-              Controle de Tempo
+              Tempo Total para Todos os Exercícios (3 minutos)
             </h3>
             
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="tempo_limite">Tempo Limite (minutos)</Label>
-                <Input
-                  id="tempo_limite"
-                  type="number"
-                  min="0"
-                  value={formData.tempo_limite_minutos}
-                  onChange={(e) => handleInputChange('tempo_limite_minutos', e.target.value)}
-                  placeholder="Ex: 15"
-                />
-              </div>
-
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Tempo Realizado</Label>
                 <div className="flex gap-2">
                   <Input
                     type="number"
                     min="0"
-                    max="59"
+                    max="3"
                     value={tempoFormatado.minutos}
                     onChange={(e) => handleTempoChange('minutos', e.target.value)}
                     placeholder="Min"
@@ -381,13 +377,16 @@ const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
                     placeholder="Seg"
                   />
                 </div>
+                <div className="text-xs text-muted-foreground">
+                  Tempo limite: 3 minutos para flexões, abdominais e polichinelos
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Status do Tempo</Label>
                 <div className="flex items-center gap-2 p-2 rounded border">
-                  {formData.tempo_total_segundos && formData.tempo_limite_minutos ? (
-                    parseInt(formData.tempo_total_segundos) <= (parseInt(formData.tempo_limite_minutos) * 60) ? (
+                  {formData.tempo_total_segundos ? (
+                    parseInt(formData.tempo_total_segundos) <= 180 ? (
                       <>
                         <CheckCircle className="w-4 h-4 text-green-500" />
                         <span className="text-green-600 text-sm">Dentro do limite</span>

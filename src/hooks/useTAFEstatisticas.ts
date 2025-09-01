@@ -33,8 +33,8 @@ export const useTAFEstatisticas = () => {
           throw statsError;
         }
 
-        // Se a função RPC não existir, calcular manualmente
-        if (!stats) {
+        // Se a função RPC não existir ou retornar array vazio, calcular manualmente
+        if (!stats || stats.length === 0) {
           const { data: avaliacoes, error: avaliacoesError } = await supabase
             .from('taf_avaliacoes')
             .select(`
@@ -126,7 +126,21 @@ export const useTAFEstatisticas = () => {
           };
         }
 
-        return stats;
+        // A função RPC retorna um array, então pegamos o primeiro elemento
+        const statsData = stats[0];
+        
+        return {
+          total_avaliacoes: statsData.total_avaliacoes,
+          taxa_aprovacao: statsData.taxa_aprovacao,
+          bombeiros_pendentes: statsData.bombeiros_pendentes,
+          media_flexoes: statsData.media_flexoes,
+          media_abdominais: statsData.media_abdominais,
+          media_polichinelos: statsData.media_polichinelos,
+          tempo_medio_segundos: 0, // A função RPC não retorna este campo
+          avaliacoes_mes_atual: 0, // A função RPC não retorna este campo
+          avaliacoes_mes_anterior: 0, // A função RPC não retorna este campo
+          tendencia_aprovacao: 'estavel' as const // A função RPC não retorna este campo
+        };
       } catch (error) {
         console.error('Erro ao processar estatísticas TAF:', error);
         throw error;

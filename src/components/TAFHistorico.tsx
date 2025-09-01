@@ -27,6 +27,17 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   Search, 
   Filter, 
@@ -48,6 +59,8 @@ import { useBombeiros } from '@/hooks/useBombeiros';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import TAFDetailsModal from './TAFDetailsModal';
+import TAFEditModal from './TAFEditModal';
 
 interface TAFHistoricoProps {
   onEditAvaliacao?: (avaliacaoId: string) => void;
@@ -68,6 +81,10 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
     itensPorPagina: 10
   });
 
+  const [avaliacaoParaExcluir, setAvaliacaoParaExcluir] = useState<string | null>(null);
+  const [avaliacaoParaVisualizar, setAvaliacaoParaVisualizar] = useState<string | null>(null);
+  const [avaliacaoParaEditar, setAvaliacaoParaEditar] = useState<string | null>(null);
+
   const { avaliacoes, isLoading, excluirAvaliacao } = useTAFAvaliacoes();
   const { bombeiros } = useBombeiros();
 
@@ -83,8 +100,8 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
         const bombeiro = bombeiros?.find(b => b.id === avaliacao.bombeiro_id);
         const termoBusca = filtros.busca.toLowerCase();
         return (
-          bombeiro?.nome_completo.toLowerCase().includes(termoBusca) ||
-          bombeiro?.matricula.toLowerCase().includes(termoBusca)
+          (bombeiro?.nome_completo || bombeiro?.nome || '').toLowerCase().includes(termoBusca) ||
+          (bombeiro?.matricula || '').toLowerCase().includes(termoBusca)
         );
       });
     }
@@ -139,15 +156,32 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
   const indiceFim = indiceInicio + paginacao.itensPorPagina;
   const dadosPaginados = dadosFiltrados.slice(indiceInicio, indiceFim);
 
-  const handleExcluir = async (avaliacaoId: string) => {
-    if (window.confirm('Tem certeza que deseja excluir esta avaliação?')) {
-      try {
-        await excluirAvaliacao.mutateAsync(avaliacaoId);
-        toast.success('Avaliação excluída com sucesso!');
-      } catch (error) {
-        console.error('Erro ao excluir avaliação:', error);
-        toast.error('Erro ao excluir avaliação');
-      }
+  const handleConfirmarExclusao = async () => {
+    if (!avaliacaoParaExcluir) return;
+    
+    try {
+      await excluirAvaliacao.mutateAsync(avaliacaoParaExcluir);
+      toast.success('Avaliação excluída com sucesso!');
+      setAvaliacaoParaExcluir(null);
+    } catch (error) {
+      console.error('Erro ao excluir avaliação:', error);
+      toast.error('Erro ao excluir avaliação');
+    }
+  };
+
+  const handleViewDetails = (avaliacaoId: string) => {
+    if (onViewDetails) {
+      onViewDetails(avaliacaoId);
+    } else {
+      setAvaliacaoParaVisualizar(avaliacaoId);
+    }
+  };
+
+  const handleEdit = (avaliacaoId: string) => {
+    if (onEditAvaliacao) {
+      onEditAvaliacao(avaliacaoId);
+    } else {
+      setAvaliacaoParaEditar(avaliacaoId);
     }
   };
 
@@ -164,7 +198,7 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
       dadosFiltrados.map(avaliacao => {
         const bombeiro = bombeiros?.find(b => b.id === avaliacao.bombeiro_id);
         return [
-          bombeiro?.nome_completo || '',
+          bombeiro?.nome_completo || bombeiro?.nome || '',
           bombeiro?.matricula || '',
           format(new Date(avaliacao.data_teste), 'dd/MM/yyyy'),
           avaliacao.faixa_etaria === 'abaixo_40' ? 'Abaixo de 40' : 'Acima de 40',
@@ -205,7 +239,8 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
   }
 
   return (
-    <Card className="glass-card">
+    <>
+      <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -293,7 +328,7 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
                 <SelectItem value="todos">Todos os bombeiros</SelectItem>
                 {bombeiros?.map((bombeiro) => (
                   <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                    {bombeiro.nome_completo} - {bombeiro.matricula}
+                    {bombeiro.nome_completo || bombeiro.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -358,7 +393,7 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <div className="font-medium">{bombeiro?.nome_completo}</div>
+                            <div className="font-medium">{bombeiro?.nome_completo || bombeiro?.nome}</div>
                             <div className="text-sm text-muted-foreground">{bombeiro?.matricula}</div>
                           </div>
                         </div>
@@ -407,18 +442,24 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onViewDetails?.(avaliacao.id)}>
+                            <DropdownMenuItem 
+                              onClick={() => handleViewDetails(avaliacao.id)}
+                              className="cursor-pointer hover:bg-accent"
+                            >
                               <Eye className="w-4 h-4 mr-2" />
                               Ver Detalhes
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onEditAvaliacao?.(avaliacao.id)}>
+                            <DropdownMenuItem 
+                              onClick={() => handleEdit(avaliacao.id)}
+                              className="cursor-pointer hover:bg-accent"
+                            >
                               <Edit className="w-4 h-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
-                              onClick={() => handleExcluir(avaliacao.id)}
-                              className="text-destructive"
+                              onClick={() => setAvaliacaoParaExcluir(avaliacao.id)}
+                              className="text-destructive cursor-pointer hover:bg-destructive/10"
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
                               Excluir
@@ -461,7 +502,60 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
           </div>
         )}
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* AlertDialog para confirmação de exclusão */}
+      <AlertDialog open={!!avaliacaoParaExcluir} onOpenChange={() => setAvaliacaoParaExcluir(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+            Confirmar Exclusão
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Tem certeza que deseja excluir esta avaliação TAF? Esta ação não pode ser desfeita.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel 
+            onClick={() => setAvaliacaoParaExcluir(null)}
+            className="hover:bg-accent"
+          >
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleConfirmarExclusao}
+            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Excluir
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal de Detalhes */}
+      {avaliacaoParaVisualizar && (
+        <TAFDetailsModal
+          avaliacaoId={avaliacaoParaVisualizar}
+          open={!!avaliacaoParaVisualizar}
+          onClose={() => setAvaliacaoParaVisualizar(null)}
+        />
+      )}
+
+      {/* Modal de Edição */}
+      {avaliacaoParaEditar && (
+        <TAFEditModal
+          avaliacaoId={avaliacaoParaEditar}
+          open={!!avaliacaoParaEditar}
+          onClose={() => setAvaliacaoParaEditar(null)}
+          onSuccess={() => {
+            setAvaliacaoParaEditar(null);
+            toast.success('Avaliação atualizada com sucesso!');
+          }}
+        />
+      )}
+    </>
   );
 };
 

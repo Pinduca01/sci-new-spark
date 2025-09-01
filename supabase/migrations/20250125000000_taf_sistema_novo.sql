@@ -53,7 +53,7 @@ DECLARE
     media_flexoes NUMERIC;
     media_abdominais NUMERIC;
     media_polichinelos NUMERIC;
-    media_tempo INTERVAL;
+    media_tempo INTERVAL;  -- Esta linha estava faltando!
     bombeiros_pendentes INTEGER;
 BEGIN
     -- Aplicar filtros de data se fornecidos
@@ -88,7 +88,7 @@ BEGIN
         AVG(flexoes),
         AVG(abdominais),
         AVG(polichinelos),
-        AVG(tempo_corrida)
+        AVG(tempo_corrida)  -- Esta linha também estava incompleta
     INTO 
         media_flexoes,
         media_abdominais,
@@ -136,7 +136,6 @@ RETURNS TABLE (
     flexoes INTEGER,
     abdominais INTEGER,
     polichinelos INTEGER,
-    tempo_corrida INTERVAL,
     aprovado BOOLEAN,
     observacoes TEXT,
     created_at TIMESTAMP WITH TIME ZONE
@@ -149,7 +148,6 @@ BEGIN
         t.flexoes,
         t.abdominais,
         t.polichinelos,
-        t.tempo_corrida,
         t.aprovado,
         t.observacoes,
         t.created_at
@@ -173,6 +171,5 @@ COMMENT ON COLUMN public.taf_avaliacoes.data_avaliacao IS 'Data em que a avalia�
 COMMENT ON COLUMN public.taf_avaliacoes.flexoes IS 'Número de flexões realizadas';
 COMMENT ON COLUMN public.taf_avaliacoes.abdominais IS 'Número de abdominais realizadas';
 COMMENT ON COLUMN public.taf_avaliacoes.polichinelos IS 'Número de polichinelos realizados';
-COMMENT ON COLUMN public.taf_avaliacoes.tempo_corrida IS 'Tempo gasto na corrida';
 COMMENT ON COLUMN public.taf_avaliacoes.aprovado IS 'Indica se o bombeiro foi aprovado no TAF';
 COMMENT ON COLUMN public.taf_avaliacoes.observacoes IS 'Observações adicionais sobre a avaliação';

@@ -123,6 +123,7 @@ export type Database = {
           id: string
           matricula: string | null
           nome: string
+          nome_completo: string | null
           proxima_atualizacao: string | null
           status: string
           telefone: string
@@ -152,6 +153,7 @@ export type Database = {
           id?: string
           matricula?: string | null
           nome: string
+          nome_completo?: string | null
           proxima_atualizacao?: string | null
           status?: string
           telefone: string
@@ -181,6 +183,7 @@ export type Database = {
           id?: string
           matricula?: string | null
           nome?: string
+          nome_completo?: string | null
           proxima_atualizacao?: string | null
           status?: string
           telefone?: string

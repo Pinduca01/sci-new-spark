@@ -96,31 +96,44 @@ const TAFDashboard = () => {
   };
 
   // Dados para os gráficos
-  const dadosAprovacao = {
-    series: [estatisticas.taxa_aprovacao, 100 - estatisticas.taxa_aprovacao],
-    labels: ['Aprovados', 'Reprovados'],
-    colors: ['#10b981', '#ef4444']
-  };
+  const dadosAprovacao = [
+    {
+      name: 'Aprovados',
+      value: estatisticas.taxa_aprovacao,
+      color: '#10b981'
+    },
+    {
+      name: 'Reprovados',
+      value: 100 - estatisticas.taxa_aprovacao,
+      color: '#ef4444'
+    }
+  ];
 
-  const dadosPerformance = {
-    categories: ['Flexões', 'Abdominais', 'Polichinelos'],
-    series: [{
-      name: 'Média Realizada',
-      data: [
-        Math.round(estatisticas.media_flexoes),
-        Math.round(estatisticas.media_abdominais),
-        Math.round(estatisticas.media_polichinelos)
-      ]
-    }]
-  };
+  const dadosPerformance = [
+    {
+      name: 'Flexões',
+      value: Math.round(estatisticas.media_flexoes)
+    },
+    {
+      name: 'Abdominais',
+      value: Math.round(estatisticas.media_abdominais)
+    },
+    {
+      name: 'Polichinelos',
+      value: Math.round(estatisticas.media_polichinelos)
+    }
+  ];
 
-  const dadosTendencia = {
-    categories: ['Mês Anterior', 'Mês Atual'],
-    series: [{
-      name: 'Avaliações',
-      data: [estatisticas.avaliacoes_mes_anterior, estatisticas.avaliacoes_mes_atual]
-    }]
-  };
+  const dadosTendencia = [
+    {
+      name: 'Mês Anterior',
+      value: estatisticas.avaliacoes_mes_anterior
+    },
+    {
+      name: 'Mês Atual',
+      value: estatisticas.avaliacoes_mes_atual
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -198,10 +211,9 @@ const TAFDashboard = () => {
           <CardContent>
             <div className="h-[300px]">
               <ApexDonutChart
-                series={dadosAprovacao.series}
-                labels={dadosAprovacao.labels}
-                colors={dadosAprovacao.colors}
-                height={300}
+                dados={dadosAprovacao}
+                titulo="Taxa de Aprovação"
+                altura={300}
               />
             </div>
           </CardContent>
@@ -218,9 +230,8 @@ const TAFDashboard = () => {
           <CardContent>
             <div className="h-[300px]">
               <ApexBarChart
-                series={dadosPerformance.series}
-                categories={dadosPerformance.categories}
-                height={300}
+                dados={dadosPerformance}
+                titulo="Performance Média"
               />
             </div>
           </CardContent>
@@ -283,9 +294,8 @@ const TAFDashboard = () => {
         <CardContent>
           <div className="h-[200px]">
             <ApexLineChart
-              series={dadosTendencia.series}
-              categories={dadosTendencia.categories}
-              height={200}
+              dados={dadosTendencia}
+              titulo="Tendência de Avaliações"
             />
           </div>
         </CardContent>
