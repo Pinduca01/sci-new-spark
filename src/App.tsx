@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import AuthErrorHandler from "@/components/AuthErrorHandler";
 
 import Login from "./pages/Login";
 import MainLayout from "./components/MainLayout";
@@ -17,6 +18,7 @@ import PTRBA from "./pages/PTRBA";
 import Equipamentos from "./pages/Equipamentos";
 import TPUniformes from "./pages/TPUniformes";
 import AtividadesAcessorias from "./pages/AtividadesAcessorias";
+import OrdemServico from "./pages/OrdemServico";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -37,6 +39,7 @@ const App = () => (
       storageKey="sci-core-theme"
     >
       <BrowserRouter>
+        <AuthErrorHandler />
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
@@ -52,6 +55,7 @@ const App = () => (
           <Route path="/equipamentos/tp-uniformes" element={<MainLayout><TPUniformes /></MainLayout>} />
           <Route path="/ptr-ba" element={<MainLayout><PTRBA /></MainLayout>} />
           <Route path="/atividades-acessorias" element={<MainLayout><AtividadesAcessorias /></MainLayout>} />
+          <Route path="/ordem-servico" element={<MainLayout><OrdemServico /></MainLayout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

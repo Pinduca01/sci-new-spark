@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useBombeiros } from "@/hooks/useBombeiros";
 
 interface OrdemServicoFormProps {
   viaturaId: string;
@@ -18,6 +19,7 @@ interface OrdemServicoFormProps {
 
 export const OrdemServicoForm = ({ viaturaId, viaturaPrefixo, onClose, onSave }: OrdemServicoFormProps) => {
   const [loading, setLoading] = useState(false);
+  const { bombeiros, isLoading: loadingBombeiros } = useBombeiros();
   const [formData, setFormData] = useState({
     tipo_servico: "viatura",
     descricao_problema: "",
@@ -149,13 +151,31 @@ export const OrdemServicoForm = ({ viaturaId, viaturaPrefixo, onClose, onSave }:
 
           <div className="space-y-2">
             <Label htmlFor="bombeiro_solicitante">Bombeiro Solicitante *</Label>
-            <Input
-              id="bombeiro_solicitante"
+            <Select
               value={formData.bombeiro_solicitante}
-              onChange={(e) => handleInputChange('bombeiro_solicitante', e.target.value)}
-              placeholder="Nome do bombeiro que está solicitando"
+              onValueChange={(value) => handleInputChange('bombeiro_solicitante', value)}
               required
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o bombeiro solicitante" />
+              </SelectTrigger>
+              <SelectContent>
+                {loadingBombeiros ? (
+                  <SelectItem value="" disabled>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando bombeiros...
+                    </div>
+                  </SelectItem>
+                ) : (
+                  bombeiros.map((bombeiro) => (
+                    <SelectItem key={bombeiro.id} value={bombeiro.nome}>
+                      {bombeiro.nome} - {bombeiro.funcao}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

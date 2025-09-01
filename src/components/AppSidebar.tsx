@@ -17,7 +17,8 @@ import {
   Activity,
   Briefcase,
   ShieldCheck,
-  Shield
+  Shield,
+  ClipboardCheck
 } from "lucide-react";
 
 import {
@@ -100,6 +101,12 @@ const navigationItems = [
     url: "/atividades-acessorias", 
     icon: Briefcase,
     description: "Atividades complementares"
+  },
+  { 
+    title: "OS - Ordem de Serviço", 
+    url: "/ordem-servico", 
+    icon: ClipboardCheck,
+    description: "Gestão e controle de ordens de serviço"
   },
   { 
     title: "Relatórios", 

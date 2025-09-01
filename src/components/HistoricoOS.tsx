@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Wrench, Calendar, User, Eye, AlertCircle } from "lucide-react";
+import { Search, Wrench, Calendar, User, Eye, AlertCircle, CheckCircle, RotateCcw } from 'lucide-react';
 import { toast } from "@/hooks/use-toast";
 
 interface OrdemServico {
@@ -69,6 +69,72 @@ export const HistoricoOS = ({ viaturaId }: HistoricoOSProps) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const marcarComoConcluida = async (ordemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('ordens_servico')
+        .update({ 
+          status: 'concluida',
+          data_conclusao: new Date().toISOString().split('T')[0]
+        })
+        .eq('id', ordemId);
+
+      if (error) throw error;
+
+      // Atualizar a lista local
+      setOrdens(prev => prev.map(ordem => 
+        ordem.id === ordemId 
+          ? { ...ordem, status: 'concluida', data_conclusao: new Date().toISOString().split('T')[0] }
+          : ordem
+      ));
+
+      toast({
+        title: "Sucesso",
+        description: "Ordem de serviço marcada como concluída.",
+      });
+    } catch (error) {
+      console.error('Erro ao marcar OS como concluída:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar a OS como concluída.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const desfazerConclusao = async (ordemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('ordens_servico')
+        .update({ 
+          status: 'aberta',
+          data_conclusao: null
+        })
+        .eq('id', ordemId);
+
+      if (error) throw error;
+
+      // Atualizar a lista local
+      setOrdens(prev => prev.map(ordem => 
+        ordem.id === ordemId 
+          ? { ...ordem, status: 'aberta', data_conclusao: null }
+          : ordem
+      ));
+
+      toast({
+        title: "Sucesso",
+        description: "Marcação de conclusão desfeita. OS reaberta.",
+      });
+    } catch (error) {
+      console.error('Erro ao desfazer conclusão da OS:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível desfazer a conclusão da OS.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -202,10 +268,33 @@ export const HistoricoOS = ({ viaturaId }: HistoricoOSProps) => {
                   )}
                 </div>
 
-                <Button variant="outline" size="sm" className="ml-4">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Detalhes
-                </Button>
+                <div className="flex gap-2 ml-4">
+                  {ordem.status !== 'concluida' ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => marcarComoConcluida(ordem.id)}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 hover:border-green-300 transition-all duration-200"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Concluir
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => desfazerConclusao(ordem.id)}
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 hover:border-orange-300 transition-all duration-200"
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Desfazer
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Detalhes
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
