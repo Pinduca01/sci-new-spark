@@ -119,7 +119,7 @@ export const ExercicioPosicionamentoModal: React.FC<ExercicioPosicionamentoModal
         dataExercicio: '',
         hora: '',
         equipe: '',
-        local: '',
+        local: 'Santa Genoveva - GYN', // Valor padrão temporário
         viaturas: [],
         observacoes: '',
         resumoExercicio: '',

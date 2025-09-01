@@ -7,10 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateTPHigienizacao, type TPHigienizacao } from "@/hooks/useTPHigienizacoes";
 import { useBombeiros } from "@/hooks/useBombeiros";
+import { useEquipes } from "@/hooks/useEquipes";
 import { Plus, Trash2 } from "lucide-react";
 
 type FormData = {
   aeroporto: string;
+  equipe_id: string;
   responsavel_id: string;
   responsavel_nome: string;
   data: string;
@@ -32,6 +34,7 @@ const TPHigienizacaoForm = () => {
   });
   const createHigienizacao = useCreateTPHigienizacao();
   const { bombeiros = [] } = useBombeiros();
+  const { data: equipes = [] } = useEquipes();
 
   const mesAtual = new Date().getMonth() + 1;
   const anoAtual = new Date().getFullYear();
@@ -41,6 +44,7 @@ const TPHigienizacaoForm = () => {
       // Adaptar dados para o formato esperado pelo backend
       const adaptedData = {
         base: data.aeroporto,
+        equipe_id: data.equipe_id,
         responsavel_id: data.responsavel_id,
         responsavel_nome: data.responsavel_nome,
         mes_referencia: mesAtual,
@@ -84,7 +88,7 @@ const TPHigienizacaoForm = () => {
           {/* Seção de Identificação */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-primary border-b pb-2">Identificação do Aeroporto</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="aeroporto">Aeroporto</Label>
                 <Select onValueChange={(value) => setValue("aeroporto", value)}>
@@ -100,6 +104,25 @@ const TPHigienizacaoForm = () => {
                 </Select>
                 {errors.aeroporto && (
                   <p className="text-sm text-destructive">{errors.aeroporto.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="equipe_id">Equipe</Label>
+                <Select onValueChange={(value) => setValue("equipe_id", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a equipe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipes.map((equipe) => (
+                      <SelectItem key={equipe.id} value={equipe.id}>
+                        {equipe.nome_equipe}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.equipe_id && (
+                  <p className="text-sm text-destructive">{errors.equipe_id.message}</p>
                 )}
               </div>
 

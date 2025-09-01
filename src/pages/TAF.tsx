@@ -14,6 +14,7 @@ import {
 import TAFForm from '@/components/TAFForm';
 import TAFDashboard from '@/components/TAFDashboard';
 import TAFHistorico from '@/components/TAFHistorico';
+import TAFEvolucao from '@/components/TAFEvolucao';
 
 const TAF = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -94,27 +95,7 @@ const TAF = () => {
         </TabsContent>
 
         <TabsContent value="evolucao" className="space-y-6">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Evolução Individual
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Evolução Individual</h3>
-                <p className="text-muted-foreground mb-6">
-                  Acompanhe o progresso individual de cada bombeiro ao longo do tempo
-                </p>
-                <Button variant="outline">
-                  <Activity className="w-4 h-4 mr-2" />
-                  Em Desenvolvimento
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <TAFEvolucao />
         </TabsContent>
       </Tabs>
     </div>

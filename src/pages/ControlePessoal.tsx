@@ -265,10 +265,11 @@ const ControlePessoal: React.FC = () => {
       // Auto-complete funcao_completa based on funcao
       if (field === 'funcao') {
         newData.funcao_completa = value === 'GS' ? 'Gerente de Seção (GS)' :
-                                  value === 'BA-CE' ? 'Chefe de Equipe (BA-CE)' :
-                                  value === 'BA-LR' ? 'Líder de Resgate (BA-LR)' :
-                                  value === 'BA-MC' ? 'Motorista Condutor (BA-MC)' :
-                                  value === 'BA-2' ? 'Bombeiro de Aeródromo (BA-2)' : value;
+                      value === 'BA-CE' ? 'Chefe de Equipe (BA-CE)' :
+                      value === 'BA-LR' ? 'Líder de Resgate (BA-LR)' :
+                      value === 'BA-MC' ? 'Motorista Condutor (BA-MC)' :
+                      value === 'BA-2' ? 'Bombeiro de Aeródromo (BA-2)' :
+                      value === 'BA-1' ? 'Bombeiro Auxiliar 1ª Classe (BA-1)' : value;
       }
       
       return newData;
@@ -375,6 +376,7 @@ const ControlePessoal: React.FC = () => {
                         <SelectItem value="BA-LR">BA-LR - Líder de Resgate</SelectItem>
                         <SelectItem value="BA-MC">BA-MC - Motorista Condutor</SelectItem>
                         <SelectItem value="BA-2">BA-2 - Bombeiro de Aeródromo</SelectItem>
+                        <SelectItem value="BA-1">BA-1 - Bombeiro Auxiliar 1ª Classe</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -613,6 +615,7 @@ const ControlePessoal: React.FC = () => {
                   <SelectItem value="BA-LR">BA-LR</SelectItem>
                   <SelectItem value="BA-MC">BA-MC</SelectItem>
                   <SelectItem value="BA-2">BA-2</SelectItem>
+                  <SelectItem value="BA-1">BA-1</SelectItem>
                 </SelectContent>
               </Select>
 

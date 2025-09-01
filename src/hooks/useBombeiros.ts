@@ -50,9 +50,16 @@ export const useBombeiros = () => {
   // Buscar bombeiros disponíveis (ativo)
   const bombeirosAtivos = bombeiros.filter(bombeiro => bombeiro.status === 'ativo');
 
+  // Buscar bombeiros com função BA-CE
+  const bombeirosBACE = bombeiros.filter(bombeiro => 
+    bombeiro.status === 'ativo' && 
+    (bombeiro.funcao === 'BA-CE' || bombeiro.funcao_completa?.includes('BA-CE'))
+  );
+
   return {
     bombeiros,
     bombeirosAtivos,
+    bombeirosBACE,
     isLoading,
     error,
     buscarPorEquipe,
