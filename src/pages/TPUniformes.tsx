@@ -6,7 +6,8 @@ import TPUniformesDashboard from "@/components/TPUniformesDashboard";
 import TPVerificacaoForm from "@/components/TPVerificacaoForm";
 import TPUniformesVerificacaoForm from "@/components/TPUniformesVerificacaoForm";
 import TPHigienizacaoForm from "@/components/TPHigienizacaoForm";
-import EPIDistribuicaoForm from "@/components/EPIDistribuicaoForm";
+
+import TPVerificacoesHistorico from "@/components/TPVerificacoesHistorico";
 
 const TPUniformes = () => {
   return (
@@ -38,10 +39,7 @@ const TPUniformes = () => {
             <Droplets className="w-4 h-4 mr-2" />
             Higienização
           </TabsTrigger>
-          <TabsTrigger value="distribuicao">
-            <Package className="w-4 h-4 mr-2" />
-            Distribuição EPIs
-          </TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
@@ -57,17 +55,7 @@ const TPUniformes = () => {
 
         <TabsContent value="verificacao" className="space-y-4">
           <TPVerificacaoForm />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Verificações de TP</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Funcionalidade de histórico em desenvolvimento</p>
-              </div>
-            </CardContent>
-          </Card>
+          <TPVerificacoesHistorico />
         </TabsContent>
 
         <TabsContent value="verificacao-uniformes" className="space-y-4">
@@ -100,20 +88,7 @@ const TPUniformes = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="distribuicao" className="space-y-4">
-          <EPIDistribuicaoForm />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Distribuições</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Funcionalidade de histórico em desenvolvimento</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
       </Tabs>
     </div>
   );
