@@ -42,7 +42,6 @@ export interface DashboardStats {
     verificacoes_mes: number;
     conformidade_percentual: number;
     higienizacoes_realizadas: number;
-    epis_distribuidos: number;
   };
   taf: any;
   trocas: any[];
@@ -181,7 +180,7 @@ export const useDashboardStats = (mes: number, ano: number) => {
   const { data: tpStats } = useQuery({
     queryKey: ['dashboard-tp', mes, ano],
     queryFn: async () => {
-      const [verificacoes, higienizacoes, epis] = await Promise.all([
+      const [verificacoes, higienizacoes] = await Promise.all([
         supabase
           .from('tp_verificacoes')
           .select('*')
@@ -189,11 +188,6 @@ export const useDashboardStats = (mes: number, ano: number) => {
           .eq('ano_referencia', ano),
         supabase
           .from('tp_higienizacoes')
-          .select('*')
-          .eq('mes_referencia', mes)
-          .eq('ano_referencia', ano),
-        supabase
-          .from('epis_uniformes_distribuicao')
           .select('*')
           .eq('mes_referencia', mes)
           .eq('ano_referencia', ano)
@@ -204,13 +198,11 @@ export const useDashboardStats = (mes: number, ano: number) => {
       const conformidadePercentual = totalVerificacoes > 0 ? (totalConformes / totalVerificacoes) * 100 : 0;
 
       const totalHigienizacoes = higienizacoes.data?.reduce((acc, h) => acc + h.quantidade_higienizada, 0) || 0;
-      const totalEpis = epis.data?.reduce((acc, e) => acc + e.quantidade_entregue, 0) || 0;
 
       return {
         verificacoes_mes: totalVerificacoes,
         conformidade_percentual: Math.round(conformidadePercentual),
-        higienizacoes_realizadas: totalHigienizacoes,
-        epis_distribuidos: totalEpis
+        higienizacoes_realizadas: totalHigienizacoes
       };
     }
   });
@@ -246,8 +238,7 @@ export const useDashboardStats = (mes: number, ano: number) => {
     tp_uniformes: tpStats || {
       verificacoes_mes: 0,
       conformidade_percentual: 0,
-      higienizacoes_realizadas: 0,
-      epis_distribuidos: 0
+      higienizacoes_realizadas: 0
     },
     taf: tafStats,
     trocas: trocasStats

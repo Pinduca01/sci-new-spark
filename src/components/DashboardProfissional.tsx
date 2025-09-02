@@ -304,18 +304,7 @@ const DashboardProfissional = () => {
             </CardContent>
           </Card>
           
-          <Card className="hover:shadow-lg transition-shadow duration-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                EPIs Distribuídos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-orange-600">{dados.tp_uniformes.epis_distribuidos}</div>
-              <p className="text-xs text-muted-foreground mt-1">Este mês</p>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Rodapé */}

@@ -16,6 +16,9 @@ export type TPVerificacao = {
   observacoes?: string;
   responsavel_id?: string;
   responsavel_nome: string;
+  assinatura_digital?: any;
+  status_assinatura?: string;
+  documento_enviado?: boolean;
   created_at: string;
   updated_at: string;
 };

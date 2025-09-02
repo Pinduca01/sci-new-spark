@@ -128,8 +128,6 @@ export const ExportadorPDF: React.FC<ExportadorPDFProps> = ({ dados, periodo }) 
       pdf.text(`Conformidade: ${dados.tp_uniformes?.conformidade_percentual || 0}%`, 25, yPosition);
       yPosition += 6;
       pdf.text(`Higienizações: ${dados.tp_uniformes?.higienizacoes_realizadas || 0}`, 25, yPosition);
-      yPosition += 6;
-      pdf.text(`EPIs Distribuídos: ${dados.tp_uniformes?.epis_distribuidos || 0}`, 25, yPosition);
       yPosition += 15;
 
       // Seção: Trocas de Plantão

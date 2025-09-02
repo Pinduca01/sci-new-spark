@@ -19,6 +19,7 @@ import Equipamentos from "./pages/Equipamentos";
 import TPUniformes from "./pages/TPUniformes";
 import AtividadesAcessorias from "./pages/AtividadesAcessorias";
 import OrdemServico from "./pages/OrdemServico";
+import ExemploAssinaturaAutentique from "./components/ExemploAssinaturaAutentique";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/ptr-ba" element={<MainLayout><PTRBA /></MainLayout>} />
           <Route path="/atividades-acessorias" element={<MainLayout><AtividadesAcessorias /></MainLayout>} />
           <Route path="/ordem-servico" element={<MainLayout><OrdemServico /></MainLayout>} />
+          <Route path="/assinatura-exemplo" element={<MainLayout><ExemploAssinaturaAutentique /></MainLayout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

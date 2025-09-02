@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTPVerificacoes } from "@/hooks/useTPVerificacoes";
 import { useTPHigienizacoes } from "@/hooks/useTPHigienizacoes";
-import { useEPIsDistribuicao } from "@/hooks/useEPIsDistribuicao";
+
 import { 
   ShieldCheck, 
   Droplets, 
@@ -27,7 +27,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const TPUniformesDashboard = () => {
   const { data: verificacoes = [] } = useTPVerificacoes();
   const { data: higienizacoes = [] } = useTPHigienizacoes();
-  const { data: distribuicoes = [] } = useEPIsDistribuicao();
+
 
   const mesAtual = new Date().getMonth() + 1;
   const anoAtual = new Date().getFullYear();

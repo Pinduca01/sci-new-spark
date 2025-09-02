@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateTPVerificacao, type TPVerificacao } from "@/hooks/useTPVerificacoes";
 import { useBombeiros } from "@/hooks/useBombeiros";
 import { useEquipes } from "@/hooks/useEquipes";
+import { AssinaturaDigital } from "@/components/AssinaturaDigital";
+import { useToast } from "@/hooks/use-toast";
 
 
 
@@ -66,6 +68,7 @@ const TPVerificacaoForm = () => {
   const createVerificacao = useCreateTPVerificacao();
   const { bombeiros = [] } = useBombeiros();
   const { data: equipes = [] } = useEquipes();
+  const { toast } = useToast();
   const [checklistItems, setChecklistItems] = useState({
     item1: "S" as "S" | "N",
     item2: "S" as "S" | "N",
@@ -76,6 +79,16 @@ const TPVerificacaoForm = () => {
     item7: "S" as "S" | "N",
     item8: "S" as "S" | "N"
   });
+  
+  // Estados para assinatura digital
+  const [assinatura, setAssinatura] = useState<{
+    documentoId: string;
+    linkAssinatura: string;
+    status: string;
+    assinaturaBase64?: string;
+  } | null>(null);
+  const [documentoEnviado, setDocumentoEnviado] = useState(false);
+  const [statusAssinatura, setStatusAssinatura] = useState<'rascunho' | 'enviado' | 'assinado'>('rascunho');
 
   // Rastrear bombeiros selecionados nos campos de integrantes
   const integrantesSelecionados = {
@@ -121,6 +134,16 @@ const TPVerificacaoForm = () => {
 
 
   const onSubmit = async (data: FormData) => {
+    // Verificar se há assinatura
+    if (!assinatura || assinatura.status !== 'assinado') {
+      toast({
+        title: "Assinatura obrigatória",
+        description: "Por favor, aguarde a conclusão da assinatura digital antes de salvar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Validar se há observações para itens não conformes
     const nonConformItems = [];
     if (checklistItems.item1 === "N" && !data.item1_observacoes) nonConformItems.push("Item 1");
@@ -133,7 +156,11 @@ const TPVerificacaoForm = () => {
     if (checklistItems.item8 === "N" && !data.item8_observacoes) nonConformItems.push("Item 8");
     
     if (nonConformItems.length > 0) {
-      alert(`Observações são obrigatórias para itens não conformes: ${nonConformItems.join(", ")}`);
+      toast({
+        title: "Observações obrigatórias",
+        description: `Observações são obrigatórias para itens não conformes: ${nonConformItems.join(", ")}`,
+        variant: "destructive"
+      });
       return;
     }
 
@@ -166,7 +193,13 @@ const TPVerificacaoForm = () => {
         tp_conformes: itensConformes,
         tp_nao_conformes: itensNaoConformes,
         total_verificados: 8, // Total de itens verificados
-        observacoes: `Verificação de ${data.data_verificacao}\n${observacoes}`
+        observacoes: `Verificação de ${data.data_verificacao}\n${observacoes}`,
+        // Adicionar dados da assinatura
+        documento_autentique_id: assinatura.documentoId,
+        status_assinatura: assinatura.status,
+        assinatura_data: new Date().toISOString(),
+        assinatura_base64: assinatura.assinaturaBase64,
+        documento_enviado: documentoEnviado
       };
       
       await createVerificacao.mutateAsync(adaptedData);
@@ -181,8 +214,23 @@ const TPVerificacaoForm = () => {
         item7: "S",
         item8: "S"
       });
+      
+      // Reset assinatura
+      setAssinatura(null);
+      setDocumentoEnviado(false);
+      setStatusAssinatura('rascunho');
+      
+      toast({
+        title: "Verificação salva",
+        description: "Verificação de TP salva com sucesso!"
+      });
     } catch (error) {
       console.error("Erro ao salvar verificação:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Erro ao salvar verificação. Tente novamente.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -413,25 +461,105 @@ const TPVerificacaoForm = () => {
         {/* Seção de Assinatura */}
         <div className="border border-gray-400 mt-6">
           <div className="bg-gray-100 p-2 text-center font-semibold border-b border-gray-400">
-            LEGENDA: S = SIM | N = NÃO QUANDO "NÃO" DESCREVER A NÃO CONFORMIDADE
+            ASSINATURA DIGITAL DO RESPONSÁVEL
           </div>
           
           <div className="p-4">
-            <div className="grid grid-cols-2 gap-8">
-              <div className="text-center">
-                <div className="border-b border-gray-400 pb-2 mb-2">
-                  <div className="h-16 flex items-end justify-center">
-                    <span className="text-sm">Assinatura Digital</span>
-                  </div>
-                </div>
-                <p className="text-sm font-semibold">Prontos para salvar</p>
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600 mb-4">
+                <p><strong>LEGENDA:</strong> S = SIM | N = NÃO QUANDO "NÃO" DESCREVER A NÃO CONFORMIDADE</p>
               </div>
               
-              <div className="flex items-center justify-center">
-                <div className="text-right">
-                  <img src="/api/placeholder/100/50" alt="med+ Group" className="h-12" />
+              <AssinaturaDigital
+                onAssinaturaConcluida={(dados) => {
+                  setAssinatura(dados);
+                  setStatusAssinatura('assinado');
+                  toast({
+                    title: "Assinatura concluída",
+                    description: "A assinatura foi concluída com sucesso."
+                  });
+                }}
+                signatarios={[
+                  {
+                    nome: watch("responsavel_nome") || "Responsável",
+                    email: "responsavel@bombeiros.gov.br"
+                  }
+                ]}
+                verificacaoData={{
+                  data_verificacao: watch("data_verificacao") || new Date().toISOString().split('T')[0],
+                  local_contrato: watch("local_contrato") || "",
+                  ba_ce_nome: watch("ba_ce_nome") || "",
+                  responsavel_nome: watch("responsavel_nome") || "",
+                  equipe_id: watch("equipe_id") || "",
+                  integrantes: [
+                    watch("integrante_1_id"),
+                    watch("integrante_2_id"),
+                    watch("integrante_3_id"),
+                    watch("integrante_4_id"),
+                    watch("integrante_5_id"),
+                    watch("integrante_6_id"),
+                    watch("integrante_7_id"),
+                    watch("integrante_8_id"),
+                    watch("integrante_9_id"),
+                    watch("integrante_10_id"),
+                    watch("integrante_11_id"),
+                    watch("integrante_12_id")
+                  ].filter(Boolean) as string[],
+                  checklist: [
+                    {
+                      item: "As vestimentas possuem algum tipo de dano?",
+                      conforme: (watch("item1_conforme") || "N") as "S" | "N",
+                      observacoes: watch("item1_observacoes") || ""
+                    },
+                    {
+                      item: "Existem vestimentas nos moldes dos pontos de verificação?",
+                      conforme: (watch("item2_conforme") || "N") as "S" | "N",
+                      observacoes: watch("item2_observacoes") || ""
+                    },
+                    {
+                      item: "Os capacetes possuem avarias de qualquer natureza?",
+                      conforme: (watch("item3_conforme") || "N") as "S" | "N",
+                      observacoes: watch("item3_observacoes") || ""
+                    },
+                    {
+                      item: "As botas apresentam algum tipo de alteração?",
+                      conforme: (watch("item4_conforme") || "N") as "S" | "N",
+                      observacoes: watch("item4_observacoes") || ""
+                    },
+                    {
+                      item: "As luvas apresentam algum tipo de alteração?",
+                      conforme: (watch("item5_conforme") || "N") as "S" | "N",
+                      observacoes: watch("item5_observacoes") || ""
+                    },
+                    {
+                      item: "As botas apresentam algum tipo de alteração? (Item 6)",
+                      conforme: (watch("item6_conforme") || "N") as "S" | "N",
+                      observacoes: watch("item6_observacoes") || ""
+                    },
+                    {
+                      item: "As luvas apresentam algum tipo de alteração? (Item 7)",
+                      conforme: (watch("item7_conforme") || "N") as "S" | "N",
+                      observacoes: watch("item7_observacoes") || ""
+                    },
+                    {
+                      item: "Os botas dos vestimentas estão funcionando?",
+                      conforme: (watch("item8_conforme") || "N") as "S" | "N",
+                      observacoes: watch("item8_observacoes") || ""
+                    }
+                  ]
+                }}
+              />
+              
+              {assinatura && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Status:</strong> {assinatura.status === 'assinado' ? 'Documento assinado' : 'Processando assinatura'}
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    <strong>ID do Documento:</strong> {assinatura.documentoId}
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
