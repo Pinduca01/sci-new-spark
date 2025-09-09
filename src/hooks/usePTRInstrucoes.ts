@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +7,7 @@ export interface PTRInstrucao {
   id: string;
   data: string;
   hora: string;
+  hora_fim?: string;
   tipo: string;
   titulo: string;
   instrutor_id?: string;
@@ -19,6 +19,7 @@ export interface PTRInstrucao {
 export interface NovaInstrucao {
   data: string;
   hora: string;
+  hora_fim?: string;
   tipo: string;
   instrutor_id?: string;
   observacoes?: string;

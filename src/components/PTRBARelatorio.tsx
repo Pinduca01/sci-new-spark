@@ -12,6 +12,28 @@ import { Plus, Trash2, Save, X, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
 import { PTRTemasManager, TEMAS_PTR_PADRAO } from './PTRTemasManager';
+
+// Função para calcular duração entre dois horários
+const calcularDuracao = (inicio: string, fim: string): string => {
+  const [horaInicio, minutoInicio] = inicio.split(':').map(Number);
+  const [horaFim, minutoFim] = fim.split(':').map(Number);
+  
+  const inicioMinutos = horaInicio * 60 + minutoInicio;
+  const fimMinutos = horaFim * 60 + minutoFim;
+  
+  const diferencaMinutos = fimMinutos - inicioMinutos;
+  const horas = Math.floor(diferencaMinutos / 60);
+  const minutos = diferencaMinutos % 60;
+  
+  if (horas === 0) {
+    return `${minutos}min`;
+  } else if (minutos === 0) {
+    return `${horas}h`;
+  } else {
+    return `${horas}h ${minutos}min`;
+  }
+};
+
 import { useEquipes } from '@/hooks/useEquipes';
 import { useBombeiros } from '@/hooks/useBombeiros';
 import { usePTRInstrucoes } from '@/hooks/usePTRInstrucoes';
@@ -26,7 +48,8 @@ interface PTRBARelatorioProps {
 
 interface PTRData {
   id: string;
-  hora: string;
+  hora_inicio: string;
+  hora_fim: string;
   tipo: string;
   instrutor_id: string;
   observacoes: string;
@@ -76,7 +99,8 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     participantes: [],
     ptrs: [{
       id: '1',
-      hora: '08:00',
+      hora_inicio: '08:00',
+      hora_fim: '09:00',
       tipo: TEMAS_PTR_PADRAO[0],
       instrutor_id: '',
       observacoes: '',
@@ -166,7 +190,8 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const handleAddPTR = () => {
     const novoPTR: PTRData = {
       id: Date.now().toString(),
-      hora: '14:00',
+      hora_inicio: '14:00',
+      hora_fim: '15:00',
       tipo: temasPTR[0] || 'CONDUÇÃO DE VEÍCULOS DE EMERGÊNCIA NA ÁREA OPERACIONAL DO AERÓDROMO',
       instrutor_id: '',
       observacoes: '',
@@ -245,10 +270,20 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     }
 
     for (const ptr of formData.ptrs) {
-      if (!ptr.hora || !ptr.tipo || !ptr.instrutor_id) {
+      if (!ptr.hora_inicio || !ptr.hora_fim || !ptr.tipo || !ptr.instrutor_id) {
         toast({
           title: "Erro de Validação",
           description: "Todos os campos do PTR são obrigatórios.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Validar se horário de término é posterior ao de início
+      if (ptr.hora_fim <= ptr.hora_inicio) {
+        toast({
+          title: "Erro de Validação",
+          description: "O horário de término deve ser posterior ao horário de início.",
           variant: "destructive",
         });
         return false;
@@ -267,7 +302,8 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       for (const ptr of formData.ptrs) {
         const novaInstrucao = await criarInstrucao.mutateAsync({
           data: formData.data,
-          hora: ptr.hora,
+          hora: ptr.hora_inicio,
+          hora_fim: ptr.hora_fim,
           tipo: ptr.tipo,
           instrutor_id: ptr.instrutor_id,
           observacoes: ptr.observacoes
@@ -458,68 +494,84 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label>Hora *</Label>
+                      <Label>Horário de Início *</Label>
                       <Input
                         type="time"
-                        value={ptr.hora}
-                        onChange={(e) => handlePTRChange(ptr.id, 'hora', e.target.value)}
+                        value={ptr.hora_inicio}
+                        onChange={(e) => handlePTRChange(ptr.id, 'hora_inicio', e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label className="flex items-center justify-between">
-                        <span>Tema da Instrução *</span>
-                        <Button
-                          type="button" 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setShowGerenciadorTemas(true)}
-                          className="h-auto p-1 text-muted-foreground hover:text-foreground"
-                        >
-                          <Settings className="w-3 h-3" />
-                        </Button>
-                      </Label>
-                      <Select 
-                        value={ptr.tipo} 
-                        onValueChange={(value) => handlePTRChange(ptr.id, 'tipo', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-64">
-                          {temasPTR.map(tipo => (
-                            <SelectItem key={tipo} value={tipo}>
-                              <div className="w-full text-left">
-                                <div className="font-medium text-sm leading-tight">
-                                  {tipo}
-                                </div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Horário de Término *</Label>
+                      <Input
+                        type="time"
+                        value={ptr.hora_fim}
+                        onChange={(e) => handlePTRChange(ptr.id, 'hora_fim', e.target.value)}
+                      />
                     </div>
+                    <div className="flex items-center pt-6">
+                      {ptr.hora_inicio && ptr.hora_fim && ptr.hora_fim > ptr.hora_inicio && (
+                        <div className="text-sm text-muted-foreground">
+                          Duração: {calcularDuracao(ptr.hora_inicio, ptr.hora_fim)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="flex items-center justify-between">
+                      <span>Tema da Instrução *</span>
+                      <Button
+                        type="button" 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setShowGerenciadorTemas(true)}
+                        className="h-auto p-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <Settings className="w-3 h-3" />
+                      </Button>
+                    </Label>
+                    <Select 
+                      value={ptr.tipo} 
+                      onValueChange={(value) => handlePTRChange(ptr.id, 'tipo', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        {temasPTR.map(tipo => (
+                          <SelectItem key={tipo} value={tipo}>
+                            <div className="w-full text-left">
+                              <div className="font-medium text-sm leading-tight">
+                                {tipo}
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>
                     <Label>Instrutor *</Label>
-                      <Select 
-                        value={ptr.instrutor_id} 
-                        onValueChange={(value) => handlePTRChange(ptr.id, 'instrutor_id', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o instrutor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {participantesSelecionados.map(bombeiro => bombeiro && (
-                            <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                              {bombeiro.nome} - {bombeiro.funcao}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Select 
+                      value={ptr.instrutor_id} 
+                      onValueChange={(value) => handlePTRChange(ptr.id, 'instrutor_id', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o instrutor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {participantesSelecionados.map(bombeiro => bombeiro && (
+                          <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                            {bombeiro.nome} - {bombeiro.funcao}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   <div>
                     <ImageUpload

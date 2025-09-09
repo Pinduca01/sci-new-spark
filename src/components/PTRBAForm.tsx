@@ -13,6 +13,27 @@ import { usePTRParticipantes } from '@/hooks/usePTRParticipantes';
 import { useBombeiros } from '@/hooks/useBombeiros';
 import { Loader2 } from 'lucide-react';
 
+// Função para calcular duração entre dois horários
+const calcularDuracao = (inicio: string, fim: string): string => {
+  const [horaInicio, minutoInicio] = inicio.split(':').map(Number);
+  const [horaFim, minutoFim] = fim.split(':').map(Number);
+  
+  const inicioMinutos = horaInicio * 60 + minutoInicio;
+  const fimMinutos = horaFim * 60 + minutoFim;
+  
+  const diferencaMinutos = fimMinutos - inicioMinutos;
+  const horas = Math.floor(diferencaMinutos / 60);
+  const minutos = diferencaMinutos % 60;
+  
+  if (horas === 0) {
+    return `${minutos}min`;
+  } else if (minutos === 0) {
+    return `${horas}h`;
+  } else {
+    return `${horas}h ${minutos}min`;
+  }
+};
+
 interface PTRBAFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,7 +52,8 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
 
   const [formData, setFormData] = useState({
     data: selectedDate.toISOString().split('T')[0],
-    hora: '',
+    hora_inicio: '',
+    hora_fim: '',
     titulo: '',
     tipo: '',
     instrutor_id: '',
@@ -60,10 +82,20 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.titulo || !formData.hora || !formData.tipo) {
+    if (!formData.titulo || !formData.hora_inicio || !formData.hora_fim || !formData.tipo) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar se horário de término é posterior ao de início
+    if (formData.hora_fim <= formData.hora_inicio) {
+      toast({
+        title: "Erro",
+        description: "O horário de término deve ser posterior ao horário de início.",
         variant: "destructive",
       });
       return;
@@ -73,7 +105,8 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
       // 1. Criar a instrução
       const novaInstrucao = await criarInstrucao.mutateAsync({
         data: formData.data,
-        hora: formData.hora,
+        hora: formData.hora_inicio,
+        hora_fim: formData.hora_fim,
         tipo: formData.tipo,
         instrutor_id: formData.instrutor_id || undefined,
         observacoes: formData.observacoes || undefined,
@@ -90,7 +123,8 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
       // Resetar form e fechar
       setFormData({
         data: selectedDate.toISOString().split('T')[0],
-        hora: '',
+        hora_inicio: '',
+        hora_fim: '',
         titulo: '',
         tipo: '',
         instrutor_id: '',
@@ -135,14 +169,34 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
               />
             </div>
             <div>
-              <Label htmlFor="hora">Horário *</Label>
+              <Label htmlFor="hora_inicio">Horário de Início *</Label>
               <Input
-                id="hora"
+                id="hora_inicio"
                 type="time"
-                value={formData.hora}
-                onChange={(e) => setFormData(prev => ({ ...prev, hora: e.target.value }))}
+                value={formData.hora_inicio}
+                onChange={(e) => setFormData(prev => ({ ...prev, hora_inicio: e.target.value }))}
                 required
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="hora_fim">Horário de Término *</Label>
+              <Input
+                id="hora_fim"
+                type="time"
+                value={formData.hora_fim}
+                onChange={(e) => setFormData(prev => ({ ...prev, hora_fim: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="flex items-center pt-6">
+              {formData.hora_inicio && formData.hora_fim && formData.hora_fim > formData.hora_inicio && (
+                <div className="text-sm text-muted-foreground">
+                  Duração: {calcularDuracao(formData.hora_inicio, formData.hora_fim)}
+                </div>
+              )}
             </div>
           </div>
 
