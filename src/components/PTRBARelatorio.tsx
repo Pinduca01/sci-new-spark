@@ -117,7 +117,8 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   // Bombeiros da equipe selecionada
   const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
   
-  // Bombeiros disponíveis para adicionar (não selecionados)
+  // Bombeiros disponíveis para adicionar (não selecionados e ativos)
+  // Se há equipe selecionada, prioriza bombeiros da mesma equipe, mas permite adicionar de outras equipes
   const bombeirosDisponiveis = bombeiros.filter(b => 
     !formData.participantes.includes(b.id) && b.status === 'ativo'
   );
@@ -155,6 +156,8 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
   // Adicionar participante individual
   const handleAdicionarParticipante = (bombeiroId: string) => {
+    if (!bombeiroId) return;
+    
     setFormData(prev => ({
       ...prev,
       participantes: [...prev.participantes, bombeiroId]
@@ -175,15 +178,6 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
   // Remover participante individual
   const handleRemoverParticipante = (bombeiroId: string) => {
-    if (formData.participantes.length === 1) {
-      toast({
-        title: "Atenção",
-        description: "É necessário ter pelo menos um participante.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setFormData(prev => ({
       ...prev,
       participantes: prev.participantes.filter(id => id !== bombeiroId)
@@ -200,13 +194,6 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       const novasSituacoes = { ...prev };
       delete novasSituacoes[bombeiroId];
       return novasSituacoes;
-    });
-    
-    // Remover da lista de presenças
-    setPresencas(prev => {
-      const novasPresencas = { ...prev };
-      delete novasPresencas[bombeiroId];
-      return novasPresencas;
     });
   };
 
@@ -480,32 +467,73 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                     )}
                   </div>
 
-                  {/* Adicionar novo participante */}
-                  {bombeirosDisponiveis.length > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <Select onValueChange={handleAdicionarParticipante}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Adicionar participante..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {bombeirosDisponiveis.map(bombeiro => (
-                            <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                              <div className="flex items-center space-x-2">
-                                <span>{bombeiro.nome}</span>
-                                <Badge variant="outline" className="text-xs">
-                                  {bombeiro.funcao}
-                                </Badge>
-                                {bombeiro.equipe && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {bombeiro.equipe}
-                                  </Badge>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                   {/* Adicionar novo participante */}
+                   {bombeirosDisponiveis.length > 0 && (
+                     <div className="flex items-center space-x-2">
+                       <div className="flex-1">
+                         <Select onValueChange={(value) => {
+                           handleAdicionarParticipante(value);
+                           // Reset do select após adicionar
+                           setTimeout(() => {
+                             const selectTrigger = document.querySelector('[role="combobox"]') as HTMLElement;
+                             if (selectTrigger) {
+                               selectTrigger.click();
+                               selectTrigger.blur();
+                             }
+                           }, 100);
+                         }}>
+                           <SelectTrigger className="w-full">
+                             <SelectValue placeholder={`Adicionar participante... (${bombeirosDisponiveis.length} disponíveis)`} />
+                           </SelectTrigger>
+                           <SelectContent>
+                             {/* Bombeiros da equipe selecionada primeiro */}
+                             {formData.equipe_id && bombeirosDisponiveis
+                               .filter(b => b.equipe_id === formData.equipe_id)
+                               .map(bombeiro => (
+                                 <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                                   <div className="flex items-center space-x-2">
+                                     <span>{bombeiro.nome}</span>
+                                     <Badge variant="outline" className="text-xs">
+                                       {bombeiro.funcao}
+                                     </Badge>
+                                     <Badge variant="default" className="text-xs">
+                                       Mesma Equipe
+                                     </Badge>
+                                   </div>
+                                 </SelectItem>
+                               ))}
+                             
+                             {/* Separador se houver bombeiros de outras equipes */}
+                             {formData.equipe_id && 
+                              bombeirosDisponiveis.filter(b => b.equipe_id === formData.equipe_id).length > 0 &&
+                              bombeirosDisponiveis.filter(b => b.equipe_id !== formData.equipe_id).length > 0 && (
+                               <div className="px-2 py-1 text-xs text-muted-foreground font-semibold border-t">
+                                 Outras Equipes:
+                               </div>
+                             )}
+                             
+                             {/* Bombeiros de outras equipes */}
+                             {bombeirosDisponiveis
+                               .filter(b => !formData.equipe_id || b.equipe_id !== formData.equipe_id)
+                               .map(bombeiro => (
+                                 <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                                   <div className="flex items-center space-x-2">
+                                     <span>{bombeiro.nome}</span>
+                                     <Badge variant="outline" className="text-xs">
+                                       {bombeiro.funcao}
+                                     </Badge>
+                                      {bombeiro.equipe && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          {bombeiro.equipe}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                           </SelectContent>
+                         </Select>
+                       </div>
+                     </div>
                   )}
                   
                   {bombeirosDisponiveis.length === 0 && participantesSelecionados.length > 0 && (
