@@ -469,7 +469,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                     </div>
                     <div>
                       <Label className="flex items-center justify-between">
-                        <span>Título da Instrução *</span>
+                        <span>Tema da Instrução *</span>
                         <Button
                           type="button" 
                           variant="ghost" 
