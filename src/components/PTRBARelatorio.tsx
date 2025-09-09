@@ -146,8 +146,8 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   // Reset completo do formulário quando o modal for aberto
   useEffect(() => {
     if (open) {
-      console.log('🔄 Resetando formulário PTR-BA');
-      setFormData({
+      console.log('🔄 Resetando formulário PTR-BA - modal aberto');
+      const novoFormData = {
         data: selectedDate.toISOString().split('T')[0],
         equipe_id: '',
         participantes: [],
@@ -160,13 +160,16 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           observacoes: '',
           fotos: []
         }]
-      });
+      };
+      
+      console.log('📝 Novo formData:', novoFormData);
+      setFormData(novoFormData);
       
       setPresencas({});
       setSituacoesBa({});
       setEquipeInicializada(false);
       setSelectedParticipante('');
-      console.log('✅ Formulário resetado');
+      console.log('✅ Formulário resetado completamente');
     }
   }, [open, selectedDate]);
 
@@ -861,7 +864,10 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                     </div>
                     <Select 
                       value={ptr.tipo} 
-                      onValueChange={(value) => handlePTRChange(ptr.id, 'tipo', value)}
+                      onValueChange={(value) => {
+                        console.log('🎯 Mudando tema do PTR:', value);
+                        handlePTRChange(ptr.id, 'tipo', value);
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o Tema do PTR" />
