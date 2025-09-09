@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,18 +117,25 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const [selectedParticipante, setSelectedParticipante] = useState<string>('');
   const [equipeInicializada, setEquipeInicializada] = useState(false);
 
-  // Bombeiros da equipe selecionada
-  const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
+  // Bombeiros da equipe selecionada - otimizado com useMemo
+  const bombeirosDaEquipe = useMemo(() => 
+    bombeiros.filter(b => b.equipe_id === formData.equipe_id),
+    [bombeiros, formData.equipe_id]
+  );
   
-  // Bombeiros disponíveis para adicionar (não selecionados e ativos)
-  const bombeirosDisponiveis = bombeiros.filter(b => 
-    !formData.participantes.includes(b.id) && b.status === 'ativo'
+  // Bombeiros disponíveis para adicionar (não selecionados e ativos) - otimizado com useMemo
+  const bombeirosDisponiveis = useMemo(() => 
+    bombeiros.filter(b => !formData.participantes.includes(b.id) && b.status === 'ativo'),
+    [bombeiros, formData.participantes]
   );
 
-  // Participantes selecionados com dados completos (garantindo que todos existem)
-  const participantesSelecionados = formData.participantes
-    .map(id => bombeiros.find(b => b.id === id))
-    .filter((bombeiro): bombeiro is Bombeiro => bombeiro !== undefined);
+  // Participantes selecionados com dados completos - otimizado com useMemo
+  const participantesSelecionados = useMemo(() =>
+    formData.participantes
+      .map(id => bombeiros.find(b => b.id === id))
+      .filter((bombeiro): bombeiro is Bombeiro => bombeiro !== undefined),
+    [formData.participantes, bombeiros]
+  );
 
   // Carregar temas PTR na inicialização
   useEffect(() => {
@@ -150,27 +157,30 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
   // Inicializar participantes apenas uma vez quando equipe é selecionada
   useEffect(() => {
-    if (formData.equipe_id && bombeirosDaEquipe.length > 0 && !equipeInicializada) {
-      console.log('Inicializando participantes da equipe:', bombeirosDaEquipe.length);
-      const participantesIds = bombeirosDaEquipe.map(b => b.id);
-      setFormData(prev => ({
-        ...prev,
-        participantes: participantesIds
-      }));
-      
-      // Marcar todos como presentes por padrão
-      const novasPresencas: Record<string, boolean> = {};
-      const novasSituacoes: Record<string, 'P' | 'A' | 'EO'> = {};
-      participantesIds.forEach(id => {
-        novasPresencas[id] = true;
-        novasSituacoes[id] = 'P';
-      });
-      setPresencas(novasPresencas);
-      setSituacoesBa(novasSituacoes);
-      setEquipeInicializada(true);
-      console.log('Participantes inicializados:', participantesIds);
+    if (formData.equipe_id && !equipeInicializada && bombeiros.length > 0) {
+      const equipeAtual = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
+      if (equipeAtual.length > 0) {
+        console.log('Inicializando participantes da equipe:', equipeAtual.length);
+        const participantesIds = equipeAtual.map(b => b.id);
+        setFormData(prev => ({
+          ...prev,
+          participantes: participantesIds
+        }));
+        
+        // Marcar todos como presentes por padrão
+        const novasPresencas: Record<string, boolean> = {};
+        const novasSituacoes: Record<string, 'P' | 'A' | 'EO'> = {};
+        participantesIds.forEach(id => {
+          novasPresencas[id] = true;
+          novasSituacoes[id] = 'P';
+        });
+        setPresencas(novasPresencas);
+        setSituacoesBa(novasSituacoes);
+        setEquipeInicializada(true);
+        console.log('Participantes inicializados:', participantesIds);
+      }
     }
-  }, [formData.equipe_id, bombeirosDaEquipe, equipeInicializada]);
+  }, [formData.equipe_id, equipeInicializada, bombeiros]);
 
   // Adicionar participante individual
   const handleAdicionarParticipante = (bombeiroId: string) => {
