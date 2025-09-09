@@ -147,7 +147,7 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="tipo">Tipo de Instrução *</Label>
+            <Label htmlFor="tipo">Tema da Instrução *</Label>
             <Select value={formData.tipo} onValueChange={(value) => setFormData(prev => ({ ...prev, tipo: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo de instrução" />
@@ -163,7 +163,7 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="titulo">Título da Instrução *</Label>
+            <Label htmlFor="titulo">Tema da Instrução *</Label>
             <Input
               id="titulo"
               value={formData.titulo}

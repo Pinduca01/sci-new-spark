@@ -128,7 +128,7 @@ export const PTRBAHistorico: React.FC<PTRBAHistoricoProps> = ({
                   />
                 </div>
                 <div>
-                  <Label>Tipo de Instrução</Label>
+                  <Label>Tema da Instrução</Label>
                   <Select value={filtroTipo} onValueChange={setFiltroTipo}>
                     <SelectTrigger>
                       <SelectValue />
