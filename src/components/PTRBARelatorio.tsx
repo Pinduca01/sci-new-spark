@@ -8,9 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Save, X, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
+import { PTRTemasManager, TEMAS_PTR_PADRAO } from './PTRTemasManager';
 import { useEquipes } from '@/hooks/useEquipes';
 import { useBombeiros } from '@/hooks/useBombeiros';
 import { usePTRInstrucoes } from '@/hooks/usePTRInstrucoes';
@@ -40,16 +41,23 @@ interface FormData {
   ptrs: PTRData[];
 }
 
-const TIPOS_INSTRUCAO = [
-  'Procedimentos de Emergência',
-  'Combate a Incêndio',
-  'Primeiros Socorros',
-  'Manuseio de Equipamentos',
-  'Resgate em Altura',
-  'Salvamento Aquático',
-  'Produtos Perigosos',
-  'Comunicação de Emergência'
-];
+// Função para gerenciar temas PTR via localStorage
+const carregarTemasPTR = (): string[] => {
+  try {
+    const temasSalvos = localStorage.getItem('ptr-temas-personalizados');
+    return temasSalvos ? JSON.parse(temasSalvos) : TEMAS_PTR_PADRAO;
+  } catch {
+    return TEMAS_PTR_PADRAO;
+  }
+};
+
+const salvarTemasPTR = (temas: string[]) => {
+  try {
+    localStorage.setItem('ptr-temas-personalizados', JSON.stringify(temas));
+  } catch (error) {
+    console.error('Erro ao salvar temas PTR:', error);
+  }
+};
 
 export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   open,
@@ -70,7 +78,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     ptrs: [{
       id: '1',
       hora: '08:00',
-      tipo: 'Procedimentos de Emergência',
+      tipo: TEMAS_PTR_PADRAO[0],
       titulo: '',
       instrutor_id: '',
       observacoes: '',
@@ -80,6 +88,8 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
   const [salvando, setSalvando] = useState(false);
+  const [temasPTR, setTemasPTR] = useState<string[]>([]);
+  const [showGerenciadorTemas, setShowGerenciadorTemas] = useState(false);
 
   // Bombeiros da equipe selecionada
   const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
@@ -93,6 +103,11 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const participantesSelecionados = formData.participantes
     .map(id => bombeiros.find(b => b.id === id))
     .filter(Boolean);
+
+  // Carregar temas PTR na inicialização
+  useEffect(() => {
+    setTemasPTR(carregarTemasPTR());
+  }, []);
 
   // Preencher participantes quando equipe é selecionada
   useEffect(() => {
@@ -154,7 +169,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     const novoPTR: PTRData = {
       id: Date.now().toString(),
       hora: '14:00',
-      tipo: 'Procedimentos de Emergência',
+      tipo: temasPTR[0] || 'CONDUÇÃO DE VEÍCULOS DE EMERGÊNCIA NA ÁREA OPERACIONAL DO AERÓDROMO',
       titulo: '',
       instrutor_id: '',
       observacoes: '',
@@ -206,6 +221,11 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       ...prev,
       [participanteId]: presente
     }));
+  };
+
+  const handleTemasChange = (novosTemas: string[]) => {
+    setTemasPTR(novosTemas);
+    salvarTemasPTR(novosTemas);
   };
 
   const validarFormulario = (): boolean => {
@@ -452,7 +472,18 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                       />
                     </div>
                     <div>
-                      <Label>Tipo de Instrução *</Label>
+                      <Label className="flex items-center justify-between">
+                        <span>Tipo de Instrução *</span>
+                        <Button
+                          type="button" 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setShowGerenciadorTemas(true)}
+                          className="h-auto p-1 text-muted-foreground hover:text-foreground"
+                        >
+                          <Settings className="w-3 h-3" />
+                        </Button>
+                      </Label>
                       <Select 
                         value={ptr.tipo} 
                         onValueChange={(value) => handlePTRChange(ptr.id, 'tipo', value)}
@@ -460,10 +491,14 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          {TIPOS_INSTRUCAO.map(tipo => (
+                        <SelectContent className="max-h-64">
+                          {temasPTR.map(tipo => (
                             <SelectItem key={tipo} value={tipo}>
-                              {tipo}
+                              <div className="w-full text-left">
+                                <div className="font-medium text-sm leading-tight">
+                                  {tipo}
+                                </div>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -533,6 +568,14 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
             </Button>
           </div>
         </div>
+
+        {/* Modal do Gerenciador de Temas */}
+        <PTRTemasManager
+          open={showGerenciadorTemas}
+          onOpenChange={setShowGerenciadorTemas}
+          temas={temasPTR}
+          onTemasChange={handleTemasChange}
+        />
       </DialogContent>
     </Dialog>
   );
