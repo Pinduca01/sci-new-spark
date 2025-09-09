@@ -114,7 +114,7 @@ export const ChecklistAlmoxarifadoForm = () => {
     try {
       const checklistData = {
         ...checklist,
-        status_geral: checklist.status_geral || 'em_andamento'
+        status_geral: (checklist as any).status_geral || 'em_andamento'
       } as Omit<ChecklistAlmoxarifado, 'id' | 'created_at' | 'updated_at'>;
 
       if (checklist.id) {

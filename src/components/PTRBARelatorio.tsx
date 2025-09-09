@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,10 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { FileText, Download, Printer, Camera } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
-import { generatePTRPDF } from './PDFGenerator';
+import { useEquipes } from '@/hooks/useEquipes';
+import { useBombeiros } from '@/hooks/useBombeiros';
+import { usePTRInstrucoes } from '@/hooks/usePTRInstrucoes';
+import { usePTRParticipantes } from '@/hooks/usePTRParticipantes';
+import { usePTRFotos } from '@/hooks/usePTRFotos';
 
 interface PTRBARelatorioProps {
   open: boolean;
@@ -19,46 +23,135 @@ interface PTRBARelatorioProps {
   selectedDate: Date;
 }
 
+interface PTRData {
+  id: string;
+  hora: string;
+  tipo: string;
+  titulo: string;
+  instrutor_id: string;
+  observacoes: string;
+  fotos: string[];
+}
+
+interface FormData {
+  data: string;
+  equipe_id: string;
+  participantes: string[];
+  ptrs: PTRData[];
+}
+
+const TIPOS_INSTRUCAO = [
+  'Procedimentos de Emergência',
+  'Combate a Incêndio',
+  'Primeiros Socorros',
+  'Manuseio de Equipamentos',
+  'Resgate em Altura',
+  'Salvamento Aquático',
+  'Produtos Perigosos',
+  'Comunicação de Emergência'
+];
+
 export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   open,
   onOpenChange,
   selectedDate,
 }) => {
   const { toast } = useToast();
-  const [dataRelatorio, setDataRelatorio] = useState(
-    selectedDate.toISOString().split('T')[0]
-  );
-  const [presencas, setPresencas] = useState<Record<string, boolean>>({});
-  const [fotosInstrucoes, setFotosInstrucoes] = useState<Record<string, string[]>>({});
-  const [observacoesInstrucoes, setObservacoesInstrucoes] = useState<Record<string, string>>({});
-  const [gerandoPDF, setGerandoPDF] = useState(false);
-
-  // Dados mockados - depois virão do Supabase
-  const instrucoesData = [
-    {
-      id: 1,
+  const { data: equipes = [] } = useEquipes();
+  const { bombeiros } = useBombeiros();
+  const { criarInstrucao } = usePTRInstrucoes();
+  const { adicionarParticipantes } = usePTRParticipantes();
+  const { uploadFotoCompleto } = usePTRFotos();
+  
+  const [formData, setFormData] = useState<FormData>({
+    data: selectedDate.toISOString().split('T')[0],
+    equipe_id: '',
+    participantes: [],
+    ptrs: [{
+      id: '1',
       hora: '08:00',
-      titulo: 'Procedimentos de Emergência',
       tipo: 'Procedimentos de Emergência',
-      instrutor: 'João Silva',
-      participantes: [
-        { id: '1', nome: 'Maria Santos', funcao: 'BA-LR' },
-        { id: '2', nome: 'Carlos Oliveira', funcao: 'BA-MC' },
-        { id: '3', nome: 'Ana Costa', funcao: 'BA-2' },
-      ]
-    },
-    {
-      id: 2,
-      hora: '14:00',
-      titulo: 'Manuseio de Equipamentos',
-      tipo: 'Manuseio de Equipamentos',
-      instrutor: 'Pedro Souza',
-      participantes: [
-        { id: '4', nome: 'Lucas Ferreira', funcao: 'BA-2' },
-        { id: '5', nome: 'Juliana Lima', funcao: 'BA-CE' },
-      ]
+      titulo: '',
+      instrutor_id: '',
+      observacoes: '',
+      fotos: []
+    }]
+  });
+  
+  const [presencas, setPresencas] = useState<Record<string, boolean>>({});
+  const [salvando, setSalvando] = useState(false);
+
+  // Bombeiros da equipe selecionada
+  const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
+
+  // Preencher participantes quando equipe é selecionada
+  useEffect(() => {
+    if (formData.equipe_id && bombeirosDaEquipe.length > 0) {
+      const participantesIds = bombeirosDaEquipe.map(b => b.id);
+      setFormData(prev => ({
+        ...prev,
+        participantes: participantesIds
+      }));
+      
+      // Marcar todos como presentes por padrão
+      const novasPresencas: Record<string, boolean> = {};
+      participantesIds.forEach(id => {
+        novasPresencas[id] = true;
+      });
+      setPresencas(novasPresencas);
     }
-  ];
+  }, [formData.equipe_id, bombeirosDaEquipe]);
+
+  const handleAddPTR = () => {
+    const novoPTR: PTRData = {
+      id: Date.now().toString(),
+      hora: '14:00',
+      tipo: 'Procedimentos de Emergência',
+      titulo: '',
+      instrutor_id: '',
+      observacoes: '',
+      fotos: []
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      ptrs: [...prev.ptrs, novoPTR]
+    }));
+  };
+
+  const handleRemovePTR = (ptrId: string) => {
+    if (formData.ptrs.length === 1) {
+      toast({
+        title: "Atenção",
+        description: "É necessário ter pelo menos um PTR no formulário.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      ptrs: prev.ptrs.filter(ptr => ptr.id !== ptrId)
+    }));
+  };
+
+  const handlePTRChange = (ptrId: string, field: keyof PTRData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      ptrs: prev.ptrs.map(ptr => 
+        ptr.id === ptrId ? { ...ptr, [field]: value } : ptr
+      )
+    }));
+  };
+
+  const handlePhotosChange = (ptrId: string, fotos: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      ptrs: prev.ptrs.map(ptr =>
+        ptr.id === ptrId ? { ...ptr, fotos } : ptr
+      )
+    }));
+  };
 
   const handlePresencaChange = (participanteId: string, presente: boolean) => {
     setPresencas(prev => ({
@@ -67,183 +160,248 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     }));
   };
 
-  const handleFotosChange = (instrucaoId: number, fotos: string[]) => {
-    setFotosInstrucoes(prev => ({
-      ...prev,
-      [instrucaoId.toString()]: fotos
-    }));
+  const validarFormulario = (): boolean => {
+    if (!formData.data || !formData.equipe_id || formData.ptrs.length === 0) {
+      toast({
+        title: "Erro de Validação",
+        description: "Data, equipe e pelo menos um PTR são obrigatórios.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    for (const ptr of formData.ptrs) {
+      if (!ptr.hora || !ptr.tipo || !ptr.titulo || !ptr.instrutor_id) {
+        toast({
+          title: "Erro de Validação",
+          description: "Todos os campos do PTR são obrigatórios.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+
+    return true;
   };
 
-  const handleObservacoesChange = (instrucaoId: number, observacoes: string) => {
-    setObservacoesInstrucoes(prev => ({
-      ...prev,
-      [instrucaoId.toString()]: observacoes
-    }));
-  };
+  const handleSalvar = async () => {
+    if (!validarFormulario()) return;
 
-  const gerarPDF = async () => {
     try {
-      setGerandoPDF(true);
+      setSalvando(true);
+      
+      for (const ptr of formData.ptrs) {
+        const novaInstrucao = await criarInstrucao.mutateAsync({
+          data: formData.data,
+          hora: ptr.hora,
+          tipo: ptr.tipo,
+          titulo: ptr.titulo,
+          instrutor_id: ptr.instrutor_id,
+          observacoes: ptr.observacoes
+        });
 
-      // Preparar dados para o PDF
-      const dadosPDF = {
-        data: dataRelatorio,
-        instrucoesData: instrucoesData.map(instrucao => ({
-          ...instrucao,
-          participantes: instrucao.participantes.map(p => ({
-            ...p,
-            presente: presencas[`${p.id}-${instrucao.id}`] || false
-          })),
-          fotos: fotosInstrucoes[instrucao.id.toString()] || [],
-          observacoes: observacoesInstrucoes[instrucao.id.toString()] || ''
-        }))
-      };
+        await adicionarParticipantes.mutateAsync({
+          instrucaoId: novaInstrucao.id,
+          bombeirosIds: formData.participantes
+        });
 
-      await generatePTRPDF(dadosPDF);
+        // Upload fotos if any
+        if (ptr.fotos.length > 0) {
+          for (let i = 0; i < ptr.fotos.length; i++) {
+            const fotoBase64 = ptr.fotos[i];
+            const response = await fetch(fotoBase64);
+            const blob = await response.blob();
+            const file = new File([blob], `foto-${i + 1}.jpg`, { type: 'image/jpeg' });
+            
+            await uploadFotoCompleto.mutateAsync({
+              file,
+              instrucaoId: novaInstrucao.id,
+              descricao: `Foto ${i + 1} - ${ptr.titulo}`,
+              ordem: i + 1
+            });
+          }
+        }
+      }
 
       toast({
-        title: "PDF Gerado com Sucesso",
-        description: "O relatório foi gerado e o download foi iniciado.",
+        title: "Sucesso",
+        description: "PTR-BA criado com sucesso!",
       });
 
+      onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
       toast({
-        title: "Erro ao Gerar PDF",
-        description: "Houve um problema ao gerar o relatório. Tente novamente.",
+        title: "Erro",
+        description: "Erro ao salvar PTR-BA.",
         variant: "destructive",
       });
     } finally {
-      setGerandoPDF(false);
+      setSalvando(false);
     }
-  };
-
-  const salvarRelatorio = () => {
-    // Aqui seria a lógica para salvar no Supabase
-    toast({
-      title: "Relatório Salvo",
-      description: "Relatório de PTR-BA salvo com sucesso no sistema.",
-    });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <FileText className="w-5 h-5" />
-            <span>Relatório Diário PTR-BA</span>
-          </DialogTitle>
+          <DialogTitle>Novo PTR-BA</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Filtros */}
-          <div className="flex items-end space-x-4">
-            <div>
-              <Label htmlFor="data-relatorio">Data do Relatório</Label>
-              <Input
-                id="data-relatorio"
-                type="date"
-                value={dataRelatorio}
-                onChange={(e) => setDataRelatorio(e.target.value)}
-              />
-            </div>
-            <Button onClick={() => setDataRelatorio(new Date().toISOString().split('T')[0])}>
-              Hoje
-            </Button>
-          </div>
-
-          {/* Cabeçalho do Relatório */}
           <Card>
             <CardHeader>
-              <CardTitle>
-                Relatório PTR-BA - {new Date(dataRelatorio).toLocaleDateString('pt-BR', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </CardTitle>
+              <CardTitle>Informações Gerais</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-sm">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <strong>Total de Instruções:</strong> {instrucoesData.length}
+                  <Label htmlFor="data">Data *</Label>
+                  <Input
+                    id="data"
+                    type="date"
+                    value={formData.data}
+                    onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
+                  />
                 </div>
                 <div>
-                  <strong>Total de Participantes:</strong> {
-                    instrucoesData.reduce((acc, inst) => acc + inst.participantes.length, 0)
-                  }
-                </div>
-                <div>
-                  <strong>Data de Geração:</strong> {new Date().toLocaleString('pt-BR')}
+                  <Label htmlFor="equipe">Equipe *</Label>
+                  <Select 
+                    value={formData.equipe_id} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, equipe_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a equipe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equipes.map(equipe => (
+                        <SelectItem key={equipe.id} value={equipe.id}>
+                          {equipe.nome_equipe}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+
+              {bombeirosDaEquipe.length > 0 && (
+                <div>
+                  <Label className="font-semibold mb-3 block">Participantes da Equipe:</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {bombeirosDaEquipe.map(bombeiro => (
+                      <div key={bombeiro.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            checked={presencas[bombeiro.id] || false}
+                            onCheckedChange={(checked) => 
+                              handlePresencaChange(bombeiro.id, checked as boolean)
+                            }
+                          />
+                          <Label>{bombeiro.nome}</Label>
+                        </div>
+                        <Badge variant="secondary">{bombeiro.funcao}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Lista de Instruções */}
-          <div className="space-y-6">
-            {instrucoesData.map((instrucao) => (
-              <Card key={instrucao.id} className="border-l-4 border-l-primary">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">PTRs do Dia</h3>
+              <Button onClick={handleAddPTR} variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar PTR-BA
+              </Button>
+            </div>
+
+            {formData.ptrs.map((ptr, index) => (
+              <Card key={ptr.id} className="border-l-4 border-l-primary">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
-                      {instrucao.hora} - {instrucao.titulo}
-                    </CardTitle>
-                    <Badge variant="outline">{instrucao.tipo}</Badge>
+                    <CardTitle>PTR-BA {index + 1}</CardTitle>
+                    {formData.ptrs.length > 1 && (
+                      <Button variant="outline" size="sm" onClick={() => handleRemovePTR(ptr.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Instrutor: {instrucao.instrutor}
-                  </p>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Lista de Presença */}
-                  <div>
-                    <Label className="font-semibold mb-3 block">Lista de Presença:</Label>
-                    <div className="space-y-2">
-                      {instrucao.participantes.map((participante) => (
-                        <div key={participante.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <Checkbox
-                              id={`presenca-${participante.id}-${instrucao.id}`}
-                              checked={presencas[`${participante.id}-${instrucao.id}`] || false}
-                              onCheckedChange={(checked) => 
-                                handlePresencaChange(`${participante.id}-${instrucao.id}`, checked as boolean)
-                              }
-                            />
-                            <Label htmlFor={`presenca-${participante.id}-${instrucao.id}`}>
-                              {participante.nome}
-                            </Label>
-                          </div>
-                          <Badge variant="secondary">{participante.funcao}</Badge>
-                        </div>
-                      ))}
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Hora *</Label>
+                      <Input
+                        type="time"
+                        value={ptr.hora}
+                        onChange={(e) => handlePTRChange(ptr.id, 'hora', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Tipo de Instrução *</Label>
+                      <Select 
+                        value={ptr.tipo} 
+                        onValueChange={(value) => handlePTRChange(ptr.id, 'tipo', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TIPOS_INSTRUCAO.map(tipo => (
+                            <SelectItem key={tipo} value={tipo}>
+                              {tipo}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
-                  {/* Upload de Fotos */}
                   <div>
-                    <ImageUpload
-                      images={fotosInstrucoes[instrucao.id.toString()] || []}
-                      onImagesChange={(fotos) => handleFotosChange(instrucao.id, fotos)}
-                      maxImages={2}
-                      title={`Fotos da Instrução - ${instrucao.titulo}`}
+                    <Label>Título da Instrução *</Label>
+                    <Input
+                      value={ptr.titulo}
+                      onChange={(e) => handlePTRChange(ptr.id, 'titulo', e.target.value)}
+                      placeholder="Ex: Uso correto de equipamentos de combate"
                     />
                   </div>
 
-                  {/* Observações */}
                   <div>
-                    <Label htmlFor={`observacoes-${instrucao.id}`} className="font-semibold">
-                      Observações da Instrução:
-                    </Label>
+                    <Label>Instrutor *</Label>
+                    <Select 
+                      value={ptr.instrutor_id} 
+                      onValueChange={(value) => handlePTRChange(ptr.id, 'instrutor_id', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o instrutor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bombeirosDaEquipe.map(bombeiro => (
+                          <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                            {bombeiro.nome} - {bombeiro.funcao}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <ImageUpload
+                      images={ptr.fotos}
+                      onImagesChange={(fotos) => handlePhotosChange(ptr.id, fotos)}
+                      maxImages={2}
+                      title={`Fotos - ${ptr.titulo || 'PTR-BA'}`}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Observações</Label>
                     <Textarea
-                      id={`observacoes-${instrucao.id}`}
-                      value={observacoesInstrucoes[instrucao.id.toString()] || ''}
-                      onChange={(e) => handleObservacoesChange(instrucao.id, e.target.value)}
-                      placeholder="Observações sobre a instrução, dificuldades encontradas, sugestões..."
+                      value={ptr.observacoes}
+                      onChange={(e) => handlePTRChange(ptr.id, 'observacoes', e.target.value)}
+                      placeholder="Observações sobre a instrução..."
                       rows={3}
-                      className="mt-2"
                     />
                   </div>
                 </CardContent>
@@ -251,30 +409,15 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
             ))}
           </div>
 
-          {/* Ações */}
           <div className="flex justify-between pt-6 border-t">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Fechar
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
             </Button>
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={salvarRelatorio}>
-                <FileText className="w-4 h-4 mr-2" />
-                Salvar Relatório
-              </Button>
-              <Button onClick={gerarPDF} disabled={gerandoPDF}>
-                {gerandoPDF ? (
-                  <>
-                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Gerando PDF...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4 mr-2" />
-                    Gerar PDF
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button onClick={handleSalvar} disabled={salvando}>
+              {salvando ? 'Salvando...' : 'Salvar PTR-BA'}
+              <Save className="w-4 h-4 ml-2" />
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -90,7 +90,7 @@ export const HistoricoChecklists = ({ viaturaId, tipoFiltro }: HistoricoChecklis
         return;
       }
 
-      setChecklists(data || []);
+      setChecklists((data || []) as any);
     } catch (error) {
       console.error("Erro ao buscar checklists:", error);
     } finally {

@@ -201,7 +201,7 @@ const OSCreateModal: React.FC<OSCreateModalProps> = ({ isOpen, onClose, tipoInic
         novaOS = { ...baseData, tipo_chamado: formData.tipo_chamado } as Partial<OrdemServico>;
     }
 
-    onSave(novaOS);
+    onSave(novaOS as any);
     onClose();
   };
 
