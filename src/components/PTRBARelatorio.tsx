@@ -28,7 +28,6 @@ interface PTRData {
   id: string;
   hora: string;
   tipo: string;
-  titulo: string;
   instrutor_id: string;
   observacoes: string;
   fotos: string[];
@@ -79,7 +78,6 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       id: '1',
       hora: '08:00',
       tipo: TEMAS_PTR_PADRAO[0],
-      titulo: '',
       instrutor_id: '',
       observacoes: '',
       fotos: []
@@ -170,7 +168,6 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       id: Date.now().toString(),
       hora: '14:00',
       tipo: temasPTR[0] || 'CONDUÇÃO DE VEÍCULOS DE EMERGÊNCIA NA ÁREA OPERACIONAL DO AERÓDROMO',
-      titulo: '',
       instrutor_id: '',
       observacoes: '',
       fotos: []
@@ -248,7 +245,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     }
 
     for (const ptr of formData.ptrs) {
-      if (!ptr.hora || !ptr.tipo || !ptr.titulo || !ptr.instrutor_id) {
+      if (!ptr.hora || !ptr.tipo || !ptr.instrutor_id) {
         toast({
           title: "Erro de Validação",
           description: "Todos os campos do PTR são obrigatórios.",
@@ -272,7 +269,6 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           data: formData.data,
           hora: ptr.hora,
           tipo: ptr.tipo,
-          titulo: ptr.titulo,
           instrutor_id: ptr.instrutor_id,
           observacoes: ptr.observacoes
         });
@@ -293,7 +289,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
             await uploadFotoCompleto.mutateAsync({
               file,
               instrucaoId: novaInstrucao.id,
-              descricao: `Foto ${i + 1} - ${ptr.titulo}`,
+              descricao: `Foto ${i + 1} - ${ptr.tipo}`,
               ordem: i + 1
             });
           }
@@ -473,7 +469,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                     </div>
                     <div>
                       <Label className="flex items-center justify-between">
-                        <span>Tipo de Instrução *</span>
+                        <span>Título da Instrução *</span>
                         <Button
                           type="button" 
                           variant="ghost" 
@@ -507,16 +503,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                   </div>
 
                   <div>
-                    <Label>Título da Instrução *</Label>
-                    <Input
-                      value={ptr.titulo}
-                      onChange={(e) => handlePTRChange(ptr.id, 'titulo', e.target.value)}
-                      placeholder="Ex: Uso correto de equipamentos de combate"
-                    />
-                  </div>
-
-                    <div>
-                      <Label>Instrutor *</Label>
+                    <Label>Instrutor *</Label>
                       <Select 
                         value={ptr.instrutor_id} 
                         onValueChange={(value) => handlePTRChange(ptr.id, 'instrutor_id', value)}
@@ -539,7 +526,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                       images={ptr.fotos}
                       onImagesChange={(fotos) => handlePhotosChange(ptr.id, fotos)}
                       maxImages={2}
-                      title={`Fotos - ${ptr.titulo || 'PTR-BA'}`}
+                      title={`Fotos - ${ptr.tipo || 'PTR-BA'}`}
                     />
                   </div>
 

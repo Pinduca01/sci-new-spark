@@ -20,7 +20,6 @@ export interface NovaInstrucao {
   data: string;
   hora: string;
   tipo: string;
-  titulo: string;
   instrutor_id?: string;
   observacoes?: string;
 }
@@ -76,9 +75,14 @@ export const usePTRInstrucoes = () => {
   // Criar nova instrução
   const criarInstrucao = useMutation({
     mutationFn: async (novaInstrucao: NovaInstrucao) => {
+      const instrucaoParaDB = {
+        ...novaInstrucao,
+        titulo: novaInstrucao.tipo // Use tipo como titulo
+      };
+      
       const { data, error } = await supabase
         .from('ptr_instrucoes')
-        .insert(novaInstrucao)
+        .insert(instrucaoParaDB)
         .select()
         .single();
 

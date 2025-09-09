@@ -75,7 +75,6 @@ export const PTRBAForm: React.FC<PTRBAFormProps> = ({
         data: formData.data,
         hora: formData.hora,
         tipo: formData.tipo,
-        titulo: formData.titulo,
         instrutor_id: formData.instrutor_id || undefined,
         observacoes: formData.observacoes || undefined,
       });
