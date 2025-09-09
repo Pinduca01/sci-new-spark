@@ -22,7 +22,7 @@ export const usePTRParticipantes = () => {
       const participantes = bombeirosIds.map(bombeiroId => ({
         ptr_instrucao_id: instrucaoId,
         bombeiro_id: bombeiroId,
-        presente: false,
+        presente: true,
         situacao_ba: 'P' as const
       }));
 
