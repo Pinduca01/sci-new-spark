@@ -452,73 +452,141 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
   // Função para enviar dados para webhook N8N
   const enviarParaWebhookN8N = async (ptrIds: string[]) => {
+    console.log('🔄 Iniciando envio para webhook N8N com PTR IDs:', ptrIds);
+    
     try {
-      // Buscar dados completos das instruções criadas
-      const { data: ptrsCompletos } = await supabase
+      // Aguardar um momento para garantir que os dados foram commitados
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Buscar dados das instruções criadas (query simplificada)
+      console.log('📋 Buscando dados das instruções...');
+      const { data: instrucoes, error: errorInstrucoes } = await supabase
         .from('ptr_instrucoes')
-        .select(`
-          *,
-          instrutor:bombeiros!ptr_instrucoes_instrutor_id_fkey(nome, funcao),
-          ptr_participantes(
-            presente,
-            situacao_ba,
-            observacoes,
-            bombeiro:bombeiros!ptr_participantes_bombeiro_id_fkey(nome, funcao)
-          ),
-          ptr_fotos(foto_url, descricao, ordem)
-        `)
+        .select('*')
         .in('id', ptrIds)
         .order('hora');
 
+      if (errorInstrucoes) {
+        console.error('❌ Erro ao buscar instruções:', errorInstrucoes);
+        throw errorInstrucoes;
+      }
+
+      console.log('✅ Instruções encontradas:', instrucoes);
+
+      // Buscar participantes para cada instrução
+      const participantesPromises = ptrIds.map(async (ptrId) => {
+        const { data: participantes, error } = await supabase
+          .from('ptr_participantes')
+          .select(`
+            presente,
+            situacao_ba,
+            observacoes,
+            bombeiro_id,
+            bombeiros!inner(nome, funcao)
+          `)
+          .eq('ptr_instrucao_id', ptrId);
+
+        if (error) {
+          console.error('❌ Erro ao buscar participantes para PTR', ptrId, ':', error);
+          return [];
+        }
+        return { ptrId, participantes: participantes || [] };
+      });
+
+      const participantesData = await Promise.all(participantesPromises);
+      console.log('👥 Participantes encontrados:', participantesData);
+
+      // Buscar fotos para cada instrução
+      const fotosPromises = ptrIds.map(async (ptrId) => {
+        const { data: fotos, error } = await supabase
+          .from('ptr_fotos')
+          .select('foto_url, descricao, ordem')
+          .eq('ptr_instrucao_id', ptrId)
+          .order('ordem');
+
+        if (error) {
+          console.error('❌ Erro ao buscar fotos para PTR', ptrId, ':', error);
+          return [];
+        }
+        return { ptrId, fotos: fotos || [] };
+      });
+
+      const fotosData = await Promise.all(fotosPromises);
+      console.log('📸 Fotos encontradas:', fotosData);
+
+      // Buscar dados dos instrutores
+      const instrutoresIds = instrucoes?.map(i => i.instrutor_id).filter(Boolean) || [];
+      const { data: instrutores } = await supabase
+        .from('bombeiros')
+        .select('id, nome, funcao')
+        .in('id', instrutoresIds);
+
+      console.log('👨‍🏫 Instrutores encontrados:', instrutores);
+
       // Encontrar equipe selecionada
       const equipeSelecionada = equipes.find(e => e.id === formData.equipe_id);
+      console.log('🚒 Equipe selecionada:', equipeSelecionada);
 
       // Formatar dados para o webhook
       const dadosWebhook = {
         data: formData.data,
-        equipe: equipeSelecionada?.nome_equipe || '',
-        ptrs: ptrsCompletos?.map(ptr => ({
-          id: ptr.id,
-          tipo: ptr.tipo,
-          hora_inicio: ptr.hora,
-          hora_fim: ptr.hora_fim,
-          duracao: ptr.hora_fim ? calcularDuracao(ptr.hora, ptr.hora_fim) : '',
-          instrutor: {
-            nome: ptr.instrutor?.nome || '',
-            funcao: ptr.instrutor?.funcao || ''
-          },
-          participantes: ptr.ptr_participantes?.map((p: any) => ({
-            nome: p.bombeiro?.nome || '',
-            funcao: p.bombeiro?.funcao || '',
-            situacao: p.situacao_ba || 'P',
-            presente: p.presente || false
-          })) || [],
-          fotos: ptr.ptr_fotos?.sort((a: any, b: any) => a.ordem - b.ordem)
-            .map((f: any) => f.foto_url) || [],
-          observacoes: ptr.observacoes || ''
-        })) || []
+        equipe: equipeSelecionada?.nome_equipe || 'Não definida',
+        ptrs: instrucoes?.map(ptr => {
+          const instrutor = instrutores?.find(i => i.id === ptr.instrutor_id);
+          const participantesItem = participantesData.find((p: any) => p && p.ptrId === ptr.id) as { ptrId: string; participantes: any[] } | undefined;
+          const participantesPtr = participantesItem?.participantes || [];
+          
+          const fotosItem = fotosData.find((f: any) => f && f.ptrId === ptr.id) as { ptrId: string; fotos: any[] } | undefined;
+          const fotosPtr = fotosItem?.fotos || [];
+
+          return {
+            id: ptr.id,
+            tipo: ptr.tipo || 'Não informado',
+            hora_inicio: ptr.hora || '',
+            hora_fim: ptr.hora_fim || '',
+            duracao: ptr.hora_fim ? calcularDuracao(ptr.hora, ptr.hora_fim) : '',
+            instrutor: {
+              nome: instrutor?.nome || 'Não informado',
+              funcao: instrutor?.funcao || 'Não informado'
+            },
+            participantes: participantesPtr.map((p: any) => ({
+              nome: p.bombeiros?.nome || 'Não informado',
+              funcao: p.bombeiros?.funcao || 'Não informado',
+              situacao: p.situacao_ba || 'P',
+              presente: p.presente || false
+            })),
+            fotos: fotosPtr.map((f: any) => f.foto_url),
+            observacoes: ptr.observacoes || ''
+          };
+        }) || []
       };
 
-      // Enviar para webhook N8N
-      const response = await fetch('https://n8n.brenodev.tech/webhook-test/f467668c-8302-4d8d-b144-80aebbdaea86', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dadosWebhook)
+      console.log('📦 Dados formatados para webhook:', JSON.stringify(dadosWebhook, null, 2));
+
+      // Enviar para webhook N8N via Edge Function (fallback para CORS)
+      console.log('🚀 Enviando dados para webhook via Edge Function...');
+      const response = await supabase.functions.invoke('ptr-webhook', {
+        body: dadosWebhook
       });
 
-      if (response.ok) {
-        console.log('Dados enviados para N8N com sucesso:', dadosWebhook);
+      if (response.error) {
+        console.error('❌ Erro na Edge Function:', response.error);
+        throw new Error(`Erro na Edge Function: ${response.error.message}`);
+      }
+
+      console.log('📡 Resposta da Edge Function:', response.data);
+
+      if (response.data?.success) {
+        console.log('✅ Dados enviados para N8N com sucesso via Edge Function!');
         toast({
           title: "Automação Ativada",
           description: "Dados enviados para N8N com sucesso!",
         });
       } else {
-        throw new Error(`Erro no webhook: ${response.status}`);
+        throw new Error(response.data?.error || 'Erro desconhecido na Edge Function');
       }
     } catch (error) {
-      console.error('Erro ao enviar para webhook N8N:', error);
+      console.error('❌ Erro completo ao enviar para webhook N8N:', error);
       toast({
         title: "Atenção", 
         description: "PTR salvo com sucesso, mas houve erro no envio da automação.",
