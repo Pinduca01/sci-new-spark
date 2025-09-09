@@ -36,6 +36,7 @@ const calcularDuracao = (inicio: string, fim: string): string => {
 
 import { useEquipes } from '@/hooks/useEquipes';
 import { useBombeiros } from '@/hooks/useBombeiros';
+import type { Bombeiro } from '@/hooks/useBombeiros';
 import { usePTRInstrucoes } from '@/hooks/usePTRInstrucoes';
 import { usePTRParticipantes } from '@/hooks/usePTRParticipantes';
 import { usePTRFotos } from '@/hooks/usePTRFotos';
@@ -119,15 +120,14 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
   
   // Bombeiros disponíveis para adicionar (não selecionados e ativos)
-  // Se há equipe selecionada, prioriza bombeiros da mesma equipe, mas permite adicionar de outras equipes
   const bombeirosDisponiveis = bombeiros.filter(b => 
     !formData.participantes.includes(b.id) && b.status === 'ativo'
   );
 
-  // Participantes selecionados com dados completos
+  // Participantes selecionados com dados completos (garantindo que todos existem)
   const participantesSelecionados = formData.participantes
     .map(id => bombeiros.find(b => b.id === id))
-    .filter(Boolean);
+    .filter((bombeiro): bombeiro is Bombeiro => bombeiro !== undefined);
 
   // Carregar temas PTR na inicialização
   useEffect(() => {
@@ -157,8 +157,21 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
   // Adicionar participante individual
   const handleAdicionarParticipante = (bombeiroId: string) => {
-    if (!bombeiroId || formData.participantes.includes(bombeiroId)) {
-      console.log('Participante já existe ou ID inválido:', bombeiroId);
+    console.log('Tentando adicionar participante:', bombeiroId);
+    console.log('Participantes atuais:', formData.participantes);
+    
+    if (!bombeiroId) {
+      console.log('ID do bombeiro é inválido');
+      return;
+    }
+    
+    if (formData.participantes.includes(bombeiroId)) {
+      console.log('Participante já existe na lista');
+      toast({
+        title: "Atenção",
+        description: "Este bombeiro já está na lista de participantes.",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -179,18 +192,33 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       [bombeiroId]: 'P'
     }));
     
-    // Reset do select
+    // Reset do select IMEDIATAMENTE
     setSelectedParticipante('');
     
-    console.log('Participante adicionado:', bombeiroId);
+    console.log('Participante adicionado com sucesso:', bombeiroId);
+    
+    toast({
+      title: "Sucesso",
+      description: "Participante adicionado com sucesso!",
+    });
   };
 
   // Remover participante individual
   const handleRemoverParticipante = (bombeiroId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      participantes: prev.participantes.filter(id => id !== bombeiroId)
-    }));
+    console.log('Tentando remover participante:', bombeiroId);
+    console.log('Participantes antes da remoção:', formData.participantes);
+    
+    const bombeiroEncontrado = bombeiros.find(b => b.id === bombeiroId);
+    console.log('Bombeiro encontrado:', bombeiroEncontrado?.nome);
+    
+    setFormData(prev => {
+      const novosParticipantes = prev.participantes.filter(id => id !== bombeiroId);
+      console.log('Novos participantes após remoção:', novosParticipantes);
+      return {
+        ...prev,
+        participantes: novosParticipantes
+      };
+    });
     
     // Remover presença e situação do participante removido
     setPresencas(prev => {
@@ -204,6 +232,13 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       delete novasSituacoes[bombeiroId];
       return novasSituacoes;
     });
+    
+    toast({
+      title: "Sucesso",
+      description: `${bombeiroEncontrado?.nome || 'Participante'} removido da lista.`,
+    });
+    
+    console.log('Participante removido com sucesso');
   };
 
   const handleAddPTR = () => {
@@ -428,12 +463,12 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                 <div>
                   <Label className="font-semibold mb-3 block">Participantes:</Label>
                   
-                  {/* Lista de participantes selecionados */}
+                   {/* Lista de participantes selecionados */}
                   <div className="space-y-3 mb-4">
                     {participantesSelecionados.length > 0 ? (
                       <div className="grid grid-cols-1 gap-3">
-                         {participantesSelecionados.map(bombeiro => bombeiro && (
-                           <div key={bombeiro.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                         {participantesSelecionados.map((bombeiro) => (
+                           <div key={`participante-${bombeiro.id}`} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                              <div className="flex items-center space-x-3 flex-1">
                                <div className="flex flex-col">
                                  <span className="font-medium">{bombeiro.nome}</span>
@@ -461,7 +496,10 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                              <Button
                                variant="outline"
                                size="sm"
-                               onClick={() => handleRemoverParticipante(bombeiro.id)}
+                               onClick={() => {
+                                 console.log('Clique no botão remover para:', bombeiro.id, bombeiro.nome);
+                                 handleRemoverParticipante(bombeiro.id);
+                               }}
                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                              >
                                <Trash2 className="w-4 h-4" />
@@ -481,10 +519,10 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                      <div className="flex items-center space-x-2">
                        <div className="flex-1">
                          <Select 
-                           value={selectedParticipante} 
+                           value="" 
                            onValueChange={(value) => {
-                             console.log('Select onChange:', value);
-                             if (value && value !== selectedParticipante) {
+                             console.log('Select onChange - valor selecionado:', value);
+                             if (value) {
                                handleAdicionarParticipante(value);
                              }
                            }}
