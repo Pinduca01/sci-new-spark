@@ -83,6 +83,16 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
   // Bombeiros da equipe selecionada
   const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
+  
+  // Bombeiros disponíveis para adicionar (não selecionados)
+  const bombeirosDisponiveis = bombeiros.filter(b => 
+    !formData.participantes.includes(b.id) && b.status === 'ativo'
+  );
+
+  // Participantes selecionados com dados completos
+  const participantesSelecionados = formData.participantes
+    .map(id => bombeiros.find(b => b.id === id))
+    .filter(Boolean);
 
   // Preencher participantes quando equipe é selecionada
   useEffect(() => {
@@ -101,6 +111,44 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       setPresencas(novasPresencas);
     }
   }, [formData.equipe_id, bombeirosDaEquipe]);
+
+  // Adicionar participante individual
+  const handleAdicionarParticipante = (bombeiroId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      participantes: [...prev.participantes, bombeiroId]
+    }));
+    
+    // Marcar como presente por padrão
+    setPresencas(prev => ({
+      ...prev,
+      [bombeiroId]: true
+    }));
+  };
+
+  // Remover participante individual
+  const handleRemoverParticipante = (bombeiroId: string) => {
+    if (formData.participantes.length === 1) {
+      toast({
+        title: "Atenção",
+        description: "É necessário ter pelo menos um participante.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      participantes: prev.participantes.filter(id => id !== bombeiroId)
+    }));
+    
+    // Remover da lista de presenças
+    setPresencas(prev => {
+      const novasPresencas = { ...prev };
+      delete novasPresencas[bombeiroId];
+      return novasPresencas;
+    });
+  };
 
   const handleAddPTR = () => {
     const novoPTR: PTRData = {
@@ -165,6 +213,15 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       toast({
         title: "Erro de Validação",
         description: "Data, equipe e pelo menos um PTR são obrigatórios.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (formData.participantes.length === 0) {
+      toast({
+        title: "Erro de Validação",
+        description: "É necessário ter pelo menos um participante.",
         variant: "destructive",
       });
       return false;
@@ -283,25 +340,81 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                 </div>
               </div>
 
-              {bombeirosDaEquipe.length > 0 && (
+              {formData.equipe_id && (
                 <div>
-                  <Label className="font-semibold mb-3 block">Participantes da Equipe:</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {bombeirosDaEquipe.map(bombeiro => (
-                      <div key={bombeiro.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <Checkbox
-                            checked={presencas[bombeiro.id] || false}
-                            onCheckedChange={(checked) => 
-                              handlePresencaChange(bombeiro.id, checked as boolean)
-                            }
-                          />
-                          <Label>{bombeiro.nome}</Label>
-                        </div>
-                        <Badge variant="secondary">{bombeiro.funcao}</Badge>
+                  <Label className="font-semibold mb-3 block">Participantes:</Label>
+                  
+                  {/* Lista de participantes selecionados */}
+                  <div className="space-y-3 mb-4">
+                    {participantesSelecionados.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-3">
+                        {participantesSelecionados.map(bombeiro => bombeiro && (
+                          <div key={bombeiro.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                            <div className="flex items-center space-x-3">
+                              <Checkbox
+                                checked={presencas[bombeiro.id] || false}
+                                onCheckedChange={(checked) => 
+                                  handlePresencaChange(bombeiro.id, checked as boolean)
+                                }
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{bombeiro.nome}</span>
+                                <Badge variant="secondary" className="w-fit text-xs">
+                                  {bombeiro.funcao}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRemoverParticipante(bombeiro.id)}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground border rounded-lg bg-muted/20">
+                        <p className="text-sm">Nenhum participante selecionado</p>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Adicionar novo participante */}
+                  {bombeirosDisponiveis.length > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <Select onValueChange={handleAdicionarParticipante}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Adicionar participante..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bombeirosDisponiveis.map(bombeiro => (
+                            <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                              <div className="flex items-center space-x-2">
+                                <span>{bombeiro.nome}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {bombeiro.funcao}
+                                </Badge>
+                                {bombeiro.equipe && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {bombeiro.equipe}
+                                  </Badge>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
+                  {bombeirosDisponiveis.length === 0 && participantesSelecionados.length > 0 && (
+                    <div className="text-center py-2 text-muted-foreground">
+                      <p className="text-sm">Todos os bombeiros disponíveis já foram adicionados</p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -367,24 +480,24 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                     />
                   </div>
 
-                  <div>
-                    <Label>Instrutor *</Label>
-                    <Select 
-                      value={ptr.instrutor_id} 
-                      onValueChange={(value) => handlePTRChange(ptr.id, 'instrutor_id', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o instrutor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {bombeirosDaEquipe.map(bombeiro => (
-                          <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                            {bombeiro.nome} - {bombeiro.funcao}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                    <div>
+                      <Label>Instrutor *</Label>
+                      <Select 
+                        value={ptr.instrutor_id} 
+                        onValueChange={(value) => handlePTRChange(ptr.id, 'instrutor_id', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o instrutor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {participantesSelecionados.map(bombeiro => bombeiro && (
+                            <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                              {bombeiro.nome} - {bombeiro.funcao}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
                   <div>
                     <ImageUpload
