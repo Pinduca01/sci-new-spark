@@ -521,18 +521,19 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                   </div>
                   
                   <div>
-                    <Label className="flex items-center justify-between">
-                      <span>Tema da Instrução *</span>
+                    <div className="flex items-center justify-between">
+                      <Label>Tema da Instrução *</Label>
                       <Button
                         type="button" 
                         variant="ghost" 
                         size="sm"
                         onClick={() => setShowGerenciadorTemas(true)}
                         className="h-auto p-1 text-muted-foreground hover:text-foreground"
+                        aria-label="Gerenciar temas de PTR"
                       >
                         <Settings className="w-3 h-3" />
                       </Button>
-                    </Label>
+                    </div>
                     <Select 
                       value={ptr.tipo} 
                       onValueChange={(value) => handlePTRChange(ptr.id, 'tipo', value)}
