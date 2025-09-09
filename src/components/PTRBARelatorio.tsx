@@ -12,6 +12,7 @@ import { Plus, Trash2, Save, X, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
 import { PTRTemasManager, TEMAS_PTR_PADRAO } from './PTRTemasManager';
+import { supabase } from '@/integrations/supabase/client';
 
 // Função para calcular duração entre dois horários
 const calcularDuracao = (inicio: string, fim: string): string => {
@@ -392,6 +393,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
     try {
       setSalvando(true);
+      const ptrIds: string[] = [];
       
       for (const ptr of formData.ptrs) {
         const novaInstrucao = await criarInstrucao.mutateAsync({
@@ -402,6 +404,8 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           instrutor_id: ptr.instrutor_id,
           observacoes: ptr.observacoes
         });
+
+        ptrIds.push(novaInstrucao.id);
 
         await adicionarParticipantes.mutateAsync({
           instrucaoId: novaInstrucao.id,
@@ -426,6 +430,9 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
         }
       }
 
+      // Enviar dados para webhook N8N após salvamento
+      await enviarParaWebhookN8N(ptrIds);
+
       toast({
         title: "Sucesso",
         description: "PTR-BA criado com sucesso!",
@@ -440,6 +447,83 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       });
     } finally {
       setSalvando(false);
+    }
+  };
+
+  // Função para enviar dados para webhook N8N
+  const enviarParaWebhookN8N = async (ptrIds: string[]) => {
+    try {
+      // Buscar dados completos das instruções criadas
+      const { data: ptrsCompletos } = await supabase
+        .from('ptr_instrucoes')
+        .select(`
+          *,
+          instrutor:bombeiros!ptr_instrucoes_instrutor_id_fkey(nome, funcao),
+          ptr_participantes(
+            presente,
+            situacao_ba,
+            observacoes,
+            bombeiro:bombeiros!ptr_participantes_bombeiro_id_fkey(nome, funcao)
+          ),
+          ptr_fotos(foto_url, descricao, ordem)
+        `)
+        .in('id', ptrIds)
+        .order('hora');
+
+      // Encontrar equipe selecionada
+      const equipeSelecionada = equipes.find(e => e.id === formData.equipe_id);
+
+      // Formatar dados para o webhook
+      const dadosWebhook = {
+        data: formData.data,
+        equipe: equipeSelecionada?.nome_equipe || '',
+        ptrs: ptrsCompletos?.map(ptr => ({
+          id: ptr.id,
+          tipo: ptr.tipo,
+          hora_inicio: ptr.hora,
+          hora_fim: ptr.hora_fim,
+          duracao: ptr.hora_fim ? calcularDuracao(ptr.hora, ptr.hora_fim) : '',
+          instrutor: {
+            nome: ptr.instrutor?.nome || '',
+            funcao: ptr.instrutor?.funcao || ''
+          },
+          participantes: ptr.ptr_participantes?.map((p: any) => ({
+            nome: p.bombeiro?.nome || '',
+            funcao: p.bombeiro?.funcao || '',
+            situacao: p.situacao_ba || 'P',
+            presente: p.presente || false
+          })) || [],
+          fotos: ptr.ptr_fotos?.sort((a: any, b: any) => a.ordem - b.ordem)
+            .map((f: any) => f.foto_url) || [],
+          observacoes: ptr.observacoes || ''
+        })) || []
+      };
+
+      // Enviar para webhook N8N
+      const response = await fetch('https://n8n.brenodev.tech/webhook-test/f467668c-8302-4d8d-b144-80aebbdaea86', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dadosWebhook)
+      });
+
+      if (response.ok) {
+        console.log('Dados enviados para N8N com sucesso:', dadosWebhook);
+        toast({
+          title: "Automação Ativada",
+          description: "Dados enviados para N8N com sucesso!",
+        });
+      } else {
+        throw new Error(`Erro no webhook: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Erro ao enviar para webhook N8N:', error);
+      toast({
+        title: "Atenção", 
+        description: "PTR salvo com sucesso, mas houve erro no envio da automação.",
+        variant: "destructive",
+      });
     }
   };
 
