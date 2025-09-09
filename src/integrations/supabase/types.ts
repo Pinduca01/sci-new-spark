@@ -1705,6 +1705,7 @@ export type Database = {
           observacoes: string | null
           presente: boolean | null
           ptr_instrucao_id: string
+          situacao_ba: string | null
           updated_at: string
         }
         Insert: {
@@ -1714,6 +1715,7 @@ export type Database = {
           observacoes?: string | null
           presente?: boolean | null
           ptr_instrucao_id: string
+          situacao_ba?: string | null
           updated_at?: string
         }
         Update: {
@@ -1723,6 +1725,7 @@ export type Database = {
           observacoes?: string | null
           presente?: boolean | null
           ptr_instrucao_id?: string
+          situacao_ba?: string | null
           updated_at?: string
         }
         Relationships: [

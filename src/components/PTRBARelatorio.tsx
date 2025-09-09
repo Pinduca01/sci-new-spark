@@ -109,6 +109,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   });
   
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
+  const [situacoesBa, setSituacoesBa] = useState<Record<string, 'P' | 'A' | 'EO'>>({});
   const [salvando, setSalvando] = useState(false);
   const [temasPTR, setTemasPTR] = useState<string[]>([]);
   const [showGerenciadorTemas, setShowGerenciadorTemas] = useState(false);
@@ -142,10 +143,13 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       
       // Marcar todos como presentes por padrão
       const novasPresencas: Record<string, boolean> = {};
+      const novasSituacoes: Record<string, 'P' | 'A' | 'EO'> = {};
       participantesIds.forEach(id => {
         novasPresencas[id] = true;
+        novasSituacoes[id] = 'P';
       });
       setPresencas(novasPresencas);
+      setSituacoesBa(novasSituacoes);
     }
   }, [formData.equipe_id, bombeirosDaEquipe]);
 
@@ -160,6 +164,12 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     setPresencas(prev => ({
       ...prev,
       [bombeiroId]: true
+    }));
+    
+    // Definir situação padrão como presente
+    setSituacoesBa(prev => ({
+      ...prev,
+      [bombeiroId]: 'P'
     }));
   };
 
@@ -178,6 +188,19 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       ...prev,
       participantes: prev.participantes.filter(id => id !== bombeiroId)
     }));
+    
+    // Remover presença e situação do participante removido
+    setPresencas(prev => {
+      const novasPresencas = { ...prev };
+      delete novasPresencas[bombeiroId];
+      return novasPresencas;
+    });
+    
+    setSituacoesBa(prev => {  
+      const novasSituacoes = { ...prev };
+      delete novasSituacoes[bombeiroId];
+      return novasSituacoes;
+    });
     
     // Remover da lista de presenças
     setPresencas(prev => {
@@ -242,6 +265,19 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     setPresencas(prev => ({
       ...prev,
       [participanteId]: presente
+    }));
+  };
+
+  const handleSituacaoChange = (participanteId: string, situacao: 'P' | 'A' | 'EO') => {
+    setSituacoesBa(prev => ({
+      ...prev,
+      [participanteId]: situacao
+    }));
+    
+    // Automaticamente atualizar presença baseado na situação
+    setPresencas(prev => ({
+      ...prev,
+      [participanteId]: situacao === 'P'
     }));
   };
 
@@ -400,32 +436,42 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                   <div className="space-y-3 mb-4">
                     {participantesSelecionados.length > 0 ? (
                       <div className="grid grid-cols-1 gap-3">
-                        {participantesSelecionados.map(bombeiro => bombeiro && (
-                          <div key={bombeiro.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                            <div className="flex items-center space-x-3">
-                              <Checkbox
-                                checked={presencas[bombeiro.id] || false}
-                                onCheckedChange={(checked) => 
-                                  handlePresencaChange(bombeiro.id, checked as boolean)
-                                }
-                              />
-                              <div className="flex flex-col">
-                                <span className="font-medium">{bombeiro.nome}</span>
-                                <Badge variant="secondary" className="w-fit text-xs">
-                                  {bombeiro.funcao}
-                                </Badge>
-                              </div>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoverParticipante(bombeiro.id)}
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
+                         {participantesSelecionados.map(bombeiro => bombeiro && (
+                           <div key={bombeiro.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                             <div className="flex items-center space-x-3 flex-1">
+                               <div className="flex flex-col">
+                                 <span className="font-medium">{bombeiro.nome}</span>
+                                 <Badge variant="secondary" className="w-fit text-xs mb-2">
+                                   {bombeiro.funcao}
+                                 </Badge>
+                                 <div className="flex items-center space-x-2">
+                                   <Label className="text-sm font-medium">Situação dos BA:</Label>
+                                   <Select
+                                     value={situacoesBa[bombeiro.id] || 'P'}
+                                     onValueChange={(value: 'P' | 'A' | 'EO') => handleSituacaoChange(bombeiro.id, value)}
+                                   >
+                                     <SelectTrigger className="w-32">
+                                       <SelectValue />
+                                     </SelectTrigger>
+                                     <SelectContent>
+                                       <SelectItem value="P">P - Presente</SelectItem>
+                                       <SelectItem value="A">A - Ausente</SelectItem>
+                                       <SelectItem value="EO">E.O - Emp. Ocorrência</SelectItem>
+                                     </SelectContent>
+                                   </Select>
+                                 </div>
+                               </div>
+                             </div>
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => handleRemoverParticipante(bombeiro.id)}
+                               className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </Button>
+                           </div>
+                         ))}
                       </div>
                     ) : (
                       <div className="text-center py-6 text-muted-foreground border rounded-lg bg-muted/20">

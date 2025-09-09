@@ -9,6 +9,7 @@ export interface PTRParticipante {
   bombeiro_id: string;
   presente?: boolean;
   observacoes?: string;
+  situacao_ba?: 'P' | 'A' | 'EO';
 }
 
 export const usePTRParticipantes = () => {
@@ -21,7 +22,8 @@ export const usePTRParticipantes = () => {
       const participantes = bombeirosIds.map(bombeiroId => ({
         ptr_instrucao_id: instrucaoId,
         bombeiro_id: bombeiroId,
-        presente: false
+        presente: false,
+        situacao_ba: 'P' as const
       }));
 
       const { data, error } = await supabase
@@ -50,14 +52,15 @@ export const usePTRParticipantes = () => {
 
   // Atualizar presença de participante
   const atualizarPresenca = useMutation({
-    mutationFn: async ({ participanteId, presente, observacoes }: { 
+    mutationFn: async ({ participanteId, presente, observacoes, situacao_ba }: { 
       participanteId: string; 
       presente: boolean; 
-      observacoes?: string 
+      observacoes?: string;
+      situacao_ba?: 'P' | 'A' | 'EO';
     }) => {
       const { data, error } = await supabase
         .from('ptr_participantes')
-        .update({ presente, observacoes })
+        .update({ presente, observacoes, situacao_ba })
         .eq('id', participanteId)
         .select();
 
@@ -78,11 +81,11 @@ export const usePTRParticipantes = () => {
 
   // Atualizar múltiplas presenças
   const atualizarMultiplasPresencas = useMutation({
-    mutationFn: async (atualizacoes: Array<{ id: string; presente: boolean; observacoes?: string }>) => {
-      const promises = atualizacoes.map(({ id, presente, observacoes }) =>
+    mutationFn: async (atualizacoes: Array<{ id: string; presente: boolean; observacoes?: string; situacao_ba?: 'P' | 'A' | 'EO' }>) => {
+      const promises = atualizacoes.map(({ id, presente, observacoes, situacao_ba }) =>
         supabase
           .from('ptr_participantes')
-          .update({ presente, observacoes })
+          .update({ presente, observacoes, situacao_ba })
           .eq('id', id)
       );
 
