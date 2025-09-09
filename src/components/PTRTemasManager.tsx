@@ -153,7 +153,7 @@ export const PTRTemasManager: React.FC<PTRTemasManagerProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Gerenciar Temas PTR</span>
@@ -202,7 +202,7 @@ export const PTRTemasManager: React.FC<PTRTemasManagerProps> = ({
           </div>
 
           {/* Lista de temas */}
-          <ScrollArea className="flex-1 border rounded-lg">
+          <ScrollArea className="h-[450px] border rounded-lg">
             <div className="p-4 space-y-2">
               {temasFiltrados.length > 0 ? (
                 temasFiltrados.map((tema, index) => {
