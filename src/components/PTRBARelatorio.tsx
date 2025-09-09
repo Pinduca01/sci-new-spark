@@ -103,7 +103,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       id: '1',
       hora_inicio: '08:00',
       hora_fim: '09:00',
-      tipo: TEMAS_PTR_PADRAO[0],
+      tipo: '',
       instrutor_id: '',
       observacoes: '',
       fotos: []
@@ -155,7 +155,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           id: '1',
           hora_inicio: '08:00',
           hora_fim: '09:00',
-          tipo: TEMAS_PTR_PADRAO[0],
+          tipo: '',
           instrutor_id: '',
           observacoes: '',
           fotos: []
@@ -301,7 +301,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       id: Date.now().toString(),
       hora_inicio: '14:00',
       hora_fim: '15:00',
-      tipo: temasPTR[0] || 'CONDUÇÃO DE VEÍCULOS DE EMERGÊNCIA NA ÁREA OPERACIONAL DO AERÓDROMO',
+      tipo: '',
       instrutor_id: '',
       observacoes: '',
       fotos: []
@@ -864,7 +864,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                       onValueChange={(value) => handlePTRChange(ptr.id, 'tipo', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Selecione o Tema do PTR" />
                       </SelectTrigger>
                       <SelectContent className="max-h-64">
                         {temasPTR.map(tipo => (
