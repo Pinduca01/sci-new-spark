@@ -143,6 +143,33 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     setTemasPTR(carregarTemasPTR());
   }, []);
 
+  // Reset completo do formulário quando o modal for aberto
+  useEffect(() => {
+    if (open) {
+      console.log('🔄 Resetando formulário PTR-BA');
+      setFormData({
+        data: selectedDate.toISOString().split('T')[0],
+        equipe_id: '',
+        participantes: [],
+        ptrs: [{
+          id: '1',
+          hora_inicio: '08:00',
+          hora_fim: '09:00',
+          tipo: TEMAS_PTR_PADRAO[0],
+          instrutor_id: '',
+          observacoes: '',
+          fotos: []
+        }]
+      });
+      
+      setPresencas({});
+      setSituacoesBa({});
+      setEquipeInicializada(false);
+      setSelectedParticipante('');
+      console.log('✅ Formulário resetado');
+    }
+  }, [open, selectedDate]);
+
   // Reset quando equipe muda
   useEffect(() => {
     if (formData.equipe_id) {
