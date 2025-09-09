@@ -115,6 +115,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const [temasPTR, setTemasPTR] = useState<string[]>([]);
   const [showGerenciadorTemas, setShowGerenciadorTemas] = useState(false);
   const [selectedParticipante, setSelectedParticipante] = useState<string>('');
+  const [equipeInicializada, setEquipeInicializada] = useState(false);
 
   // Bombeiros da equipe selecionada
   const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
@@ -134,9 +135,23 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
     setTemasPTR(carregarTemasPTR());
   }, []);
 
-  // Preencher participantes quando equipe é selecionada
+  // Reset quando equipe muda
   useEffect(() => {
-    if (formData.equipe_id && bombeirosDaEquipe.length > 0) {
+    if (formData.equipe_id) {
+      setEquipeInicializada(false);
+      setFormData(prev => ({
+        ...prev,
+        participantes: []
+      }));
+      setPresencas({});
+      setSituacoesBa({});
+    }
+  }, [formData.equipe_id]);
+
+  // Inicializar participantes apenas uma vez quando equipe é selecionada
+  useEffect(() => {
+    if (formData.equipe_id && bombeirosDaEquipe.length > 0 && !equipeInicializada) {
+      console.log('Inicializando participantes da equipe:', bombeirosDaEquipe.length);
       const participantesIds = bombeirosDaEquipe.map(b => b.id);
       setFormData(prev => ({
         ...prev,
@@ -152,8 +167,10 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       });
       setPresencas(novasPresencas);
       setSituacoesBa(novasSituacoes);
+      setEquipeInicializada(true);
+      console.log('Participantes inicializados:', participantesIds);
     }
-  }, [formData.equipe_id, bombeirosDaEquipe]);
+  }, [formData.equipe_id, bombeirosDaEquipe, equipeInicializada]);
 
   // Adicionar participante individual
   const handleAdicionarParticipante = (bombeiroId: string) => {
