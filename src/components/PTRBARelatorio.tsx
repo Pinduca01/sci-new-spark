@@ -113,6 +113,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
   const [situacoesBa, setSituacoesBa] = useState<Record<string, 'P' | 'A' | 'EO'>>({});
   const [salvando, setSalvando] = useState(false);
+  const [etapaSalvamento, setEtapaSalvamento] = useState<string>('');
   const [temasPTR, setTemasPTR] = useState<string[]>([]);
   const [showGerenciadorTemas, setShowGerenciadorTemas] = useState(false);
   const [selectedParticipante, setSelectedParticipante] = useState<string>('');
@@ -169,6 +170,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       setSituacoesBa({});
       setEquipeInicializada(false);
       setSelectedParticipante('');
+      setEtapaSalvamento('');
       console.log('✅ Formulário resetado completamente');
     }
   }, [open, selectedDate]);
@@ -423,9 +425,14 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
     try {
       setSalvando(true);
+      setEtapaSalvamento('Iniciando salvamento...');
       const ptrIds: string[] = [];
+      const totalPtrs = formData.ptrs.length;
       
-      for (const ptr of formData.ptrs) {
+      for (let index = 0; index < formData.ptrs.length; index++) {
+        const ptr = formData.ptrs[index];
+        setEtapaSalvamento(`Salvando PTR ${index + 1} de ${totalPtrs}...`);
+        
         const novaInstrucao = await criarInstrucao.mutateAsync({
           data: formData.data,
           hora: ptr.hora_inicio,
@@ -437,6 +444,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
         ptrIds.push(novaInstrucao.id);
 
+        setEtapaSalvamento(`Adicionando participantes ao PTR ${index + 1}...`);
         await adicionarParticipantes.mutateAsync({
           instrucaoId: novaInstrucao.id,
           bombeirosIds: formData.participantes
@@ -444,6 +452,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
         // Upload fotos if any
         if (ptr.fotos.length > 0) {
+          setEtapaSalvamento(`Fazendo upload de ${ptr.fotos.length} foto(s) do PTR ${index + 1}...`);
           for (let i = 0; i < ptr.fotos.length; i++) {
             const fotoBase64 = ptr.fotos[i];
             const response = await fetch(fotoBase64);
@@ -461,22 +470,26 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       }
 
       // Enviar dados para webhook N8N após salvamento
+      setEtapaSalvamento('Enviando dados para relatório final...');
       await enviarParaWebhookN8N(ptrIds);
 
+      // Toast de sucesso apenas no final
       toast({
-        title: "Sucesso",
-        description: "PTR-BA criado com sucesso!",
+        title: "✅ PTR-BA Salvo com Sucesso!",
+        description: `${totalPtrs} PTR(s) criado(s) e relatório enviado com sucesso.`,
       });
 
       onOpenChange(false);
     } catch (error) {
+      console.error('Erro ao salvar PTR-BA:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar PTR-BA.",
+        title: "❌ Erro no Salvamento",
+        description: `Erro na etapa: ${etapaSalvamento}. Tente novamente.`,
         variant: "destructive",
       });
     } finally {
       setSalvando(false);
+      setEtapaSalvamento('');
     }
   };
 
@@ -929,13 +942,31 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           </div>
 
           <div className="flex justify-between pt-6 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
               <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
-            <Button onClick={handleSalvar} disabled={salvando}>
-              {salvando ? 'Salvando...' : 'Salvar PTR-BA'}
-              <Save className="w-4 h-4 ml-2" />
+            
+            {/* Mostrar progresso durante salvamento */}
+            {salvando && etapaSalvamento && (
+              <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>{etapaSalvamento}</span>
+              </div>
+            )}
+            
+            <Button onClick={handleSalvar} disabled={salvando} className="min-w-[160px]">
+              {salvando ? (
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm">Processando...</span>
+                </div>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar PTR-BA
+                </>
+              )}
             </Button>
           </div>
         </div>
