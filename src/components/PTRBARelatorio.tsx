@@ -113,6 +113,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const [salvando, setSalvando] = useState(false);
   const [temasPTR, setTemasPTR] = useState<string[]>([]);
   const [showGerenciadorTemas, setShowGerenciadorTemas] = useState(false);
+  const [selectedParticipante, setSelectedParticipante] = useState<string>('');
 
   // Bombeiros da equipe selecionada
   const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === formData.equipe_id);
@@ -156,7 +157,10 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
   // Adicionar participante individual
   const handleAdicionarParticipante = (bombeiroId: string) => {
-    if (!bombeiroId) return;
+    if (!bombeiroId || formData.participantes.includes(bombeiroId)) {
+      console.log('Participante já existe ou ID inválido:', bombeiroId);
+      return;
+    }
     
     setFormData(prev => ({
       ...prev,
@@ -174,6 +178,11 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       ...prev,
       [bombeiroId]: 'P'
     }));
+    
+    // Reset do select
+    setSelectedParticipante('');
+    
+    console.log('Participante adicionado:', bombeiroId);
   };
 
   // Remover participante individual
@@ -467,21 +476,19 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                     )}
                   </div>
 
-                   {/* Adicionar novo participante */}
+                    {/* Adicionar novo participante */}
                    {bombeirosDisponiveis.length > 0 && (
                      <div className="flex items-center space-x-2">
                        <div className="flex-1">
-                         <Select onValueChange={(value) => {
-                           handleAdicionarParticipante(value);
-                           // Reset do select após adicionar
-                           setTimeout(() => {
-                             const selectTrigger = document.querySelector('[role="combobox"]') as HTMLElement;
-                             if (selectTrigger) {
-                               selectTrigger.click();
-                               selectTrigger.blur();
+                         <Select 
+                           value={selectedParticipante} 
+                           onValueChange={(value) => {
+                             console.log('Select onChange:', value);
+                             if (value && value !== selectedParticipante) {
+                               handleAdicionarParticipante(value);
                              }
-                           }, 100);
-                         }}>
+                           }}
+                         >
                            <SelectTrigger className="w-full">
                              <SelectValue placeholder={`Adicionar participante... (${bombeirosDisponiveis.length} disponíveis)`} />
                            </SelectTrigger>
@@ -490,7 +497,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                              {formData.equipe_id && bombeirosDisponiveis
                                .filter(b => b.equipe_id === formData.equipe_id)
                                .map(bombeiro => (
-                                 <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                                 <SelectItem key={`equipe-${bombeiro.id}`} value={bombeiro.id}>
                                    <div className="flex items-center space-x-2">
                                      <span>{bombeiro.nome}</span>
                                      <Badge variant="outline" className="text-xs">
@@ -516,25 +523,25 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                              {bombeirosDisponiveis
                                .filter(b => !formData.equipe_id || b.equipe_id !== formData.equipe_id)
                                .map(bombeiro => (
-                                 <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                                 <SelectItem key={`outro-${bombeiro.id}`} value={bombeiro.id}>
                                    <div className="flex items-center space-x-2">
                                      <span>{bombeiro.nome}</span>
                                      <Badge variant="outline" className="text-xs">
                                        {bombeiro.funcao}
                                      </Badge>
-                                      {bombeiro.equipe && (
-                                        <Badge variant="secondary" className="text-xs">
-                                          {bombeiro.equipe}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                ))}
+                                     {bombeiro.equipe && (
+                                       <Badge variant="secondary" className="text-xs">
+                                         {bombeiro.equipe}
+                                       </Badge>
+                                     )}
+                                   </div>
+                                 </SelectItem>
+                               ))}
                            </SelectContent>
                          </Select>
                        </div>
                      </div>
-                  )}
+                   )}
                   
                   {bombeirosDisponiveis.length === 0 && participantesSelecionados.length > 0 && (
                     <div className="text-center py-2 text-muted-foreground">
