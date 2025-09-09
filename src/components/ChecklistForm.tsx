@@ -191,8 +191,8 @@ export const ChecklistForm = ({ tipo, viaturaId, viaturaPrefixo, onClose, onSave
   const [bombeiros, setBombeiros] = useState<Bombeiro[]>([]);
   const [loadingBombeiros, setLoadingBombeiros] = useState(true);
   
-  // Hook para gerenciar não conformidades
-  const { salvarNaoConformidadeComImagem, uploading, saving } = useNaoConformidades();
+  // Hook para gerenciar não conformidades (temporarily disabled)
+  // const { salvarNaoConformidadeComImagem, uploading, saving } = useNaoConformidades();
   
   // Estados para o modal de não conformidade
   const [modalNaoConformidade, setModalNaoConformidade] = useState<{
@@ -425,9 +425,12 @@ export const ChecklistForm = ({ tipo, viaturaId, viaturaPrefixo, onClose, onSave
               data_registro: new Date().toISOString()
             };
 
-            // Salvar não conformidade com imagem (se houver)
-            const primeiraImagem = item.naoConformidade.imagens[0];
-            await salvarNaoConformidadeComImagem(naoConformidadeData, primeiraImagem);
+            // Salvar não conformidade com imagem (se houver) - temporarily disabled
+            // const primeiraImagem = item.naoConformidade.imagens[0];
+            // await salvarNaoConformidadeComImagem(naoConformidadeData, primeiraImagem);
+            
+            // TODO: Implement non-conformity saving when table exists
+            console.log('Non-conformity data to save:', naoConformidadeData);
           }
         }
       }
