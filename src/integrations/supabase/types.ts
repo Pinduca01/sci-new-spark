@@ -123,6 +123,7 @@ export type Database = {
           id: string
           matricula: string | null
           nome: string
+          nome_completo: string | null
           proxima_atualizacao: string | null
           status: string
           telefone: string
@@ -152,6 +153,7 @@ export type Database = {
           id?: string
           matricula?: string | null
           nome: string
+          nome_completo?: string | null
           proxima_atualizacao?: string | null
           status?: string
           telefone: string
@@ -181,6 +183,7 @@ export type Database = {
           id?: string
           matricula?: string | null
           nome?: string
+          nome_completo?: string | null
           proxima_atualizacao?: string | null
           status?: string
           telefone?: string
@@ -199,39 +202,6 @@ export type Database = {
           },
         ]
       }
-      checklist_templates: {
-        Row: {
-          ativo: boolean
-          categoria: string
-          created_at: string
-          id: string
-          itens: Json
-          nome: string
-          tipo_viatura: string
-          updated_at: string
-        }
-        Insert: {
-          ativo?: boolean
-          categoria?: string
-          created_at?: string
-          id?: string
-          itens?: Json
-          nome: string
-          tipo_viatura: string
-          updated_at?: string
-        }
-        Update: {
-          ativo?: boolean
-          categoria?: string
-          created_at?: string
-          id?: string
-          itens?: Json
-          nome?: string
-          tipo_viatura?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       checklists_almoxarifado: {
         Row: {
           assinatura_digital: string | null
@@ -245,7 +215,6 @@ export type Database = {
           itens_conformes: number | null
           itens_divergentes: number | null
           observacoes_gerais: string | null
-          status_geral: string
           total_itens: number | null
           updated_at: string
         }
@@ -261,7 +230,6 @@ export type Database = {
           itens_conformes?: number | null
           itens_divergentes?: number | null
           observacoes_gerais?: string | null
-          status_geral?: string
           total_itens?: number | null
           updated_at?: string
         }
@@ -277,7 +245,6 @@ export type Database = {
           itens_conformes?: number | null
           itens_divergentes?: number | null
           observacoes_gerais?: string | null
-          status_geral?: string
           total_itens?: number | null
           updated_at?: string
         }
@@ -288,13 +255,10 @@ export type Database = {
           bombeiro_responsavel: string
           created_at: string
           data_checklist: string
-          equipe: string | null
           hora_checklist: string
           id: string
           itens_checklist: Json
           observacoes_gerais: string | null
-          status_geral: string
-          timestamp_conclusao: string | null
           tipo_checklist: string
           updated_at: string
           viatura_id: string
@@ -303,13 +267,10 @@ export type Database = {
           bombeiro_responsavel: string
           created_at?: string
           data_checklist?: string
-          equipe?: string | null
           hora_checklist?: string
           id?: string
           itens_checklist?: Json
           observacoes_gerais?: string | null
-          status_geral?: string
-          timestamp_conclusao?: string | null
           tipo_checklist: string
           updated_at?: string
           viatura_id: string
@@ -318,13 +279,10 @@ export type Database = {
           bombeiro_responsavel?: string
           created_at?: string
           data_checklist?: string
-          equipe?: string | null
           hora_checklist?: string
           id?: string
           itens_checklist?: Json
           observacoes_gerais?: string | null
-          status_geral?: string
-          timestamp_conclusao?: string | null
           tipo_checklist?: string
           updated_at?: string
           viatura_id?: string
@@ -339,127 +297,7 @@ export type Database = {
           },
         ]
       }
-      document_templates: {
-        Row: {
-          content: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          type: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          type: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          type?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: []
-      }
-      epis_uniformes_distribuicao: {
-        Row: {
-          ano_referencia: number
-          bombeiro_id: string | null
-          bombeiro_nome: string
-          created_at: string | null
-          data_entrega: string | null
-          equipe_id: string | null
-          id: string
-          item_descricao: string
-          mes_referencia: number
-          observacoes: string | null
-          quantidade_entregue: number
-          quantidade_prevista: number
-          responsavel_entrega_id: string | null
-          responsavel_entrega_nome: string | null
-          tipo_item: string
-          updated_at: string | null
-        }
-        Insert: {
-          ano_referencia: number
-          bombeiro_id?: string | null
-          bombeiro_nome: string
-          created_at?: string | null
-          data_entrega?: string | null
-          equipe_id?: string | null
-          id?: string
-          item_descricao: string
-          mes_referencia: number
-          observacoes?: string | null
-          quantidade_entregue?: number
-          quantidade_prevista?: number
-          responsavel_entrega_id?: string | null
-          responsavel_entrega_nome?: string | null
-          tipo_item: string
-          updated_at?: string | null
-        }
-        Update: {
-          ano_referencia?: number
-          bombeiro_id?: string | null
-          bombeiro_nome?: string
-          created_at?: string | null
-          data_entrega?: string | null
-          equipe_id?: string | null
-          id?: string
-          item_descricao?: string
-          mes_referencia?: number
-          observacoes?: string | null
-          quantidade_entregue?: number
-          quantidade_prevista?: number
-          responsavel_entrega_id?: string | null
-          responsavel_entrega_nome?: string | null
-          tipo_item?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "epis_uniformes_distribuicao_bombeiro_id_fkey"
-            columns: ["bombeiro_id"]
-            isOneToOne: false
-            referencedRelation: "bombeiros"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "epis_uniformes_distribuicao_equipe_id_fkey"
-            columns: ["equipe_id"]
-            isOneToOne: false
-            referencedRelation: "equipes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "epis_uniformes_distribuicao_responsavel_entrega_id_fkey"
-            columns: ["responsavel_entrega_id"]
-            isOneToOne: false
-            referencedRelation: "bombeiros"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
       equipamentos_estoque: {
         Row: {
           codigo_equipamento: string
@@ -1215,59 +1053,6 @@ export type Database = {
           },
         ]
       }
-      nao_conformidades: {
-        Row: {
-          bombeiro_responsavel: string
-          checklist_id: string
-          created_at: string | null
-          data_registro: string | null
-          descricao: string
-          id: string
-          imagem_nome: string | null
-          imagem_url: string | null
-          item_id: string
-          item_nome: string
-          secao: string
-          updated_at: string | null
-        }
-        Insert: {
-          bombeiro_responsavel: string
-          checklist_id: string
-          created_at?: string | null
-          data_registro?: string | null
-          descricao: string
-          id?: string
-          imagem_nome?: string | null
-          imagem_url?: string | null
-          item_id: string
-          item_nome: string
-          secao: string
-          updated_at?: string | null
-        }
-        Update: {
-          bombeiro_responsavel?: string
-          checklist_id?: string
-          created_at?: string | null
-          data_registro?: string | null
-          descricao?: string
-          id?: string
-          imagem_nome?: string | null
-          imagem_url?: string | null
-          item_id?: string
-          item_nome?: string
-          secao?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "nao_conformidades_checklist_id_fkey"
-            columns: ["checklist_id"]
-            isOneToOne: false
-            referencedRelation: "checklists_viaturas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ocorrencias: {
         Row: {
           bombeiros_envolvidos: string[] | null
@@ -1647,81 +1432,6 @@ export type Database = {
           },
         ]
       }
-      qr_checklists: {
-        Row: {
-          assinatura_digital: string | null
-          bombeiro_id: string
-          bombeiro_nome: string
-          created_at: string
-          data_checklist: string
-          fotos: Json | null
-          hora_conclusao: string | null
-          hora_inicio: string
-          id: string
-          itens_checklist: Json
-          localizacao: Json | null
-          observacoes_gerais: string | null
-          qr_code: string
-          status: string
-          template_id: string
-          updated_at: string
-          viatura_id: string
-        }
-        Insert: {
-          assinatura_digital?: string | null
-          bombeiro_id: string
-          bombeiro_nome: string
-          created_at?: string
-          data_checklist?: string
-          fotos?: Json | null
-          hora_conclusao?: string | null
-          hora_inicio?: string
-          id?: string
-          itens_checklist?: Json
-          localizacao?: Json | null
-          observacoes_gerais?: string | null
-          qr_code: string
-          status?: string
-          template_id: string
-          updated_at?: string
-          viatura_id: string
-        }
-        Update: {
-          assinatura_digital?: string | null
-          bombeiro_id?: string
-          bombeiro_nome?: string
-          created_at?: string
-          data_checklist?: string
-          fotos?: Json | null
-          hora_conclusao?: string | null
-          hora_inicio?: string
-          id?: string
-          itens_checklist?: Json
-          localizacao?: Json | null
-          observacoes_gerais?: string | null
-          qr_code?: string
-          status?: string
-          template_id?: string
-          updated_at?: string
-          viatura_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "qr_checklists_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "checklist_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_checklists_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       quadrantes_aeroporto: {
         Row: {
           ativo: boolean
@@ -1769,7 +1479,7 @@ export type Database = {
           aprovado: boolean
           avaliador_nome: string
           bombeiro_id: string
-          created_at: string
+          created_at: string | null
           data_teste: string
           faixa_etaria: string
           flexoes_realizadas: number
@@ -1779,31 +1489,31 @@ export type Database = {
           polichinelos_realizados: number
           tempo_limite_minutos: number
           tempo_total_segundos: number
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          abdominais_realizadas: number
+          abdominais_realizadas?: number
           aprovado?: boolean
-          avaliador_nome?: string
+          avaliador_nome: string
           bombeiro_id: string
-          created_at?: string
+          created_at?: string | null
           data_teste?: string
-          faixa_etaria?: string
-          flexoes_realizadas: number
+          faixa_etaria: string
+          flexoes_realizadas?: number
           id?: string
-          idade_na_data?: number
+          idade_na_data: number
           observacoes?: string | null
-          polichinelos_realizados: number
-          tempo_limite_minutos?: number
-          tempo_total_segundos?: number
-          updated_at?: string
+          polichinelos_realizados?: number
+          tempo_limite_minutos: number
+          tempo_total_segundos: number
+          updated_at?: string | null
         }
         Update: {
           abdominais_realizadas?: number
           aprovado?: boolean
           avaliador_nome?: string
           bombeiro_id?: string
-          created_at?: string
+          created_at?: string | null
           data_teste?: string
           faixa_etaria?: string
           flexoes_realizadas?: number
@@ -1813,7 +1523,7 @@ export type Database = {
           polichinelos_realizados?: number
           tempo_limite_minutos?: number
           tempo_total_segundos?: number
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1824,54 +1534,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      taf_avaliacoes_historico: {
-        Row: {
-          campos_alterados: string[] | null
-          dados_anteriores: Json | null
-          dados_novos: Json
-          id: string
-          ip_address: unknown | null
-          observacoes_historico: string | null
-          operacao: string
-          taf_avaliacao_id: string
-          timestamp_operacao: string
-          user_agent: string | null
-          usuario_nome: string | null
-          usuario_responsavel: string | null
-          usuario_role: string | null
-        }
-        Insert: {
-          campos_alterados?: string[] | null
-          dados_anteriores?: Json | null
-          dados_novos: Json
-          id?: string
-          ip_address?: unknown | null
-          observacoes_historico?: string | null
-          operacao: string
-          taf_avaliacao_id: string
-          timestamp_operacao?: string
-          user_agent?: string | null
-          usuario_nome?: string | null
-          usuario_responsavel?: string | null
-          usuario_role?: string | null
-        }
-        Update: {
-          campos_alterados?: string[] | null
-          dados_anteriores?: Json | null
-          dados_novos?: Json
-          id?: string
-          ip_address?: unknown | null
-          observacoes_historico?: string | null
-          operacao?: string
-          taf_avaliacao_id?: string
-          timestamp_operacao?: string
-          user_agent?: string | null
-          usuario_nome?: string | null
-          usuario_responsavel?: string | null
-          usuario_role?: string | null
-        }
-        Relationships: []
       }
       taf_metas: {
         Row: {
@@ -2001,13 +1663,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tp_higienizacoes_equipe_id_fkey"
-            columns: ["equipe_id"]
-            isOneToOne: false
-            referencedRelation: "equipes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "tp_higienizacoes_responsavel_id_fkey"
             columns: ["responsavel_id"]
             isOneToOne: false
@@ -2019,18 +1674,15 @@ export type Database = {
       tp_verificacoes: {
         Row: {
           ano_referencia: number
-          assinatura_digital: Json | null
           base: string
           created_at: string | null
           data_verificacao: string
-          documento_enviado: boolean | null
           equipe_id: string | null
           id: string
           mes_referencia: number
           observacoes: string | null
           responsavel_id: string | null
           responsavel_nome: string
-          status_assinatura: string | null
           total_verificados: number
           tp_conformes: number
           tp_nao_conformes: number
@@ -2038,18 +1690,15 @@ export type Database = {
         }
         Insert: {
           ano_referencia: number
-          assinatura_digital?: Json | null
           base: string
           created_at?: string | null
           data_verificacao?: string
-          documento_enviado?: boolean | null
           equipe_id?: string | null
           id?: string
           mes_referencia: number
           observacoes?: string | null
           responsavel_id?: string | null
           responsavel_nome: string
-          status_assinatura?: string | null
           total_verificados?: number
           tp_conformes?: number
           tp_nao_conformes?: number
@@ -2057,18 +1706,15 @@ export type Database = {
         }
         Update: {
           ano_referencia?: number
-          assinatura_digital?: Json | null
           base?: string
           created_at?: string | null
           data_verificacao?: string
-          documento_enviado?: boolean | null
           equipe_id?: string | null
           id?: string
           mes_referencia?: number
           observacoes?: string | null
           responsavel_id?: string | null
           responsavel_nome?: string
-          status_assinatura?: string | null
           total_verificados?: number
           tp_conformes?: number
           tp_nao_conformes?: number
@@ -2171,163 +1817,6 @@ export type Database = {
           },
         ]
       }
-      uniformes: {
-        Row: {
-          ano_referencia: number
-          base: string
-          bermudas_bombeiro: string
-          bermudas_imagem_url: string | null
-          bermudas_observacoes: string | null
-          bombeiro_id: string | null
-          bombeiro_nome: string
-          bota_imagem_url: string | null
-          bota_observacoes: string | null
-          bota_seguranca: string
-          calcas_bombeiro: string
-          calcas_imagem_url: string | null
-          calcas_observacoes: string | null
-          camisas_bombeiro: string
-          camisas_imagem_url: string | null
-          camisas_observacoes: string | null
-          cinto_bombeiro: string
-          cinto_imagem_url: string | null
-          cinto_observacoes: string | null
-          created_at: string | null
-          data_verificacao: string
-          equipe_id: string | null
-          gandolas_bombeiro: string
-          gandolas_imagem_url: string | null
-          gandolas_observacoes: string | null
-          id: string
-          itens_conformes: number
-          itens_nao_conformes: number
-          mes_referencia: number
-          observacoes_gerais: string | null
-          oculos_imagem_url: string | null
-          oculos_observacoes: string | null
-          oculos_protetor: string
-          percentual_conformidade: number | null
-          responsavel_id: string | null
-          responsavel_nome: string
-          status: string
-          tarjeta_identificacao: string
-          tarjeta_imagem_url: string | null
-          tarjeta_observacoes: string | null
-          total_itens_verificados: number
-          updated_at: string | null
-        }
-        Insert: {
-          ano_referencia: number
-          base: string
-          bermudas_bombeiro?: string
-          bermudas_imagem_url?: string | null
-          bermudas_observacoes?: string | null
-          bombeiro_id?: string | null
-          bombeiro_nome: string
-          bota_imagem_url?: string | null
-          bota_observacoes?: string | null
-          bota_seguranca?: string
-          calcas_bombeiro?: string
-          calcas_imagem_url?: string | null
-          calcas_observacoes?: string | null
-          camisas_bombeiro?: string
-          camisas_imagem_url?: string | null
-          camisas_observacoes?: string | null
-          cinto_bombeiro?: string
-          cinto_imagem_url?: string | null
-          cinto_observacoes?: string | null
-          created_at?: string | null
-          data_verificacao?: string
-          equipe_id?: string | null
-          gandolas_bombeiro?: string
-          gandolas_imagem_url?: string | null
-          gandolas_observacoes?: string | null
-          id?: string
-          itens_conformes?: number
-          itens_nao_conformes?: number
-          mes_referencia: number
-          observacoes_gerais?: string | null
-          oculos_imagem_url?: string | null
-          oculos_observacoes?: string | null
-          oculos_protetor?: string
-          percentual_conformidade?: number | null
-          responsavel_id?: string | null
-          responsavel_nome: string
-          status?: string
-          tarjeta_identificacao?: string
-          tarjeta_imagem_url?: string | null
-          tarjeta_observacoes?: string | null
-          total_itens_verificados?: number
-          updated_at?: string | null
-        }
-        Update: {
-          ano_referencia?: number
-          base?: string
-          bermudas_bombeiro?: string
-          bermudas_imagem_url?: string | null
-          bermudas_observacoes?: string | null
-          bombeiro_id?: string | null
-          bombeiro_nome?: string
-          bota_imagem_url?: string | null
-          bota_observacoes?: string | null
-          bota_seguranca?: string
-          calcas_bombeiro?: string
-          calcas_imagem_url?: string | null
-          calcas_observacoes?: string | null
-          camisas_bombeiro?: string
-          camisas_imagem_url?: string | null
-          camisas_observacoes?: string | null
-          cinto_bombeiro?: string
-          cinto_imagem_url?: string | null
-          cinto_observacoes?: string | null
-          created_at?: string | null
-          data_verificacao?: string
-          equipe_id?: string | null
-          gandolas_bombeiro?: string
-          gandolas_imagem_url?: string | null
-          gandolas_observacoes?: string | null
-          id?: string
-          itens_conformes?: number
-          itens_nao_conformes?: number
-          mes_referencia?: number
-          observacoes_gerais?: string | null
-          oculos_imagem_url?: string | null
-          oculos_observacoes?: string | null
-          oculos_protetor?: string
-          percentual_conformidade?: number | null
-          responsavel_id?: string | null
-          responsavel_nome?: string
-          status?: string
-          tarjeta_identificacao?: string
-          tarjeta_imagem_url?: string | null
-          tarjeta_observacoes?: string | null
-          total_itens_verificados?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "uniformes_bombeiro_id_fkey"
-            columns: ["bombeiro_id"]
-            isOneToOne: false
-            referencedRelation: "bombeiros"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "uniformes_equipe_id_fkey"
-            columns: ["equipe_id"]
-            isOneToOne: false
-            referencedRelation: "equipes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "uniformes_responsavel_id_fkey"
-            columns: ["responsavel_id"]
-            isOneToOne: false
-            referencedRelation: "bombeiros"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       viaturas: {
         Row: {
           created_at: string
@@ -2336,7 +1825,6 @@ export type Database = {
           nome_viatura: string
           observacoes: string | null
           prefixo: string
-          qr_code: string | null
           status: string
           tipo: string
           updated_at: string
@@ -2348,7 +1836,6 @@ export type Database = {
           nome_viatura: string
           observacoes?: string | null
           prefixo: string
-          qr_code?: string | null
           status?: string
           tipo?: string
           updated_at?: string
@@ -2360,7 +1847,6 @@ export type Database = {
           nome_viatura?: string
           observacoes?: string | null
           prefixo?: string
-          qr_code?: string | null
           status?: string
           tipo?: string
           updated_at?: string
@@ -2369,112 +1855,9 @@ export type Database = {
       }
     }
     Views: {
-      vw_uniformes_estatisticas_mensais: {
-        Row: {
-          ano_referencia: number | null
-          aprovados: number | null
-          base: string | null
-          media_conformidade: number | null
-          mes_referencia: number | null
-          pendentes: number | null
-          reprovados: number | null
-          total_conformes: number | null
-          total_nao_conformes: number | null
-          total_verificacoes: number | null
-        }
-        Relationships: []
-      }
-      vw_uniformes_itens_problematicos: {
-        Row: {
-          item: string | null
-          nao_conformes: number | null
-          percentual_problemas: number | null
-          total: number | null
-        }
-        Relationships: []
-      }
-      vw_uniformes_ranking_bombeiros: {
-        Row: {
-          base: string | null
-          bombeiro_id: string | null
-          bombeiro_nome: string | null
-          media_conformidade: number | null
-          total_aprovados: number | null
-          total_verificacoes: number | null
-          ultima_verificacao: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "uniformes_bombeiro_id_fkey"
-            columns: ["bombeiro_id"]
-            isOneToOne: false
-            referencedRelation: "bombeiros"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
-      fn_create_taf_avaliacao: {
-        Args: {
-          p_abdominais_realizadas: number
-          p_aprovado: boolean
-          p_avaliador_nome?: string
-          p_bombeiro_id: string
-          p_data_teste?: string
-          p_faixa_etaria: string
-          p_flexoes_realizadas: number
-          p_idade_na_data: number
-          p_observacoes?: string
-          p_polichinelos_realizados: number
-          p_tempo_limite_minutos?: number
-          p_tempo_total_segundos: number
-        }
-        Returns: string
-      }
-      fn_delete_taf_avaliacao: {
-        Args: { p_id: string; p_motivo_exclusao?: string }
-        Returns: boolean
-      }
-      fn_read_taf_avaliacoes: {
-        Args: {
-          p_aprovado?: boolean
-          p_bombeiro_id?: string
-          p_data_fim?: string
-          p_data_inicio?: string
-          p_limit?: number
-          p_offset?: number
-        }
-        Returns: {
-          abdominais_realizadas: number
-          aprovado: boolean
-          avaliador_nome: string
-          bombeiro_id: string
-          created_at: string
-          data_teste: string
-          faixa_etaria: string
-          flexoes_realizadas: number
-          id: string
-          idade_na_data: number
-          observacoes: string
-          polichinelos_realizados: number
-          tempo_limite_minutos: number
-          tempo_total_segundos: number
-          updated_at: string
-        }[]
-      }
-      fn_update_taf_avaliacao: {
-        Args: {
-          p_abdominais_realizadas?: number
-          p_aprovado?: boolean
-          p_flexoes_realizadas?: number
-          p_id: string
-          p_observacoes?: string
-          p_polichinelos_realizados?: number
-          p_tempo_total_segundos?: number
-        }
-        Returns: boolean
-      }
       get_alertas_vencimento_agentes: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2510,42 +1893,9 @@ export type Database = {
           total_avaliacoes: number
         }[]
       }
-      get_taf_estatisticas_completas: {
-        Args: { p_data_fim?: string; p_data_inicio?: string }
-        Returns: {
-          bombeiros_pendentes: number
-          evolucao_mensal: Json
-          media_abdominais: number
-          media_flexoes: number
-          media_polichinelos: number
-          media_tempo_segundos: number
-          taxa_aprovacao: number
-          total_avaliacoes: number
-        }[]
-      }
-      get_taf_historico: {
-        Args:
-          | { p_bombeiro_id: string }
-          | { p_bombeiro_id: string; p_limite?: number }
-        Returns: {
-          abdominais_realizadas: number
-          aprovado: boolean
-          created_at: string
-          data_teste: string
-          flexoes_realizadas: number
-          id: string
-          observacoes: string
-          polichinelos_realizados: number
-          tempo_total_segundos: number
-        }[]
-      }
       nextval: {
         Args: { sequence_name: string }
         Returns: number
-      }
-      validate_checklist_itens: {
-        Args: { itens_json: Json }
-        Returns: boolean
       }
     }
     Enums: {

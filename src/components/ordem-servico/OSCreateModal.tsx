@@ -118,7 +118,7 @@ const OSCreateModal: React.FC<OSCreateModalProps> = ({ isOpen, onClose, tipoInic
 
   const handleSave = () => {
     // Validação usando a função do sistema
-    const validacao = validarDadosOS(formData as Partial<OrdemServico>);
+    const validacao = validarDadosOS(formData);
     
     if (!validacao.valido) {
       alert('Erros encontrados:\n' + validacao.erros.join('\n'));

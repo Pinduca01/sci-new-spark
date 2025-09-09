@@ -332,7 +332,7 @@ export const InspecaoForm = ({
             </CardContent>
           </Card>
 
-          {itensVerificados.some(item => item.conforme === false) && (
+          {statusGeral === 'nao_conforme' && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>

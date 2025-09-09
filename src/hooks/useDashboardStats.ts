@@ -133,7 +133,7 @@ export const useDashboardStats = (mes: number, ano: number) => {
       ]);
 
       const naoConformidades = checklists.data?.filter(c => 
-        c.itens_checklist && Array.isArray(c.itens_checklist) && c.itens_checklist.some((item: any) => item.status === 'nao_conforme')
+        c.itens && c.itens.some(item => item.status === 'nao_conforme')
       ).length || 0;
 
       return {

@@ -380,7 +380,7 @@ export const ChecklistForm = ({ tipo, viaturaId, viaturaPrefixo, onClose, onSave
           data_checklist: checklistData.data_checklist,
           bombeiro_responsavel: checklistData.bombeiro_responsavel,
           observacoes_gerais: checklistData.observacoes_gerais,
-          itens_checklist: checklistData.itens_checklist as any,
+          itens_checklist: checklistData.itens_checklist as unknown as Json,
           timestamp_conclusao: timestampConclusao
         })
         .select('id')

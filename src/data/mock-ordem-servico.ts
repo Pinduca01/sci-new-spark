@@ -174,10 +174,10 @@ export const mockOrdemServico: OrdemServico[] = [
 // Estatísticas mockadas
 export const mockEstatisticasOS: EstatisticasOS = {
   total_os: 8,
-  abertas: 2,
   pendentes: 4,
   em_andamento: 2,
   concluidas: 2,
+  canceladas: 0,
   por_tipo: {
     'Estrutural': 2,
     'Viatura': 2,
@@ -277,8 +277,6 @@ export const obterEstatisticasAtualizadas = (osLista: OrdemServico[] = mockOrdem
   return {
     total_os: osLista.length,
     abertas: osLista.filter(os => os.status === 'Aberta').length,
-    pendentes: osLista.filter(os => os.status === 'Pendente').length,
-    em_andamento: osLista.filter(os => os.status === 'Em Andamento').length,
     concluidas: osLista.filter(os => os.status === 'Concluída').length,
     por_tipo: {
       'Estrutural': osLista.filter(os => os.tipo_chamado === 'Estrutural').length,

@@ -90,10 +90,7 @@ export const HistoricoChecklists = ({ viaturaId, tipoFiltro }: HistoricoChecklis
         return;
       }
 
-      setChecklists((data as any[]).map(item => ({
-        ...item,
-        itens_checklist: Array.isArray(item.itens_checklist) ? item.itens_checklist : []
-      })) || []);
+      setChecklists(data || []);
     } catch (error) {
       console.error("Erro ao buscar checklists:", error);
     } finally {

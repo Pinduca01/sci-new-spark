@@ -93,8 +93,6 @@ export interface FiltrosOS {
 export interface EstatisticasOS {
   total_os: number;
   abertas: number;
-  pendentes: number;
-  em_andamento: number;
   concluidas: number;
   por_tipo: Record<TipoOS, number>;
   tempo_medio_conclusao: number; // em dias
