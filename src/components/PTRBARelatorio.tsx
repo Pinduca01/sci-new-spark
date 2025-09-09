@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
 import { PTRTemasManager, TEMAS_PTR_PADRAO } from './PTRTemasManager';
 import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // Função para calcular duração entre dois horários
 const calcularDuracao = (inicio: string, fim: string): string => {
@@ -572,7 +574,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
       // Formatar dados para o webhook
       const dadosWebhook = {
-        data: formData.data,
+        data: format(new Date(formData.data), 'dd/MM/yyyy', { locale: ptBR }),
         equipe: equipeSelecionada?.nome_equipe || 'Não definida',
         ptrs: instrucoes?.map(ptr => {
           const instrutor = instrutores?.find(i => i.id === ptr.instrutor_id);
