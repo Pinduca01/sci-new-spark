@@ -22,14 +22,29 @@ interface PTRData {
 }
 
 export const usePTRExcelGenerator = () => {
-  const { activeTemplate, getTemplateFile } = usePTRTemplates();
+  const { activeTemplate, getTemplateFile, isLoading } = usePTRTemplates();
 
   const diagnosticLog = (step: string, data?: any) => {
     console.log(`[PTR Excel Generator] ${step}`, data || '');
   };
 
   const generateExcel = async (data: PTRData) => {
-    diagnosticLog('Iniciando geração de Excel', { templateAtivo: !!activeTemplate, dadosRecebidos: !!data });
+    diagnosticLog('Iniciando geração de Excel', { 
+      templateAtivo: !!activeTemplate, 
+      dadosRecebidos: !!data,
+      carregando: isLoading 
+    });
+    
+    // Check if templates are still loading
+    if (isLoading) {
+      diagnosticLog('Templates ainda carregando, aguarde...');
+      toast({
+        title: "Aguarde",
+        description: "Templates ainda estão sendo carregados. Tente novamente em alguns segundos.",
+        variant: "default"
+      });
+      return false;
+    }
     
     if (!activeTemplate) {
       diagnosticLog('Erro: Template não configurado');
@@ -233,6 +248,12 @@ export const usePTRExcelGenerator = () => {
   };
 
   const validateTemplate = () => {
+    // Check if templates are still loading
+    if (isLoading) {
+      diagnosticLog('Templates ainda carregando');
+      return false;
+    }
+    
     if (!activeTemplate) {
       diagnosticLog('Validação falhou: Nenhum template ativo');
       return false;
@@ -257,6 +278,7 @@ export const usePTRExcelGenerator = () => {
 
   const getDebugInfo = () => {
     return {
+      isLoading,
       hasActiveTemplate: !!activeTemplate,
       activeTemplateName: activeTemplate?.name,
       templateMappings: activeTemplate?.mappings,
@@ -268,7 +290,8 @@ export const usePTRExcelGenerator = () => {
     generateExcel,
     validateTemplate,
     getDebugInfo,
-    hasActiveTemplate: !!activeTemplate,
-    activeTemplateName: activeTemplate?.name
+    hasActiveTemplate: !!activeTemplate && !isLoading,
+    activeTemplateName: activeTemplate?.name,
+    isLoading
   };
 };

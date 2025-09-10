@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 export interface PTRTemplate {
@@ -33,35 +33,62 @@ interface StoredTemplate {
 
 const STORAGE_KEY = 'ptr-excel-templates';
 
-// Helper functions for robust Base64 conversion
+// Cache para conversões já realizadas
+const templateCache = new Map<string, ArrayBuffer>();
+
+// Helper functions for robust Base64 conversion with caching
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  const chunkSize = 8192;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  try {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    return btoa(binary);
+  } catch (error) {
+    console.error('[PTR Templates] Erro na conversão para Base64:', error);
+    throw error;
   }
-  return btoa(binary);
 };
 
-const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
+const base64ToArrayBuffer = (base64: string, cacheKey?: string): ArrayBuffer => {
   try {
+    // Check cache first
+    if (cacheKey && templateCache.has(cacheKey)) {
+      return templateCache.get(cacheKey)!;
+    }
+
     const binaryString = atob(base64);
     const len = binaryString.length;
+    
+    // Validate size before processing
+    if (len > 10 * 1024 * 1024) { // 10MB limit
+      throw new Error('Template muito grande (>10MB)');
+    }
+    
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    return bytes.buffer;
+    
+    const buffer = bytes.buffer;
+    
+    // Cache the result
+    if (cacheKey) {
+      templateCache.set(cacheKey, buffer);
+    }
+    
+    return buffer;
   } catch (error) {
     console.error('[PTR Templates] Erro na conversão Base64:', error);
     throw error;
   }
 };
 
-// Helper to safely load templates from storage
-const loadTemplatesFromStorage = (): PTRTemplate[] => {
+// Async helper to safely load templates from storage
+const loadTemplatesFromStorageAsync = async (): Promise<PTRTemplate[]> => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return [];
@@ -71,10 +98,13 @@ const loadTemplatesFromStorage = (): PTRTemplate[] => {
     
     for (const stored of storedTemplates) {
       try {
+        // Use cache key for this template
+        const cacheKey = `template-${stored.id}`;
+        
         const template: PTRTemplate = {
           id: stored.id,
           name: stored.name,
-          file: base64ToArrayBuffer(stored.file),
+          file: base64ToArrayBuffer(stored.file, cacheKey),
           mappings: stored.mappings,
           createdAt: new Date(stored.createdAt)
         };
@@ -94,17 +124,21 @@ const loadTemplatesFromStorage = (): PTRTemplate[] => {
   }
 };
 
-// Helper to safely load active template from storage
-const loadActiveTemplateFromStorage = (): PTRTemplate | null => {
+// Async helper to safely load active template from storage  
+const loadActiveTemplateFromStorageAsync = async (): Promise<PTRTemplate | null> => {
   try {
     const stored = localStorage.getItem(`${STORAGE_KEY}-active`);
     if (!stored) return null;
     
     const storedTemplate: StoredTemplate = JSON.parse(stored);
+    
+    // Use cache key for active template
+    const cacheKey = `active-${storedTemplate.id}`;
+    
     const template: PTRTemplate = {
       id: storedTemplate.id,
       name: storedTemplate.name,
-      file: base64ToArrayBuffer(storedTemplate.file),
+      file: base64ToArrayBuffer(storedTemplate.file, cacheKey),
       mappings: storedTemplate.mappings,
       createdAt: new Date(storedTemplate.createdAt)
     };
@@ -119,9 +153,45 @@ const loadActiveTemplateFromStorage = (): PTRTemplate | null => {
 };
 
 export const usePTRTemplates = () => {
-  const [templates, setTemplates] = useState<PTRTemplate[]>(loadTemplatesFromStorage);
+  const [templates, setTemplates] = useState<PTRTemplate[]>([]);
+  const [activeTemplate, setActiveTemplate] = useState<PTRTemplate | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [activeTemplate, setActiveTemplate] = useState<PTRTemplate | null>(loadActiveTemplateFromStorage);
+  // Async loading on mount - prevents blocking initialization
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('[PTR Templates] Iniciando carregamento assíncrono...');
+        
+        // Load templates and active template in parallel
+        const [loadedTemplates, loadedActiveTemplate] = await Promise.all([
+          loadTemplatesFromStorageAsync(),
+          loadActiveTemplateFromStorageAsync()
+        ]);
+        
+        setTemplates(loadedTemplates);
+        setActiveTemplate(loadedActiveTemplate);
+        
+        console.log('[PTR Templates] Carregamento concluído:', {
+          templates: loadedTemplates.length,
+          activeTemplate: loadedActiveTemplate?.name || 'nenhum'
+        });
+      } catch (error) {
+        console.error('[PTR Templates] Erro no carregamento inicial:', error);
+        // Reset to safe state if loading fails
+        setTemplates([]);
+        setActiveTemplate(null);
+        
+        // Clear potentially corrupted data
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(`${STORAGE_KEY}-active`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   const saveTemplate = useCallback(async (template: PTRTemplate) => {
     try {
@@ -219,6 +289,7 @@ export const usePTRTemplates = () => {
   return {
     templates,
     activeTemplate,
+    isLoading,
     saveTemplate,
     deleteTemplate,
     setActive,
