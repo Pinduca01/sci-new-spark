@@ -16,56 +16,112 @@ export interface PTRTemplate {
   createdAt: Date;
 }
 
+interface StoredTemplate {
+  id: string;
+  name: string;
+  file: string; // Base64 in storage
+  mappings: {
+    data?: string;
+    codigo?: string;
+    equipe?: string;
+    participantes_inicio?: string;
+    ptr_inicio?: string;
+    observacoes?: string;
+  };
+  createdAt: string;
+}
+
 const STORAGE_KEY = 'ptr-excel-templates';
 
 // Helper functions for robust Base64 conversion
-const arrayBufferToBase64 = (buffer: Uint8Array): string => {
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
   let binary = '';
-  const len = buffer.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(buffer[i]);
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
   }
   return btoa(binary);
 };
 
 const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  try {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  } catch (error) {
+    console.error('[PTR Templates] Erro na conversão Base64:', error);
+    throw error;
   }
-  return bytes.buffer;
+};
+
+// Helper to safely load templates from storage
+const loadTemplatesFromStorage = (): PTRTemplate[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return [];
+    
+    const storedTemplates: StoredTemplate[] = JSON.parse(stored);
+    const templates: PTRTemplate[] = [];
+    
+    for (const stored of storedTemplates) {
+      try {
+        const template: PTRTemplate = {
+          id: stored.id,
+          name: stored.name,
+          file: base64ToArrayBuffer(stored.file),
+          mappings: stored.mappings,
+          createdAt: new Date(stored.createdAt)
+        };
+        templates.push(template);
+      } catch (error) {
+        console.warn('[PTR Templates] Template corrompido removido:', stored.name, error);
+        continue;
+      }
+    }
+    
+    console.log('[PTR Templates] Templates carregados:', templates.length);
+    return templates;
+  } catch (error) {
+    console.error('[PTR Templates] Erro ao carregar templates, limpando storage:', error);
+    localStorage.removeItem(STORAGE_KEY);
+    return [];
+  }
+};
+
+// Helper to safely load active template from storage
+const loadActiveTemplateFromStorage = (): PTRTemplate | null => {
+  try {
+    const stored = localStorage.getItem(`${STORAGE_KEY}-active`);
+    if (!stored) return null;
+    
+    const storedTemplate: StoredTemplate = JSON.parse(stored);
+    const template: PTRTemplate = {
+      id: storedTemplate.id,
+      name: storedTemplate.name,
+      file: base64ToArrayBuffer(storedTemplate.file),
+      mappings: storedTemplate.mappings,
+      createdAt: new Date(storedTemplate.createdAt)
+    };
+    
+    console.log('[PTR Templates] Template ativo carregado:', template.name);
+    return template;
+  } catch (error) {
+    console.error('[PTR Templates] Erro ao carregar template ativo, removendo:', error);
+    localStorage.removeItem(`${STORAGE_KEY}-active`);
+    return null;
+  }
 };
 
 export const usePTRTemplates = () => {
-  const [templates, setTemplates] = useState<PTRTemplate[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return [];
-      
-      const parsedTemplates = JSON.parse(stored);
-      console.log('[PTR Templates] Templates carregados do localStorage:', parsedTemplates.length);
-      return parsedTemplates;
-    } catch (error) {
-      console.error('[PTR Templates] Erro ao carregar templates:', error);
-      return [];
-    }
-  });
+  const [templates, setTemplates] = useState<PTRTemplate[]>(loadTemplatesFromStorage);
 
-  const [activeTemplate, setActiveTemplate] = useState<PTRTemplate | null>(() => {
-    try {
-      const stored = localStorage.getItem(`${STORAGE_KEY}-active`);
-      if (!stored) return null;
-      
-      const parsedTemplate = JSON.parse(stored);
-      console.log('[PTR Templates] Template ativo carregado:', parsedTemplate.name);
-      return parsedTemplate;
-    } catch (error) {
-      console.error('[PTR Templates] Erro ao carregar template ativo:', error);
-      return null;
-    }
-  });
+  const [activeTemplate, setActiveTemplate] = useState<PTRTemplate | null>(loadActiveTemplateFromStorage);
 
   const saveTemplate = useCallback(async (template: PTRTemplate) => {
     try {
@@ -74,20 +130,14 @@ export const usePTRTemplates = () => {
       const updatedTemplates = [...templates.filter(t => t.id !== template.id), template];
       setTemplates(updatedTemplates);
       
-      // Convert ArrayBuffer to base64 for storage using safer method
-      const uint8Array = new Uint8Array(template.file);
-      const base64 = arrayBufferToBase64(uint8Array);
-      const templateForStorage = {
-        ...template,
-        file: base64
-      };
-      
-      const templatesForStorage = updatedTemplates.map(t => 
-        t.id === template.id ? templateForStorage : {
-          ...t,
-          file: typeof t.file === 'string' ? t.file : arrayBufferToBase64(new Uint8Array(t.file))
-        }
-      );
+      // Convert to storage format
+      const templatesForStorage: StoredTemplate[] = updatedTemplates.map(t => ({
+        id: t.id,
+        name: t.name,
+        file: arrayBufferToBase64(t.file),
+        mappings: t.mappings,
+        createdAt: t.createdAt.toISOString()
+      }));
       
       localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesForStorage));
       console.log('[PTR Templates] Template salvo com sucesso no localStorage');
@@ -109,7 +159,16 @@ export const usePTRTemplates = () => {
   const deleteTemplate = useCallback((templateId: string) => {
     const updatedTemplates = templates.filter(t => t.id !== templateId);
     setTemplates(updatedTemplates);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedTemplates));
+    
+    const templatesForStorage: StoredTemplate[] = updatedTemplates.map(t => ({
+      id: t.id,
+      name: t.name,
+      file: arrayBufferToBase64(t.file),
+      mappings: t.mappings,
+      createdAt: t.createdAt.toISOString()
+    }));
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(templatesForStorage));
     
     if (activeTemplate?.id === templateId) {
       setActiveTemplate(null);
@@ -125,10 +184,14 @@ export const usePTRTemplates = () => {
   const setActive = useCallback((template: PTRTemplate | null) => {
     console.log('[PTR Templates] Definindo template ativo:', template?.name || 'nenhum');
     setActiveTemplate(template);
+    
     if (template) {
-      const templateForStorage = {
-        ...template,
-        file: typeof template.file === 'string' ? template.file : arrayBufferToBase64(new Uint8Array(template.file))
+      const templateForStorage: StoredTemplate = {
+        id: template.id,
+        name: template.name,
+        file: arrayBufferToBase64(template.file),
+        mappings: template.mappings,
+        createdAt: template.createdAt.toISOString()
       };
       localStorage.setItem(`${STORAGE_KEY}-active`, JSON.stringify(templateForStorage));
       console.log('[PTR Templates] Template ativo salvo no localStorage');
@@ -140,18 +203,15 @@ export const usePTRTemplates = () => {
 
   const getTemplateFile = useCallback((template: PTRTemplate) => {
     try {
+      // Template in memory should always have ArrayBuffer
       if (template.file instanceof ArrayBuffer) {
-        console.log('[PTR Templates] Template já é ArrayBuffer, tamanho:', template.file.byteLength);
+        console.log('[PTR Templates] Template válido, tamanho:', template.file.byteLength);
         return template.file;
       }
       
-      // Convert base64 back to ArrayBuffer using safer method
-      console.log('[PTR Templates] Convertendo template de base64 para ArrayBuffer');
-      const arrayBuffer = base64ToArrayBuffer(template.file as string);
-      console.log('[PTR Templates] Conversão concluída, tamanho:', arrayBuffer.byteLength);
-      return arrayBuffer;
+      throw new Error('Template em formato inválido na memória');
     } catch (error) {
-      console.error('[PTR Templates] Erro ao converter template:', error);
+      console.error('[PTR Templates] Erro ao acessar template:', error);
       throw new Error('Template corrompido ou inválido');
     }
   }, []);
