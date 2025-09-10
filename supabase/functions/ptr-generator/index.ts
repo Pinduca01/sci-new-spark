@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { PDFDocument, rgb, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1'
+import { createDoc } from 'https://esm.sh/docx-templates@4.12.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -89,282 +90,100 @@ serve(async (req) => {
   }
 });
 
-function prepararDadosTemplate(dadosPtr: PTRData) {
+function prepararDadosParaTemplate(dadosPtr: PTRData) {
   const equipeNome = typeof dadosPtr.equipe === 'string' ? dadosPtr.equipe : dadosPtr.equipe.nome_equipe;
   
-  // Garantir sempre 11 linhas na tabela de participantes
-  const participantesCompletos: ParticipanteTemplate[] = [];
+  // Preparar participantes exatamente como o template espera
+  const participantes = [];
   
-  dadosPtr.participantes.forEach((participante, index) => {
-    participantesCompletos.push({
-      numeroLinha: index + 1,
+  // Adicionar participantes reais
+  dadosPtr.participantes.forEach((participante) => {
+    participantes.push({
       funcao: participante.funcao || '',
       nome: participante.nome || '',
-      situacao: participante.presente ? 'PRESENTE' : 'AUSENTE',
-      presente: participante.presente
+      situacao: participante.presente ? 'PRESENTE' : 'AUSENTE'
     });
   });
   
-  // Completar com linhas vazias até 11
-  for (let i = dadosPtr.participantes.length; i < 11; i++) {
-    participantesCompletos.push({
-      numeroLinha: i + 1,
+  // Completar com linhas vazias até 11 participantes
+  while (participantes.length < 11) {
+    participantes.push({
       funcao: '',
       nome: '',
-      situacao: '',
-      presente: false
+      situacao: ''
     });
   }
+  
+  // Preparar PTRs com campos separados
+  const ptrs = dadosPtr.ptrs.map((ptr) => ({
+    tipo: ptr.tipo || '',
+    hora_inicio: ptr.hora_inicio || '',
+    hora_fim: ptr.hora_fim || '',
+    duracao: ptr.duracao || '',
+    instrutor_nome: ptr.instrutor_nome || '',
+    observacoes: ptr.observacoes || ''
+  }));
   
   return {
     data: dadosPtr.data,
     equipe: equipeNome,
-    participantesCompletos,
-    ptrs: dadosPtr.ptrs.map((ptr, index) => ({
-      numero: index + 1,
-      tipo: ptr.tipo,
-      horario: `${ptr.hora_inicio} às ${ptr.hora_fim}`,
-      duracao: ptr.duracao || '',
-      instrutor_nome: ptr.instrutor_nome || '',
-      observacoes: ptr.observacoes || ''
-    })),
-    totalParticipantes: dadosPtr.participantes.length,
-    participantesPresentes: dadosPtr.participantes.filter(p => p.presente).length,
-    participantesAusentes: dadosPtr.participantes.filter(p => !p.presente).length
+    participantes: participantes,
+    ptrs: ptrs,
+    fotos: [] // Placeholder para fotos futuras
   };
 }
 
 async function gerarDOCXEstruturado(dadosPtr: PTRData, supabase: any): Promise<Response> {
-  console.log('📄 Gerando DOCX estruturado baseado no template...');
+  console.log('📄 Gerando DOCX a partir do template real...');
   
-  const dadosTemplate = prepararDadosTemplate(dadosPtr);
-  console.log('📊 Dados preparados:', {
-    totalLinhas: dadosTemplate.participantesCompletos.length,
-    participantesComNome: dadosTemplate.participantesCompletos.filter(p => p.nome).length
-  });
-  
-  const htmlContent = gerarHTMLTemplate(dadosTemplate);
-  const docxContent = converterParaDOCX(htmlContent);
-  
-  console.log(`✅ DOCX estruturado criado! Tamanho: ${docxContent.length} bytes`);
-
-  const filename = `PTR-BA-${dadosPtr.data.replace(/\//g, '-')}.docx`;
-  
-  return new Response(docxContent, {
-    headers: {
-      ...corsHeaders,
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Length': docxContent.length.toString(),
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
+  try {
+    // Baixar o template DOCX do bucket Supabase
+    const { data: templateData, error: downloadError } = await supabase.storage
+      .from('Template - PTR-BA')
+      .download('arquivo ptr place.docx');
+    
+    if (downloadError) {
+      throw new Error(`Erro ao baixar template: ${downloadError.message}`);
     }
-  });
+    
+    console.log('📋 Template baixado com sucesso');
+    
+    // Converter arquivo para buffer
+    const templateBuffer = await templateData.arrayBuffer();
+    
+    // Preparar dados no formato correto para o template
+    const dadosTemplate = prepararDadosParaTemplate(dadosPtr);
+    console.log('📊 Dados preparados para template:', JSON.stringify(dadosTemplate, null, 2));
+    
+    // Processar template com os dados
+    const docxBuffer = await createDoc({
+      template: new Uint8Array(templateBuffer),
+      data: dadosTemplate,
+      cmdDelimiter: ['{', '}'],
+    });
+    
+    console.log(`✅ DOCX real criado! Tamanho: ${docxBuffer.length} bytes`);
+
+    const filename = `PTR-BA-${dadosPtr.data.replace(/\//g, '-')}.docx`;
+    
+    return new Response(docxBuffer, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Length': docxBuffer.length.toString(),
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro ao processar template DOCX:', error);
+    throw new Error(`Falha ao gerar DOCX: ${error.message}`);
+  }
 }
 
-function gerarHTMLTemplate(dadosTemplate: any): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>PTR-BA - ${dadosTemplate.data}</title>
-    <style>
-        @page { 
-            size: A4; 
-            margin: 2cm 1.5cm; 
-        }
-        body { 
-            font-family: 'Times New Roman', serif; 
-            font-size: 11pt; 
-            line-height: 1.3; 
-            margin: 0; 
-            padding: 0;
-            color: #000;
-        }
-        .header { 
-            text-align: center; 
-            margin-bottom: 25px; 
-            border-bottom: 2px solid #000; 
-            padding-bottom: 15px;
-        }
-        .title { 
-            font-size: 16pt; 
-            font-weight: bold; 
-            margin-bottom: 10px; 
-            text-transform: uppercase;
-        }
-        .info { 
-            font-size: 12pt; 
-            margin-bottom: 10px; 
-        }
-        .section { 
-            margin-bottom: 25px; 
-            page-break-inside: avoid;
-        }
-        .section-title { 
-            font-size: 12pt; 
-            font-weight: bold; 
-            margin-bottom: 15px; 
-            padding: 8px; 
-            background-color: #f0f0f0; 
-            border: 1px solid #000;
-            text-align: center;
-        }
-        .participants-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-            font-size: 10pt;
-        }
-        .participants-table th, 
-        .participants-table td { 
-            border: 1px solid #000; 
-            padding: 8px; 
-            text-align: left; 
-            vertical-align: middle;
-            height: 25px;
-        }
-        .participants-table th { 
-            background-color: #e0e0e0; 
-            font-weight: bold; 
-            text-align: center;
-        }
-        .ptr-item { 
-            margin-bottom: 15px; 
-            padding: 10px; 
-            border: 1px solid #ccc; 
-            background-color: #f9f9f9;
-        }
-        .ptr-title { 
-            font-weight: bold; 
-            margin-bottom: 8px; 
-            font-size: 11pt;
-        }
-        .ptr-details { 
-            margin-left: 15px; 
-            font-size: 10pt; 
-            line-height: 1.4;
-        }
-        .signature-section {
-            margin-top: 50px;
-            display: flex;
-            justify-content: space-between;
-            page-break-inside: avoid;
-        }
-        .signature-box {
-            width: 45%;
-            text-align: center;
-            border-top: 1px solid #000;
-            padding-top: 10px;
-            margin-top: 40px;
-        }
-        .status-presente {
-            color: #006400;
-            font-weight: bold;
-        }
-        .status-ausente {
-            color: #8b0000;
-            font-weight: bold;
-        }
-        .summary-info {
-            margin-bottom: 15px;
-            padding: 8px;
-            background-color: #f5f5f5;
-            border-left: 3px solid #333;
-            font-size: 10pt;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="title">RELATÓRIO DE TREINAMENTO PERIÓDICO - PTR-BA</div>
-        <div class="info">
-            <strong>Data:</strong> ${dadosTemplate.data}<br>
-            <strong>Equipe:</strong> ${dadosTemplate.equipe}
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">PARTICIPANTES DO TREINAMENTO</div>
-        
-        <div class="summary-info">
-            <strong>Resumo:</strong> 
-            ${dadosTemplate.totalParticipantes} participantes cadastrados | 
-            ${dadosTemplate.participantesPresentes} presentes | 
-            ${dadosTemplate.participantesAusentes} ausentes
-        </div>
-        
-        <table class="participants-table">
-            <thead>
-                <tr>
-                    <th style="width: 8%;">Nº</th>
-                    <th style="width: 25%;">FUNÇÃO</th>
-                    <th style="width: 40%;">NOME COMPLETO</th>
-                    <th style="width: 15%;">SITUAÇÃO</th>
-                    <th style="width: 12%;">ASSINATURA</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${dadosTemplate.participantesCompletos.map(p => `
-                    <tr>
-                        <td style="text-align: center;">${p.numeroLinha}</td>
-                        <td>${p.funcao}</td>
-                        <td>${p.nome}</td>
-                        <td style="text-align: center;" class="${p.presente && p.nome ? 'status-presente' : (!p.presente && p.nome) ? 'status-ausente' : ''}">${p.situacao}</td>
-                        <td style="border-bottom: 1px solid #ccc;"></td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="section">
-        <div class="section-title">TREINAMENTOS REALIZADOS (PTR)</div>
-        ${dadosTemplate.ptrs.map(ptr => `
-            <div class="ptr-item">
-                <div class="ptr-title">${ptr.numero}. ${ptr.tipo}</div>
-                <div class="ptr-details">
-                    <div><strong>Horário:</strong> ${ptr.horario}</div>
-                    ${ptr.duracao ? `<div><strong>Duração:</strong> ${ptr.duracao}</div>` : ''}
-                    ${ptr.instrutor_nome ? `<div><strong>Instrutor:</strong> ${ptr.instrutor_nome}</div>` : ''}
-                    ${ptr.observacoes ? `<div><strong>Observações:</strong> ${ptr.observacoes}</div>` : ''}
-                </div>
-            </div>
-        `).join('')}
-    </div>
-
-    <div class="signature-section">
-        <div class="signature-box">
-            <strong>Responsável pelo Treinamento</strong><br><br>
-            Nome: ____________________________________<br><br>
-            Assinatura: _______________________________<br>
-            Data: _____ / _____ / _______
-        </div>
-        <div class="signature-box">
-            <strong>Supervisor de Equipe</strong><br><br>
-            Nome: ____________________________________<br><br>
-            Assinatura: _______________________________<br>
-            Data: _____ / _____ / _______
-        </div>
-    </div>
-
-    <div style="margin-top: 30px; font-size: 9pt; text-align: center; color: #666;">
-        Documento gerado automaticamente em ${new Date().toLocaleString('pt-BR')}
-    </div>
-</body>
-</html>`;
-}
-
-function converterParaDOCX(htmlContent: string): Uint8Array {
-  // Por enquanto retornamos HTML estruturado
-  // TODO: Implementar biblioteca docx-templates para conversão real
-  console.log('🔧 Convertendo HTML para formato DOCX...');
-  
-  const encoder = new TextEncoder();
-  return encoder.encode(htmlContent);
-}
 
 async function criarPDFEstruturado(dadosPtr: PTRData): Promise<Response> {
   console.log('📄 Criando PDF estruturado...');
