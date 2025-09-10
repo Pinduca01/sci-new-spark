@@ -69,11 +69,25 @@ serve(async (req) => {
 
     console.log('✅ Template baixado, processando...');
 
-    // Converter para ArrayBuffer
+    // Converter para ArrayBuffer e validar
     const arrayBuffer = await templateBuffer.arrayBuffer();
     
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      console.log('⚠️ Template vazio ou corrompido, criando PDF do zero...');
+      return await criarPDFDoZero(dadosPtr);
+    }
+
+    console.log(`📄 Template carregado: ${arrayBuffer.byteLength} bytes`);
+    
     // Carregar PDF template
-    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    let pdfDoc;
+    try {
+      pdfDoc = await PDFDocument.load(arrayBuffer);
+      console.log('✅ Template PDF carregado com sucesso');
+    } catch (error) {
+      console.log('⚠️ Erro ao carregar template PDF, criando do zero...', error.message);
+      return await criarPDFDoZero(dadosPtr);
+    }
     const form = pdfDoc.getForm();
 
     console.log('📝 Preenchendo campos do template...');
@@ -164,15 +178,27 @@ serve(async (req) => {
     // Gerar PDF final
     const pdfBytes = await pdfDoc.save();
 
-    console.log('✅ PDF gerado com sucesso!');
+    // Validar se o PDF foi gerado corretamente
+    if (!pdfBytes || pdfBytes.length === 0) {
+      throw new Error('Falha na geração do PDF - arquivo vazio');
+    }
 
-    return new Response(pdfBytes, {
+    console.log(`✅ PDF gerado com sucesso! Tamanho: ${pdfBytes.length} bytes`);
+
+    // Criar resposta com headers corretos para download de PDF
+    const response = new Response(pdfBytes, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="PTR-BA-${dadosPtr.data}.pdf"`
+        'Content-Length': pdfBytes.length.toString(),
+        'Content-Disposition': `attachment; filename="PTR-BA-${dadosPtr.data.replace(/\//g, '-')}.pdf"`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
+
+    return response;
 
   } catch (error) {
     console.error('❌ Erro na geração do PDF:', error);
@@ -309,11 +335,23 @@ async function criarPDFDoZero(dadosPtr: any): Promise<Response> {
 
   const pdfBytes = await pdfDoc.save();
 
+  // Validar PDF gerado
+  if (!pdfBytes || pdfBytes.length === 0) {
+    throw new Error('Falha na criação do PDF do zero - arquivo vazio');
+  }
+
+  console.log(`✅ PDF criado do zero com sucesso! Tamanho: ${pdfBytes.length} bytes`);
+
   return new Response(pdfBytes, {
     headers: {
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="PTR-BA-${dadosPtr.data}.pdf"`
+      'Content-Length': pdfBytes.length.toString(),
+      'Content-Disposition': `attachment; filename="PTR-BA-${dadosPtr.data.replace(/\//g, '-')}.pdf"`,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     }
   });
 }
