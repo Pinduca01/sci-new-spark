@@ -120,6 +120,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const [showGerenciadorTemas, setShowGerenciadorTemas] = useState(false);
   const [selectedParticipante, setSelectedParticipante] = useState<string>('');
   const [equipeInicializada, setEquipeInicializada] = useState(false);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
 
   // Bombeiros da equipe selecionada - otimizado com useMemo
   const bombeirosDaEquipe = useMemo(() => 
@@ -496,6 +497,82 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   };
 
   // Função para enviar dados para webhook N8N
+  // Função para gerar PDF usando template
+  const handleGerarPDF = async () => {
+    if (!validarFormulario()) return;
+
+    try {
+      setGerandoPdf(true);
+      
+      // Usar os mesmos dados do webhook para gerar o PDF
+      const equipeSelecionada = equipes.find(e => e.id === formData.equipe_id);
+      
+      // Montar dados básicos (sem precisar buscar do banco)
+      const dadosParaPdf = {
+        data: format(new Date(formData.data), 'dd/MM/yyyy', { locale: ptBR }),
+        equipe: equipeSelecionada?.nome_equipe || 'Não definida',
+        ptrs: formData.ptrs.map(ptr => {
+          const instrutor = bombeiros.find(b => b.id === ptr.instrutor_id);
+          return {
+            tipo: ptr.tipo,
+            hora_inicio: ptr.hora_inicio,
+            hora_fim: ptr.hora_fim,
+            duracao: calcularDuracao(ptr.hora_inicio, ptr.hora_fim),
+            instrutor_nome: instrutor?.nome || 'Não informado',
+            observacoes: ptr.observacoes || ''
+          };
+        }),
+        participantes: participantesSelecionados.map(p => ({
+          nome: p.nome,
+          funcao: p.funcao,
+          presente: presencas[p.id] || false,
+          situacao: situacoesBa[p.id] || 'A'
+        }))
+      };
+
+      console.log('📄 Enviando dados para geração de PDF:', dadosParaPdf);
+
+      // Chamar edge function para gerar PDF
+      const { data, error } = await supabase.functions.invoke('ptr-pdf-generator', {
+        body: { dadosPtr: dadosParaPdf }
+      });
+
+      if (error) {
+        console.error('❌ Erro ao gerar PDF:', error);
+        throw error;
+      }
+
+      // Se retornou dados, significa que é o PDF
+      if (data) {
+        // Criar URL para download do PDF
+        const blob = new Blob([data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PTR-BA-${formData.data}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        toast({
+          title: "✅ PDF Gerado!",
+          description: "O PDF do PTR-BA foi gerado e baixado com sucesso.",
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao gerar PDF:', error);
+      toast({
+        title: "❌ Erro na Geração do PDF",
+        description: "Ocorreu um erro ao gerar o PDF. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setGerandoPdf(false);
+    }
+  };
+
   const enviarParaWebhookN8N = async (ptrIds: string[]) => {
     console.log('🔄 Iniciando envio para webhook N8N com PTR IDs:', ptrIds);
     
@@ -944,32 +1021,50 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           </div>
 
           <div className="flex justify-between pt-6 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando || gerandoPdf}>
               <X className="w-4 h-4 mr-2" />
               Cancelar
             </Button>
             
-            {/* Mostrar progresso durante salvamento */}
-            {salvando && etapaSalvamento && (
-              <div className="flex items-center space-x-3 text-sm text-muted-foreground">
-                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                <span>{etapaSalvamento}</span>
-              </div>
-            )}
-            
-            <Button onClick={handleSalvar} disabled={salvando} className="min-w-[160px]">
-              {salvando ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Processando...</span>
+            <div className="flex items-center space-x-3">
+              {/* Mostrar progresso durante salvamento */}
+              {(salvando || gerandoPdf) && etapaSalvamento && (
+                <div className="flex items-center space-x-3 text-sm text-muted-foreground">
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span>{etapaSalvamento}</span>
                 </div>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Salvar PTR-BA
-                </>
               )}
-            </Button>
+              
+              <Button 
+                variant="secondary" 
+                onClick={handleGerarPDF} 
+                disabled={salvando || gerandoPdf}
+                className="min-w-[120px]"
+              >
+                {gerandoPdf ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Gerando...</span>
+                  </div>
+                ) : (
+                  'Gerar PDF'
+                )}
+              </Button>
+              
+              <Button onClick={handleSalvar} disabled={salvando || gerandoPdf} className="min-w-[160px]">
+                {salvando ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Processando...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Salvar PTR-BA
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
