@@ -63,6 +63,9 @@ verify_jwt = false
 [functions.ptr-pdf-generator]
 verify_jwt = false
 
+[functions.ptr-generator]
+verify_jwt = false
+
 [edge-runtime]
 enabled = true
 port = 54330

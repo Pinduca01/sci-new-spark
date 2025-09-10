@@ -497,18 +497,18 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   };
 
   // Função para enviar dados para webhook N8N
-  // Função para gerar PDF usando template
-  const handleGerarPDF = async () => {
+  // Função genérica para gerar relatório
+  const gerarRelatorio = async (formato: 'docx' | 'pdf') => {
     if (!validarFormulario()) return;
 
     try {
       setGerandoPdf(true);
       
-      // Usar os mesmos dados do webhook para gerar o PDF
+      // Usar os mesmos dados do webhook para gerar o relatório
       const equipeSelecionada = equipes.find(e => e.id === formData.equipe_id);
       
-      // Montar dados básicos (sem precisar buscar do banco)
-      const dadosParaPdf = {
+      // Montar dados básicos
+      const dadosParaRelatorio = {
         data: format(new Date(formData.data), 'dd/MM/yyyy', { locale: ptBR }),
         equipe: equipeSelecionada?.nome_equipe || 'Não definida',
         ptrs: formData.ptrs.map(ptr => {
@@ -530,48 +530,62 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
         }))
       };
 
-      console.log('📄 Enviando dados para geração de PDF:', dadosParaPdf);
+      console.log(`📄 Enviando dados para geração de ${formato.toUpperCase()}:`, dadosParaRelatorio);
 
-      // Chamar edge function para gerar PDF
-      const { data, error } = await supabase.functions.invoke('ptr-pdf-generator', {
-        body: { dadosPtr: dadosParaPdf }
+      // Chamar novo edge function com parâmetro de formato
+      const response = await fetch(`https://rfgmqogwhlnfrhifsbbg.supabase.co/functions/v1/ptr-generator?format=${formato}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmZ21xb2d3aGxuZnJoaWZzYmJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMTExOTIsImV4cCI6MjA3MDY4NzE5Mn0.LHBul7ZS-hRmOoeVtY5wJkdBsfWtGnRhp48tZRHTNR4`,
+        },
+        body: JSON.stringify({ dadosPtr: dadosParaRelatorio })
       });
 
-      if (error) {
-        console.error('❌ Erro ao gerar PDF:', error);
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+        throw new Error(errorData.error || `Erro HTTP: ${response.status}`);
       }
 
-      // Se retornou dados, significa que é o PDF
-      if (data) {
-        // Criar URL para download do PDF
-        const blob = new Blob([data], { type: 'application/pdf' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `PTR-BA-${formData.data}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+      // Fazer download do arquivo
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const extensao = formato.toUpperCase();
+      const mimeType = formato === 'docx' 
+        ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        : 'application/pdf';
+      
+      a.download = `PTR-BA-${formData.data.replace(/\//g, '-')}.${formato}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
-        toast({
-          title: "✅ PDF Gerado!",
-          description: "O PDF do PTR-BA foi gerado e baixado com sucesso.",
-        });
-      }
+      toast({
+        title: `✅ ${extensao} Gerado!`,
+        description: `O arquivo ${extensao} do PTR-BA foi gerado e baixado com sucesso.`,
+      });
 
     } catch (error) {
-      console.error('❌ Erro ao gerar PDF:', error);
+      console.error(`❌ Erro ao gerar ${formato.toUpperCase()}:`, error);
       toast({
-        title: "❌ Erro na Geração do PDF",
-        description: "Ocorreu um erro ao gerar o PDF. Tente novamente.",
+        title: `❌ Erro na Geração do ${formato.toUpperCase()}`,
+        description: `Ocorreu um erro ao gerar o arquivo. Tente novamente.`,
         variant: "destructive",
       });
     } finally {
       setGerandoPdf(false);
     }
   };
+
+  // Função específica para gerar DOCX
+  const handleGerarDOCX = () => gerarRelatorio('docx');
+
+  // Função específica para gerar PDF
+  const handleGerarPDF = () => gerarRelatorio('pdf');
 
   const enviarParaWebhookN8N = async (ptrIds: string[]) => {
     console.log('🔄 Iniciando envio para webhook N8N com PTR IDs:', ptrIds);
@@ -1034,6 +1048,22 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                   <span>{etapaSalvamento}</span>
                 </div>
               )}
+              
+              <Button 
+                variant="outline" 
+                onClick={handleGerarDOCX} 
+                disabled={salvando || gerandoPdf}
+                className="min-w-[120px]"
+              >
+                {gerandoPdf ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Gerando...</span>
+                  </div>
+                ) : (
+                  'Gerar DOCX'
+                )}
+              </Button>
               
               <Button 
                 variant="secondary" 
