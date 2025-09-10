@@ -187,9 +187,9 @@ const AgentesExtintoresTable = () => {
       };
       
       if (editingAgente) {
-        await updateAgente(editingAgente.id, agenteData);
+        await updateAgente.mutateAsync({ id: editingAgente.id, updates: agenteData });
       } else {
-        await createAgente(agenteData);
+        await createAgente.mutateAsync(agenteData);
       }
       
       setIsDialogOpen(false);
@@ -257,7 +257,7 @@ const AgentesExtintoresTable = () => {
   const handleDeleteConfirm = async () => {
     if (agentToDelete && deleteAgente) {
       try {
-        await deleteAgente(agentToDelete.id);
+        await deleteAgente.mutateAsync(agentToDelete.id);
         setIsDeleteDialogOpen(false);
         setAgentToDelete(null);
       } catch (error) {

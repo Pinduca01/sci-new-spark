@@ -1,4 +1,5 @@
 import { AgenteExtintor, Movimentacao } from '@/hooks/useAgentesExtintores';
+import type { ChecklistAgente } from '@/types/checklist';
 import { FiltroRelatorio } from '@/hooks/useAgentesExtintoresRelatorios';
 
 // Interface para configuração do Excel
