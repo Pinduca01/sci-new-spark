@@ -8,6 +8,7 @@ export interface PTRTemplate {
   mappings: {
     data?: string;
     codigo?: string;
+    equipe?: string;
     participantes_inicio?: string;
     ptr_inicio?: string;
     observacoes?: string;

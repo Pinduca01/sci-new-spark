@@ -14,6 +14,7 @@ import { ImageUpload } from './ImageUpload';
 import { PTRTemasManager, TEMAS_PTR_PADRAO } from './PTRTemasManager';
 import { PTRExcelTemplateManager } from './PTRExcelTemplateManager';
 import { usePTRExcelGenerator } from './PTRExcelGenerator';
+import { PTRExcelDebugModal } from './PTRExcelDebugModal';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -123,6 +124,7 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const [selectedParticipante, setSelectedParticipante] = useState<string>('');
   const [equipeInicializada, setEquipeInicializada] = useState(false);
   const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [showDebugModal, setShowDebugModal] = useState(false);
   
   // Excel Generator Hook
   const { generateExcel, hasActiveTemplate, activeTemplateName } = usePTRExcelGenerator();
@@ -503,7 +505,21 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
 
   // Função para gerar Excel com os dados do formulário
   const handleGerarExcel = async () => {
-    if (!validarFormulario()) return;
+    console.log('[PTR-BA Relatório] Iniciando geração de Excel');
+    
+    if (!hasActiveTemplate) {
+      toast({
+        title: "Template não configurado",
+        description: "Configure um template Excel primeiro usando o botão '⚙️ Configurar Excel'.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!validarFormulario()) {
+      console.log('[PTR-BA Relatório] Validação do formulário falhou');
+      return;
+    }
 
     // Preparar dados no formato esperado pelo gerador
     const equipeSelecionada = equipes.find(e => e.id === formData.equipe_id);
@@ -529,8 +545,21 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       }),
       observacoes_gerais: 'Documento gerado pelo Sistema de Gerenciamento de PTR-BA'
     };
+    
+    console.log('[PTR-BA Relatório] Dados preparados para Excel:', {
+      codigo: dadosExcel.codigo,
+      data: dadosExcel.data,
+      equipe: dadosExcel.equipe,
+      totalParticipantes: dadosExcel.participantes.length,
+      totalPTRs: dadosExcel.ptrs.length
+    });
 
-    await generateExcel(dadosExcel);
+    const sucesso = await generateExcel(dadosExcel);
+    if (sucesso) {
+      console.log('[PTR-BA Relatório] Excel gerado com sucesso');
+    } else {
+      console.log('[PTR-BA Relatório] Falha na geração do Excel');
+    }
   };
 
   // Função para enviar dados para webhook N8N
@@ -996,6 +1025,16 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                 <Settings className="w-4 h-4 mr-2" />
                 Configurar Excel
               </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowDebugModal(true)}
+                disabled={salvando}
+                title="Diagnóstico do sistema Excel"
+              >
+                🔍 Debug
+              </Button>
             </div>
             
             {/* Mostrar progresso durante salvamento */}
@@ -1013,9 +1052,15 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                   onClick={handleGerarExcel}
                   disabled={salvando || !formData.equipe_id || formData.participantes.length === 0}
                   title={activeTemplateName ? `Usando template: ${activeTemplateName}` : 'Gerar Excel'}
+                  className="flex items-center gap-2"
                 >
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Gerar Excel
+                  <FileSpreadsheet className="w-4 h-4" />
+                  📊 Gerar Excel
+                  {activeTemplateName && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      ({activeTemplateName})
+                    </span>
+                  )}
                 </Button>
               )}
               
@@ -1045,9 +1090,14 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
         />
 
         {/* Modal do Gerenciador de Templates Excel */}
-        <PTRExcelTemplateManager
-          open={showTemplateManager}
-          onOpenChange={setShowTemplateManager}
+        <PTRExcelTemplateManager 
+          open={showTemplateManager} 
+          onOpenChange={setShowTemplateManager} 
+        />
+        
+        <PTRExcelDebugModal 
+          open={showDebugModal} 
+          onOpenChange={setShowDebugModal} 
         />
       </DialogContent>
     </Dialog>
