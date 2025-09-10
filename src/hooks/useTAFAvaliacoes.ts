@@ -79,7 +79,7 @@ export const useTAFAvaliacoes = () => {
 
       console.log('📊 Avaliações carregadas:', {
         total: data?.length || 0,
-        equipes: [...new Set(data?.map(a => a.equipe) || [])],
+        equipes: [...new Set(data?.map(a => a.bombeiros?.equipe).filter(Boolean) || [])],
         datas: [...new Set(data?.map(a => a.data_teste) || [])]
       });
       

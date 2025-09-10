@@ -56,23 +56,20 @@ const AgentesExtintoresRelatoriosSection: React.FC = () => {
       
       switch (tipoRelatorio) {
         case 'Estoque':
-          nomeArquivo = await gerarRelatorioPDF.estoque(agentes, filtros);
+          gerarRelatorioPDF({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear(), agentes });
+          nomeArquivo = `relatorio_estoque_${new Date().getFullYear()}.pdf`;
           break;
         case 'Movimentações':
-          nomeArquivo = await gerarRelatorioPDF.movimentacoes(movimentacoes, filtros);
+          gerarRelatorioPDF({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear(), agentes });
+          nomeArquivo = `relatorio_movimentacoes_${new Date().getFullYear()}.pdf`;
           break;
         case 'Checklists':
-          nomeArquivo = await gerarRelatorioPDF.checklists(checklists, filtros);
+          gerarRelatorioPDF({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear(), agentes });
+          nomeArquivo = `relatorio_checklists_${new Date().getFullYear()}.pdf`;
           break;
         case 'Consolidado':
-          const dadosRelatorio = await gerarRelatorio(filtros);
-          nomeArquivo = await gerarRelatorioPDF.consolidado(
-            agentes, 
-            movimentacoes, 
-            checklists, 
-            dadosRelatorio, 
-            filtros
-          );
+          gerarRelatorioPDF({ mes: new Date().getMonth() + 1, ano: new Date().getFullYear(), agentes });
+          nomeArquivo = `relatorio_consolidado_${new Date().getFullYear()}.pdf`;
           break;
         default:
           // Simular geração de relatório

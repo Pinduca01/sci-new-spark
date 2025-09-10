@@ -275,7 +275,7 @@ const ExercicioPosicionamento = () => {
             setExercicioParaEdicao(null);
           }
         }}
-        exercicioParaEdicao={exercicioParaEdicao}
+        formularioParaEdicao={exercicioParaEdicao}
         onSave={(formulario) => {
           console.log('Formulário salvo:', formulario);
           toast({
