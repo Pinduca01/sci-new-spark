@@ -1011,19 +1011,24 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           </div>
 
           <div className="flex justify-between pt-6 border-t">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
-                <X className="w-4 h-4 mr-2" />
-                Cancelar
-              </Button>
-              
               <Button 
                 variant="outline" 
                 onClick={() => setShowTemplateManager(true)}
                 disabled={salvando}
+                className="flex items-center gap-2"
               >
-                <Settings className="w-4 h-4 mr-2" />
-                Configurar Excel
+                <Settings className="w-4 h-4" />
+                ⚙️ Configurar Excel
+                {hasActiveTemplate && (
+                  <span className="text-xs text-green-600 dark:text-green-400">
+                    ● Ativo
+                  </span>
+                )}
               </Button>
               
               <Button 
@@ -1046,21 +1051,18 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
             )}
             
             <div className="flex gap-2">
-              {hasActiveTemplate && (
+              {/* Botão separado para gerar Excel manualmente (opcional) */}
+              {hasActiveTemplate && !salvando && (
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   onClick={handleGerarExcel}
-                  disabled={salvando || !formData.equipe_id || formData.participantes.length === 0}
-                  title={activeTemplateName ? `Usando template: ${activeTemplateName}` : 'Gerar Excel'}
-                  className="flex items-center gap-2"
+                  disabled={!formData.equipe_id || formData.participantes.length === 0}
+                  title={`Gerar Excel usando: ${activeTemplateName}`}
+                  className="flex items-center gap-2 text-xs"
+                  size="sm"
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  📊 Gerar Excel
-                  {activeTemplateName && (
-                    <span className="text-xs text-muted-foreground ml-1">
-                      ({activeTemplateName})
-                    </span>
-                  )}
+                  <FileSpreadsheet className="w-3 h-3" />
+                  Só Excel
                 </Button>
               )}
               
@@ -1074,6 +1076,9 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
                   <>
                     <Save className="w-4 h-4 mr-2" />
                     Salvar PTR-BA
+                    {hasActiveTemplate && (
+                      <span className="text-xs ml-1 opacity-70">+ Excel</span>
+                    )}
                   </>
                 )}
               </Button>
