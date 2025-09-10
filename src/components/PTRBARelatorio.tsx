@@ -8,10 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Save, X, Settings } from 'lucide-react';
+import { Plus, Trash2, Save, X, Settings, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
 import { PTRTemasManager, TEMAS_PTR_PADRAO } from './PTRTemasManager';
+import { PTRExcelTemplateManager } from './PTRExcelTemplateManager';
+import { usePTRExcelGenerator } from './PTRExcelGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -120,6 +122,10 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
   const [showGerenciadorTemas, setShowGerenciadorTemas] = useState(false);
   const [selectedParticipante, setSelectedParticipante] = useState<string>('');
   const [equipeInicializada, setEquipeInicializada] = useState(false);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  
+  // Excel Generator Hook
+  const { generateExcel, hasActiveTemplate, activeTemplateName } = usePTRExcelGenerator();
 
   // Bombeiros da equipe selecionada - otimizado com useMemo
   const bombeirosDaEquipe = useMemo(() => 
@@ -493,6 +499,38 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
       setSalvando(false);
       setEtapaSalvamento('');
     }
+  };
+
+  // Função para gerar Excel com os dados do formulário
+  const handleGerarExcel = async () => {
+    if (!validarFormulario()) return;
+
+    // Preparar dados no formato esperado pelo gerador
+    const equipeSelecionada = equipes.find(e => e.id === formData.equipe_id);
+    
+    const dadosExcel = {
+      data: format(new Date(formData.data), 'dd/MM/yyyy', { locale: ptBR }),
+      codigo: `PTR-${format(new Date(formData.data), 'yyyyMMdd', { locale: ptBR })}-${equipeSelecionada?.nome_equipe?.substr(0, 3) || 'EQP'}`,
+      equipe: equipeSelecionada?.nome_equipe || 'Não definida',
+      participantes: participantesSelecionados.map(bombeiro => ({
+        nome: bombeiro.nome,
+        presente: presencas[bombeiro.id] !== false,
+        situacao_ba: situacoesBa[bombeiro.id] || 'P'
+      })),
+      ptrs: formData.ptrs.map(ptr => {
+        const instrutor = participantesSelecionados.find(b => b.id === ptr.instrutor_id);
+        return {
+          horario_inicio: ptr.hora_inicio,
+          horario_fim: ptr.hora_fim,
+          tipo: ptr.tipo,
+          instrutor: instrutor?.nome || 'Não informado',
+          observacoes: ptr.observacoes || ''
+        };
+      }),
+      observacoes_gerais: 'Documento gerado pelo Sistema de Gerenciamento de PTR-BA'
+    };
+
+    await generateExcel(dadosExcel);
   };
 
   // Função para enviar dados para webhook N8N
@@ -944,10 +982,21 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           </div>
 
           <div className="flex justify-between pt-6 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
-              <X className="w-4 h-4 mr-2" />
-              Cancelar
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={salvando}>
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setShowTemplateManager(true)}
+                disabled={salvando}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Configurar Excel
+              </Button>
+            </div>
             
             {/* Mostrar progresso durante salvamento */}
             {salvando && etapaSalvamento && (
@@ -957,19 +1006,33 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
               </div>
             )}
             
-            <Button onClick={handleSalvar} disabled={salvando} className="min-w-[160px]">
-              {salvando ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm">Processando...</span>
-                </div>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Salvar PTR-BA
-                </>
+            <div className="flex gap-2">
+              {hasActiveTemplate && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleGerarExcel}
+                  disabled={salvando || !formData.equipe_id || formData.participantes.length === 0}
+                  title={activeTemplateName ? `Usando template: ${activeTemplateName}` : 'Gerar Excel'}
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Gerar Excel
+                </Button>
               )}
-            </Button>
+              
+              <Button onClick={handleSalvar} disabled={salvando} className="min-w-[160px]">
+                {salvando ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm">Processando...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Salvar PTR-BA
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -979,6 +1042,12 @@ export const PTRBARelatorio: React.FC<PTRBARelatorioProps> = ({
           onOpenChange={setShowGerenciadorTemas}
           temas={temasPTR}
           onTemasChange={handleTemasChange}
+        />
+
+        {/* Modal do Gerenciador de Templates Excel */}
+        <PTRExcelTemplateManager
+          open={showTemplateManager}
+          onOpenChange={setShowTemplateManager}
         />
       </DialogContent>
     </Dialog>
