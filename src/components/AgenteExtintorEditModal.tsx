@@ -82,28 +82,28 @@ export const AgenteExtintorEditModal = ({ agente, open, onClose }: AgenteExtinto
             <div>
               <Label>Tipo de Agente</Label>
               <div className="p-2 bg-muted rounded">
-                <div className="font-medium">{agente?.tipo_agente}</div>
+                <div className="font-medium">{agente?.tipo}</div>
               </div>
             </div>
             <div>
-              <Label>Lote</Label>
+              <Label>Fabricante</Label>
               <div className="p-2 bg-muted rounded">
-                {agente?.lote}
+                {agente?.fabricante}
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Capacidade</Label>
+              <Label>Quantidade</Label>
               <div className="p-2 bg-muted rounded">
-                {agente?.capacidade} {agente?.unidade_capacidade}
+                {agente?.quantidade} {agente?.unidade}
               </div>
             </div>
             <div>
-              <Label>Data de Vencimento</Label>
+              <Label>Data de Validade</Label>
               <div className="p-2 bg-muted rounded">
-                {agente?.data_vencimento ? new Date(agente.data_vencimento).toLocaleDateString('pt-BR') : '-'}
+                {agente?.data_validade ? new Date(agente.data_validade).toLocaleDateString('pt-BR') : '-'}
               </div>
             </div>
           </div>

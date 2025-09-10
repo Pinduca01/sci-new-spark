@@ -61,7 +61,7 @@ const navigationItems = [
     description: "Teste de Aptidão Física"
   },
   { 
-    title: "Equipamentos Gerais", 
+    title: "Agentes Extintores", 
     url: "/equipamentos", 
     icon: Radio,
     description: "Controle de equipamentos"

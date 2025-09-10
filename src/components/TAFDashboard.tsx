@@ -99,12 +99,12 @@ const TAFDashboard = () => {
   const dadosAprovacao = [
     {
       name: 'Aprovados',
-      value: estatisticas.taxa_aprovacao,
+      value: estatisticas.taxa_aprovacao ?? 0,
       color: '#10b981'
     },
     {
       name: 'Reprovados',
-      value: 100 - estatisticas.taxa_aprovacao,
+      value: 100 - (estatisticas.taxa_aprovacao ?? 0),
       color: '#ef4444'
     }
   ];
@@ -112,15 +112,15 @@ const TAFDashboard = () => {
   const dadosPerformance = [
     {
       name: 'Flexões',
-      value: Math.round(estatisticas.media_flexoes)
+      value: Math.round(estatisticas.media_flexoes ?? 0)
     },
     {
       name: 'Abdominais',
-      value: Math.round(estatisticas.media_abdominais)
+      value: Math.round(estatisticas.media_abdominais ?? 0)
     },
     {
       name: 'Polichinelos',
-      value: Math.round(estatisticas.media_polichinelos)
+      value: Math.round(estatisticas.media_polichinelos ?? 0)
     }
   ];
 
@@ -145,7 +145,7 @@ const TAFDashboard = () => {
             <CheckCircle className="w-4 h-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{estatisticas.taxa_aprovacao.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{(estatisticas.taxa_aprovacao ?? 0).toFixed(1)}%</div>
             <div className="flex items-center space-x-1 text-xs text-muted-foreground">
               {getTendenciaIcon(estatisticas.tendencia_aprovacao)}
               <span className={getTendenciaColor(estatisticas.tendencia_aprovacao)}>
@@ -189,7 +189,7 @@ const TAFDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.floor(estatisticas.tempo_medio_segundos / 60)}:{String(Math.floor(estatisticas.tempo_medio_segundos % 60)).padStart(2, '0')}
+              {Math.floor((estatisticas.tempo_medio_segundos ?? 0) / 60)}:{String(Math.floor((estatisticas.tempo_medio_segundos ?? 0) % 60)).padStart(2, '0')}
             </div>
             <p className="text-xs text-muted-foreground">
               Minutos por avaliação
@@ -247,7 +247,7 @@ const TAFDashboard = () => {
           <CardContent>
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600 mb-2">
-                {estatisticas.media_flexoes.toFixed(1)}
+                {(estatisticas.media_flexoes ?? 0).toFixed(1)}
               </div>
               <Badge variant="secondary">Por avaliação</Badge>
             </div>
@@ -261,7 +261,7 @@ const TAFDashboard = () => {
           <CardContent>
             <div className="text-center">
               <div className="text-3xl font-bold text-green-600 mb-2">
-                {estatisticas.media_abdominais.toFixed(1)}
+                {(estatisticas.media_abdominais ?? 0).toFixed(1)}
               </div>
               <Badge variant="secondary">Por avaliação</Badge>
             </div>
@@ -275,7 +275,7 @@ const TAFDashboard = () => {
           <CardContent>
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-600 mb-2">
-                {estatisticas.media_polichinelos.toFixed(1)}
+                {(estatisticas.media_polichinelos ?? 0).toFixed(1)}
               </div>
               <Badge variant="secondary">Por avaliação</Badge>
             </div>

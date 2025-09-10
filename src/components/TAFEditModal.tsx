@@ -71,6 +71,8 @@ const TAFEditModal: React.FC<TAFEditModalProps> = ({
     tempo_total_segundos: 0,
     observacoes: '',
     status: 'pendente',
+    equipe: '',
+    tipo_avaliacao: '',
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -121,6 +123,8 @@ const TAFEditModal: React.FC<TAFEditModalProps> = ({
         tempo_total_segundos: avaliacao.tempo_total_segundos || 0,
         observacoes: avaliacao.observacoes || '',
         status: avaliacao.status || 'pendente',
+        equipe: avaliacao.equipe || (avaliacao.bombeiros?.equipe) || '',
+        tipo_avaliacao: avaliacao.tipo_avaliacao || '',
       });
     }
   }, [avaliacao]);
@@ -150,16 +154,27 @@ const TAFEditModal: React.FC<TAFEditModalProps> = ({
       setIsLoading(true);
       
       const statusCalculado = calcularStatus();
+      // SEMPRE preservar a data_teste ORIGINAL da avaliação
+      const dataTesteOriginal = avaliacao?.data_teste;
+      
       const dadosAtualizados = {
-        data_teste: formData.data_teste,
+        data_teste: dataTesteOriginal, // USAR SEMPRE A DATA ORIGINAL
         faixa_etaria: formData.faixa_etaria,
         flexoes_realizadas: Number(formData.flexoes_realizadas),
         abdominais_realizadas: Number(formData.abdominais_realizadas),
         polichinelos_realizados: Number(formData.polichinelos_realizados),
         tempo_total_segundos: Number(formData.tempo_total_segundos),
         observacoes: formData.observacoes,
-        aprovado: statusCalculado === 'aprovado'
+        aprovado: statusCalculado === 'aprovado',
+        equipe: formData.equipe,
+        tipo_avaliacao: formData.tipo_avaliacao
       };
+      
+      console.log('💾 Salvando com data original preservada:', {
+        id: avaliacaoId,
+        data_teste_original: dataTesteOriginal,
+        dados: dadosAtualizados
+      });
 
       await atualizarAvaliacao.mutateAsync({ 
         id: avaliacaoId, 
@@ -224,8 +239,13 @@ const TAFEditModal: React.FC<TAFEditModalProps> = ({
                   id="data_teste"
                   type="date"
                   value={formData.data_teste}
-                  onChange={(e) => handleInputChange('data_teste', e.target.value)}
+                  readOnly
+                  className="bg-muted cursor-not-allowed"
+                  title="A data do teste não pode ser alterada"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  ⚠️ A data do teste não pode ser alterada após a criação
+                </p>
               </div>
 
               <div className="space-y-2">

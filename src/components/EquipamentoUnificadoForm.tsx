@@ -46,32 +46,22 @@ export const EquipamentoUnificadoForm = () => {
 
   // Formulário para agente extintor
   const [agenteForm, setAgenteForm] = useState<{
-    material_id: string;
-    lote: string;
+    tipo: 'LGE' | 'PQS';
+    fabricante: string;
     data_fabricacao: string;
-    data_vencimento: string;
-    tipo_agente: 'LGE' | 'PQS';
-    capacidade: number;
-    unidade_capacidade: string;
-    localizacao_fisica: string;
-    status_uso: 'disponivel' | 'em_uso' | 'vencido' | 'descartado';
-    custo_unitario: number;
-    fornecedor: string;
-    numero_serie: string;
+    data_validade: string;
+    quantidade: number;
+    unidade: string;
+    situacao: 'disponivel' | 'em_uso' | 'vencido' | 'descartado';
     observacoes: string;
   }>({
-    material_id: '',
-    lote: '',
+    tipo: 'LGE',
+    fabricante: '',
     data_fabricacao: '',
-    data_vencimento: '',
-    tipo_agente: 'LGE',
-    capacidade: 0,
-    unidade_capacidade: 'kg',
-    localizacao_fisica: '',
-    status_uso: 'disponivel',
-    custo_unitario: 0,
-    fornecedor: '',
-    numero_serie: '',
+    data_validade: '',
+    quantidade: 0,
+    unidade: 'kg',
+    situacao: 'disponivel',
     observacoes: ''
   });
 
@@ -105,18 +95,13 @@ export const EquipamentoUnificadoForm = () => {
         numero_recargas: 0
       });
       setAgenteForm({
-        material_id: '',
-        lote: '',
+        tipo: 'LGE',
+        fabricante: '',
         data_fabricacao: '',
-        data_vencimento: '',
-        tipo_agente: 'LGE',
-        capacidade: 0,
-        unidade_capacidade: 'kg',
-        localizacao_fisica: '',
-        status_uso: 'disponivel',
-        custo_unitario: 0,
-        fornecedor: '',
-        numero_serie: '',
+        data_validade: '',
+        quantidade: 0,
+        unidade: 'kg',
+        situacao: 'disponivel',
         observacoes: ''
       });
       setOpen(false);
@@ -282,23 +267,8 @@ export const EquipamentoUnificadoForm = () => {
             <form onSubmit={handleAgenteSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="material_id_agente">Material Base</Label>
-                  <Select value={agenteForm.material_id} onValueChange={(value) => setAgenteForm(prev => ({ ...prev, material_id: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materiais.filter(m => m.categoria === 'Agente Extintor').map((material) => (
-                        <SelectItem key={material.id} value={material.id}>
-                          {material.codigo_material} - {material.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="tipo_agente">Tipo de Agente</Label>
-                  <Select value={agenteForm.tipo_agente} onValueChange={(value: 'LGE' | 'PQS') => setAgenteForm(prev => ({ ...prev, tipo_agente: value }))}>
+                  <Label htmlFor="tipo">Tipo de Agente</Label>
+                  <Select value={agenteForm.tipo} onValueChange={(value: 'LGE' | 'PQS') => setAgenteForm(prev => ({ ...prev, tipo: value }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -308,33 +278,33 @@ export const EquipamentoUnificadoForm = () => {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="lote">Lote</Label>
+                  <Label htmlFor="fabricante">Fabricante</Label>
                   <Input
-                    id="lote"
-                    value={agenteForm.lote}
-                    onChange={(e) => setAgenteForm(prev => ({ ...prev, lote: e.target.value }))}
+                    id="fabricante"
+                    value={agenteForm.fabricante}
+                    onChange={(e) => setAgenteForm(prev => ({ ...prev, fabricante: e.target.value }))}
                     required
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="capacidade">Capacidade</Label>
+                  <Label htmlFor="quantidade">Quantidade</Label>
                   <Input
-                    id="capacidade"
+                    id="quantidade"
                     type="number"
                     min="0"
                     step="0.1"
-                    value={agenteForm.capacidade}
-                    onChange={(e) => setAgenteForm(prev => ({ ...prev, capacidade: Number(e.target.value) }))}
+                    value={agenteForm.quantidade}
+                    onChange={(e) => setAgenteForm(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="unidade_capacidade">Unidade</Label>
-                  <Select value={agenteForm.unidade_capacidade} onValueChange={(value) => setAgenteForm(prev => ({ ...prev, unidade_capacidade: value }))}>
+                  <Label htmlFor="unidade">Unidade</Label>
+                  <Select value={agenteForm.unidade} onValueChange={(value) => setAgenteForm(prev => ({ ...prev, unidade: value }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -358,56 +328,30 @@ export const EquipamentoUnificadoForm = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="data_vencimento">Data de Vencimento</Label>
+                  <Label htmlFor="data_validade">Data de Validade</Label>
                   <Input
-                    id="data_vencimento"
+                    id="data_validade"
                     type="date"
-                    value={agenteForm.data_vencimento}
-                    onChange={(e) => setAgenteForm(prev => ({ ...prev, data_vencimento: e.target.value }))}
+                    value={agenteForm.data_validade}
+                    onChange={(e) => setAgenteForm(prev => ({ ...prev, data_validade: e.target.value }))}
                     required
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="custo_unitario">Custo Unitário (R$)</Label>
-                  <Input
-                    id="custo_unitario"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={agenteForm.custo_unitario}
-                    onChange={(e) => setAgenteForm(prev => ({ ...prev, custo_unitario: Number(e.target.value) }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="fornecedor_agente">Fornecedor</Label>
-                  <Input
-                    id="fornecedor_agente"
-                    value={agenteForm.fornecedor}
-                    onChange={(e) => setAgenteForm(prev => ({ ...prev, fornecedor: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="numero_serie_agente">Número de Série</Label>
-                  <Input
-                    id="numero_serie_agente"
-                    value={agenteForm.numero_serie}
-                    onChange={(e) => setAgenteForm(prev => ({ ...prev, numero_serie: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="localizacao_fisica_agente">Localização Física</Label>
-                  <Input
-                    id="localizacao_fisica_agente"
-                    value={agenteForm.localizacao_fisica}
-                    onChange={(e) => setAgenteForm(prev => ({ ...prev, localizacao_fisica: e.target.value }))}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="situacao">Situação</Label>
+                <Select value={agenteForm.situacao} onValueChange={(value: 'disponivel' | 'em_uso' | 'vencido' | 'descartado') => setAgenteForm(prev => ({ ...prev, situacao: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="disponivel">Disponível</SelectItem>
+                    <SelectItem value="em_uso">Em Uso</SelectItem>
+                    <SelectItem value="vencido">Vencido</SelectItem>
+                    <SelectItem value="descartado">Descartado</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

@@ -7,69 +7,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Beaker } from "lucide-react";
 import { useAgentesExtintores } from "@/hooks/useAgentesExtintores";
-import { useMateriais } from "@/hooks/useMateriais";
+
 
 export const AgenteExtintorForm = () => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
-    material_id: "",
-    lote: "",
+    tipo: "" as "LGE" | "PO_QUIMICO" | "NITROGENIO" | "",
+    fabricante: "",
     data_fabricacao: "",
-    data_vencimento: "",
-    tipo_agente: "" as "LGE" | "PQS" | "",
-    capacidade: "",
-    unidade_capacidade: "kg",
-    localizacao_fisica: "",
-    custo_unitario: "",
-    fornecedor: "",
-    numero_serie: "",
+    data_validade: "",
+    quantidade: "",
+    unidade: "kg",
     observacoes: ""
   });
 
   const { createAgente } = useAgentesExtintores();
-  const { materiais } = useMateriais();
-
-  // Filtrar apenas materiais de agentes extintores
-  const materiaisAgentes = materiais.filter(m => 
-    m.categoria === 'Agentes Extintores' || 
-    m.nome.toLowerCase().includes('lge') || 
-    m.nome.toLowerCase().includes('pqs') ||
-    m.nome.toLowerCase().includes('espuma') ||
-    m.nome.toLowerCase().includes('pó químico')
-  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação para garantir que tipo_agente não seja vazio
-    if (!formData.tipo_agente) {
+    // Validação para garantir que tipo não seja vazio
+    if (!formData.tipo) {
       return;
     }
 
     const agenteData = {
-      ...formData,
-      tipo_agente: formData.tipo_agente as "LGE" | "PQS", // Type assertion para garantir o tipo correto
-      capacidade: parseFloat(formData.capacidade),
-      custo_unitario: parseFloat(formData.custo_unitario) || 0,
-      numero_recargas: 0,
-      status_uso: 'disponivel' as const
+      tipo: formData.tipo as "LGE" | "PO_QUIMICO" | "NITROGENIO",
+      fabricante: formData.fabricante,
+      data_fabricacao: formData.data_fabricacao,
+      data_validade: formData.data_validade,
+      quantidade: parseFloat(formData.quantidade),
+      unidade: formData.unidade,
+      situacao: 'ativo' as const,
+      observacoes: formData.observacoes
     };
 
     createAgente.mutate(agenteData, {
       onSuccess: () => {
         setOpen(false);
         setFormData({
-          material_id: "",
-          lote: "",
+          tipo: "",
+          fabricante: "",
           data_fabricacao: "",
-          data_vencimento: "",
-          tipo_agente: "",
-          capacidade: "",
-          unidade_capacidade: "kg",
-          localizacao_fisica: "",
-          custo_unitario: "",
-          fornecedor: "",
-          numero_serie: "",
+          data_validade: "",
+          quantidade: "",
+          unidade: "kg",
           observacoes: ""
         });
       }
@@ -94,29 +76,10 @@ export const AgenteExtintorForm = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="material_id">Material Base*</Label>
+              <Label htmlFor="tipo">Tipo de Agente*</Label>
               <Select 
-                value={formData.material_id} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, material_id: value }))}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o material" />
-                </SelectTrigger>
-                <SelectContent>
-                  {materiaisAgentes.map((material) => (
-                    <SelectItem key={material.id} value={material.id}>
-                      {material.codigo_material} - {material.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tipo_agente">Tipo de Agente*</Label>
-              <Select 
-                value={formData.tipo_agente} 
-                onValueChange={(value: "LGE" | "PQS") => setFormData(prev => ({ ...prev, tipo_agente: value }))}
+                value={formData.tipo} 
+                onValueChange={(value: "LGE" | "PO_QUIMICO" | "NITROGENIO") => setFormData(prev => ({ ...prev, tipo: value }))}
                 required
               >
                 <SelectTrigger>
@@ -124,40 +87,41 @@ export const AgenteExtintorForm = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="LGE">LGE - Líquido Gerador de Espuma</SelectItem>
-                  <SelectItem value="PQS">PQS - Pó Químico Seco</SelectItem>
+                  <SelectItem value="PO_QUIMICO">Pó Químico</SelectItem>
+                  <SelectItem value="NITROGENIO">Nitrogênio</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="lote">Lote*</Label>
+              <Label htmlFor="fabricante">Fabricante*</Label>
               <Input
-                id="lote"
-                value={formData.lote}
-                onChange={(e) => setFormData(prev => ({ ...prev, lote: e.target.value }))}
-                placeholder="Ex: LGE001-2024"
+                id="fabricante"
+                value={formData.fabricante}
+                onChange={(e) => setFormData(prev => ({ ...prev, fabricante: e.target.value }))}
+                placeholder="Ex: Extinção LTDA"
                 required
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="capacidade">Capacidade*</Label>
+              <Label htmlFor="quantidade">Quantidade*</Label>
               <Input
-                id="capacidade"
+                id="quantidade"
                 type="number"
                 step="0.1"
-                value={formData.capacidade}
-                onChange={(e) => setFormData(prev => ({ ...prev, capacidade: e.target.value }))}
+                value={formData.quantidade}
+                onChange={(e) => setFormData(prev => ({ ...prev, quantidade: e.target.value }))}
                 placeholder="Ex: 20"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="unidade_capacidade">Unidade</Label>
+              <Label htmlFor="unidade">Unidade</Label>
               <Select 
-                value={formData.unidade_capacidade} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, unidade_capacidade: value }))}
+                value={formData.unidade} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, unidade: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -182,60 +146,18 @@ export const AgenteExtintorForm = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="data_vencimento">Data de Vencimento*</Label>
+              <Label htmlFor="data_validade">Data de Validade*</Label>
               <Input
-                id="data_vencimento"
+                id="data_validade"
                 type="date"
-                value={formData.data_vencimento}
-                onChange={(e) => setFormData(prev => ({ ...prev, data_vencimento: e.target.value }))}
+                value={formData.data_validade}
+                onChange={(e) => setFormData(prev => ({ ...prev, data_validade: e.target.value }))}
                 required
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="fornecedor">Fornecedor</Label>
-              <Input
-                id="fornecedor"
-                value={formData.fornecedor}
-                onChange={(e) => setFormData(prev => ({ ...prev, fornecedor: e.target.value }))}
-                placeholder="Ex: Empresa XYZ"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="custo_unitario">Custo Unitário (R$)</Label>
-              <Input
-                id="custo_unitario"
-                type="number"
-                step="0.01"
-                value={formData.custo_unitario}
-                onChange={(e) => setFormData(prev => ({ ...prev, custo_unitario: e.target.value }))}
-                placeholder="0,00"
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="numero_serie">Número de Série</Label>
-              <Input
-                id="numero_serie"
-                value={formData.numero_serie}
-                onChange={(e) => setFormData(prev => ({ ...prev, numero_serie: e.target.value }))}
-                placeholder="Ex: ABC123456"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="localizacao_fisica">Localização Física</Label>
-              <Input
-                id="localizacao_fisica"
-                value={formData.localizacao_fisica}
-                onChange={(e) => setFormData(prev => ({ ...prev, localizacao_fisica: e.target.value }))}
-                placeholder="Ex: Almoxarifado - Prateleira A1"
-              />
-            </div>
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="observacoes">Observações</Label>

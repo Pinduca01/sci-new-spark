@@ -12,12 +12,15 @@ import {
   User, 
   Calendar, 
   Clock, 
-  Target,
   CheckCircle,
   XCircle,
   AlertTriangle,
   Timer,
-  Activity
+  Activity,
+  Users,
+  Plus,
+  Trash2,
+  Target
 } from "lucide-react";
 import { useTAFAvaliacoes } from '@/hooks/useTAFAvaliacoes';
 import { useTAFMetas } from '@/hooks/useTAFMetas';
@@ -31,151 +34,203 @@ interface TAFFormProps {
   avaliacaoId?: string;
 }
 
+interface ParticipanteEquipe {
+  id: string;
+  bombeiro_id: string;
+  faixa_etaria: 'abaixo_40' | 'acima_40';
+  flexoes_realizadas: string;
+  abdominais_realizadas: string;
+  polichinelos_realizados: string;
+  tempo_total_segundos: string;
+  tempo_minutos: string;
+  tempo_segundos: string;
+  aprovado?: boolean;
+}
+
 const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
-  const [formData, setFormData] = useState({
-    bombeiro_id: '',
-    data_teste: format(new Date(), 'yyyy-MM-dd'),
-    faixa_etaria: 'abaixo_40' as 'abaixo_40' | 'acima_40',
-    flexoes_realizadas: '',
-    abdominais_realizadas: '',
-    polichinelos_realizados: '',
-    tempo_total_segundos: '',
-    tempo_limite_minutos: '3'
-  });
-
+  const [equipeSelecionada, setEquipeSelecionada] = useState('');
+  const [participantes, setParticipantes] = useState<ParticipanteEquipe[]>([]);
+  const [dataAvaliacao, setDataAvaliacao] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [aprovado, setAprovado] = useState<boolean | null>(null);
-  const [tempoFormatado, setTempoFormatado] = useState({ minutos: '3', segundos: '0' });
 
-  const { bombeiros, isLoading: loadingBombeiros } = useBombeiros();
+  const equipes = ['Alfa', 'Bravo', 'Charlie', 'Delta'];
+
+  const { bombeiros, isLoading: loadingBombeiros, buscarPorEquipe } = useBombeiros();
   const { metas, isLoading: loadingMetas } = useTAFMetas();
   const { criarAvaliacao, atualizarAvaliacao, buscarPorId } = useTAFAvaliacoes();
 
-  // Carregar dados da avaliação se estiver editando
+  // Carregar dados da avaliação se estiver editando (modo equipe)
   useEffect(() => {
     if (avaliacaoId) {
-      const carregarAvaliacao = async () => {
-        try {
-          const avaliacao = await buscarPorId.mutateAsync(avaliacaoId);
-          if (avaliacao) {
-            setFormData({
-              bombeiro_id: avaliacao.bombeiro_id,
-              data_teste: format(new Date(avaliacao.data_teste), 'yyyy-MM-dd'),
-              faixa_etaria: avaliacao.faixa_etaria as 'abaixo_40' | 'acima_40',
-              flexoes_realizadas: avaliacao.flexoes_realizadas.toString(),
-              abdominais_realizadas: avaliacao.abdominais_realizadas.toString(),
-              polichinelos_realizados: avaliacao.polichinelos_realizados.toString(),
-              tempo_total_segundos: avaliacao.tempo_total_segundos.toString(),
-              tempo_limite_minutos: '3'
-            });
-            
-            const minutos = Math.floor(avaliacao.tempo_total_segundos / 60);
-            const segundos = avaliacao.tempo_total_segundos % 60;
-            setTempoFormatado({ 
-              minutos: minutos.toString(), 
-              segundos: segundos.toString() 
-            });
-          }
-        } catch (error) {
-          console.error('Erro ao carregar avaliação:', error);
-          toast.error('Erro ao carregar dados da avaliação');
-        }
-      };
-      
-      carregarAvaliacao();
+      // TODO: Implementar carregamento de avaliação de equipe se necessário
+      console.log('Carregamento de avaliação de equipe não implementado ainda');
     }
-  }, [avaliacaoId, buscarPorId]);
+  }, [avaliacaoId]);
 
-  // Calcular aprovação automaticamente
+  // Buscar automaticamente bombeiros da equipe selecionada
   useEffect(() => {
-    if (formData.flexoes_realizadas && formData.abdominais_realizadas && 
-        formData.polichinelos_realizados && metas) {
+    if (equipeSelecionada && buscarPorEquipe) {
+      const bombeirosDaEquipe = buscarPorEquipe(equipeSelecionada);
       
-      const metaAtual = metas.find(m => m.faixa_etaria === formData.faixa_etaria);
-      
-      if (metaAtual) {
-        const flexoesOk = parseInt(formData.flexoes_realizadas) >= metaAtual.meta_flexoes;
-        const abdominaisOk = parseInt(formData.abdominais_realizadas) >= metaAtual.meta_abdominais;
-        const polichinelasOk = parseInt(formData.polichinelos_realizados) >= metaAtual.meta_polichinelos;
+      if (bombeirosDaEquipe && bombeirosDaEquipe.length > 0) {
+        // Limpar participantes existentes
+        setParticipantes([]);
         
-        const tempoOk = formData.tempo_total_segundos ? 
-          parseInt(formData.tempo_total_segundos) <= (parseInt(formData.tempo_limite_minutos || '0') * 60) : true;
+        // Criar participantes automaticamente para cada bombeiro da equipe
+        const novosParticipantes: ParticipanteEquipe[] = bombeirosDaEquipe.map((bombeiro, index) => ({
+          id: `${Date.now()}-${index}`,
+          bombeiro_id: bombeiro.id,
+          faixa_etaria: 'abaixo_40',
+          flexoes_realizadas: '',
+          abdominais_realizadas: '',
+          polichinelos_realizados: '',
+          tempo_total_segundos: '',
+          tempo_minutos: '3',
+          tempo_segundos: '0'
+        }));
         
-        setAprovado(flexoesOk && abdominaisOk && polichinelasOk && tempoOk);
+        setParticipantes(novosParticipantes);
+        
+        // Mostrar toast informativo
+        toast.success(`${bombeirosDaEquipe.length} bombeiro(s) da equipe ${equipeSelecionada} adicionado(s) automaticamente!`);
+      } else {
+        // Limpar participantes se não houver bombeiros na equipe
+        setParticipantes([]);
+        toast.info(`Nenhum bombeiro encontrado na equipe ${equipeSelecionada}`);
       }
-    } else {
-      setAprovado(null);
+    } else if (!equipeSelecionada) {
+      // Limpar participantes quando nenhuma equipe estiver selecionada
+      setParticipantes([]);
     }
-  }, [formData, metas]);
+  }, [equipeSelecionada, buscarPorEquipe]);
 
-  // Atualizar tempo total quando minutos/segundos mudarem
+
+
+  // Calcular aprovação para cada participante da equipe
   useEffect(() => {
-    if (tempoFormatado.minutos || tempoFormatado.segundos) {
-      const totalSegundos = (parseInt(tempoFormatado.minutos || '0') * 60) + parseInt(tempoFormatado.segundos || '0');
-      setFormData(prev => ({ ...prev, tempo_total_segundos: totalSegundos.toString() }));
+    if (metas) {
+      const participantesAtualizados = participantes.map(participante => {
+        const metaAtual = metas.find(m => m.faixa_etaria === participante.faixa_etaria);
+        
+        if (metaAtual && participante.flexoes_realizadas && participante.abdominais_realizadas && participante.polichinelos_realizados) {
+          const flexoesOk = parseInt(participante.flexoes_realizadas) >= metaAtual.meta_flexoes;
+          const abdominaisOk = parseInt(participante.abdominais_realizadas) >= metaAtual.meta_abdominais;
+          const polichinelasOk = parseInt(participante.polichinelos_realizados) >= metaAtual.meta_polichinelos;
+          const tempoOk = participante.tempo_total_segundos ? parseInt(participante.tempo_total_segundos) <= 180 : true;
+          
+          return { ...participante, aprovado: flexoesOk && abdominaisOk && polichinelasOk && tempoOk };
+        }
+        
+        return { ...participante, aprovado: undefined };
+      });
+      
+      setParticipantes(participantesAtualizados);
     }
-  }, [tempoFormatado]);
+  }, [participantes, metas]);
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const adicionarParticipante = () => {
+    const novoParticipante: ParticipanteEquipe = {
+      id: Date.now().toString(),
+      bombeiro_id: '',
+      faixa_etaria: 'abaixo_40',
+      flexoes_realizadas: '',
+      abdominais_realizadas: '',
+      polichinelos_realizados: '',
+      tempo_total_segundos: '',
+      tempo_minutos: '3',
+      tempo_segundos: '0'
+    };
+    setParticipantes(prev => [...prev, novoParticipante]);
   };
 
-  const handleTempoChange = (tipo: 'minutos' | 'segundos', value: string) => {
-    // Validar entrada
-    const numValue = parseInt(value) || 0;
-    if (tipo === 'segundos' && numValue >= 60) return;
-    if (numValue < 0) return;
-    
-    setTempoFormatado(prev => ({ ...prev, [tipo]: value }));
+  const removerParticipante = (id: string) => {
+    setParticipantes(prev => prev.filter(p => p.id !== id));
+  };
+
+  const atualizarParticipante = (id: string, campo: string, valor: string) => {
+    setParticipantes(prev => prev.map(p => {
+      if (p.id === id) {
+        const participanteAtualizado = { ...p, [campo]: valor };
+        
+        // Atualizar tempo total se for mudança de minutos/segundos
+        if (campo === 'tempo_minutos' || campo === 'tempo_segundos') {
+          const minutos = campo === 'tempo_minutos' ? parseInt(valor || '0') : parseInt(p.tempo_minutos || '0');
+          const segundos = campo === 'tempo_segundos' ? parseInt(valor || '0') : parseInt(p.tempo_segundos || '0');
+          participanteAtualizado.tempo_total_segundos = (minutos * 60 + segundos).toString();
+        }
+        
+        return participanteAtualizado;
+      }
+      return p;
+    }));
+  };
+
+  const validarParticipantesUnicos = () => {
+    const bombeiroIds = participantes.map(p => p.bombeiro_id).filter(id => id);
+    const idsUnicos = new Set(bombeiroIds);
+    return bombeiroIds.length === idsUnicos.size;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.bombeiro_id || !formData.flexoes_realizadas || 
-        !formData.abdominais_realizadas || !formData.polichinelos_realizados) {
-      toast.error('Preencha todos os campos obrigatórios');
+    // Validações para modo equipe
+    if (!equipeSelecionada) {
+      toast.error('Selecione uma equipe');
+      return;
+    }
+    
+    if (participantes.length === 0) {
+      toast.error('Adicione pelo menos um participante');
+      return;
+    }
+    
+    if (!validarParticipantesUnicos()) {
+      toast.error('Não é possível ter participantes duplicados na mesma equipe');
+      return;
+    }
+    
+    // Validar se todos os participantes têm dados completos
+    const participantesIncompletos = participantes.filter(p => 
+      !p.bombeiro_id || !p.flexoes_realizadas || !p.abdominais_realizadas || !p.polichinelos_realizados
+    );
+    
+    if (participantesIncompletos.length > 0) {
+      toast.error('Preencha todos os campos obrigatórios de todos os participantes');
       return;
     }
 
     setIsSubmitting(true);
 
-    const dadosAvaliacao = {
-      bombeiro_id: formData.bombeiro_id,
-      data_teste: formData.data_teste,
-      avaliador_nome: 'Sistema', // Valor padrão temporário
-      faixa_etaria: formData.faixa_etaria,
-      idade_na_data: 30, // Valor padrão temporário - deve ser calculado baseado na data de nascimento
-      flexoes_realizadas: parseInt(formData.flexoes_realizadas),
-      abdominais_realizadas: parseInt(formData.abdominais_realizadas),
-      polichinelos_realizados: parseInt(formData.polichinelos_realizados),
-      tempo_total_segundos: parseInt(formData.tempo_total_segundos || '0'),
-      tempo_limite_minutos: parseInt(formData.tempo_limite_minutos || '0'),
-      aprovado: aprovado || false
-    };
-
     try {
-      if (avaliacaoId) {
-        await atualizarAvaliacao.mutateAsync({ id: avaliacaoId, dados: dadosAvaliacao });
-        toast.success('Avaliação TAF atualizada com sucesso!');
-      } else {
-        await criarAvaliacao.mutateAsync(dadosAvaliacao);
-        toast.success('Avaliação TAF cadastrada com sucesso!');
+      // Salvar avaliação de equipe
+      const avaliacoesEquipe = participantes.map(participante => ({
+        bombeiro_id: participante.bombeiro_id,
+        data_teste: dataAvaliacao,
+        avaliador_nome: 'Sistema',
+        faixa_etaria: participante.faixa_etaria,
+        idade_na_data: 30,
+        flexoes_realizadas: parseInt(participante.flexoes_realizadas),
+        abdominais_realizadas: parseInt(participante.abdominais_realizadas),
+        polichinelos_realizados: parseInt(participante.polichinelos_realizados),
+        tempo_total_segundos: parseInt(participante.tempo_total_segundos || '0'),
+        tempo_limite_minutos: 3,
+        aprovado: participante.aprovado || false,
+        equipe: equipeSelecionada,
+        tipo_avaliacao: 'equipe'
+      }));
+      
+      // Criar todas as avaliações da equipe
+      for (const avaliacao of avaliacoesEquipe) {
+        await criarAvaliacao.mutateAsync(avaliacao);
       }
       
-      // Limpar formulário
-      setFormData({
-        bombeiro_id: '',
-        data_teste: format(new Date(), 'yyyy-MM-dd'),
-        faixa_etaria: 'abaixo_40',
-        flexoes_realizadas: '',
-        abdominais_realizadas: '',
-        polichinelos_realizados: '',
-        tempo_total_segundos: '',
-        tempo_limite_minutos: ''
-      });
-      setTempoFormatado({ minutos: '', segundos: '' });
-      setAprovado(null);
+      toast.success(`Avaliação TAF da equipe ${equipeSelecionada} cadastrada com sucesso!`);
+      
+      // Limpar formulário de equipe
+      setEquipeSelecionada('');
+      setParticipantes([]);
+      setDataAvaliacao(format(new Date(), 'yyyy-MM-dd'));
       
       onSuccess?.();
     } catch (error) {
@@ -186,256 +241,262 @@ const TAFForm: React.FC<TAFFormProps> = ({ onSuccess, avaliacaoId }) => {
     }
   };
 
-  const metaAtual = metas?.find(m => m.faixa_etaria === formData.faixa_etaria);
-  const bombeiroSelecionado = bombeiros?.find(b => b.id === formData.bombeiro_id);
-
   return (
     <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Target className="w-5 h-5 text-blue-500" />
-          {avaliacaoId ? 'Editar Avaliação TAF' : 'Nova Avaliação TAF'}
+          <Users className="w-5 h-5 text-blue-500" />
+          Nova Avaliação TAF - Equipe
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informações Básicas */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="bombeiro">Bombeiro *</Label>
-              <Select 
-                value={formData.bombeiro_id} 
-                onValueChange={(value) => handleInputChange('bombeiro_id', value)}
-                disabled={loadingBombeiros}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o bombeiro" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bombeiros?.map((bombeiro) => (
-                    <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        {bombeiro.nome_completo || bombeiro.nome}
+           {/* Modo Equipe */}
+           <div className="space-y-6">
+              {/* Seleção de Equipe e Data */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Equipe *</Label>
+                  <Select value={equipeSelecionada} onValueChange={setEquipeSelecionada}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a equipe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equipes.map((equipe) => (
+                        <SelectItem key={equipe} value={equipe}>
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            Equipe {equipe}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="data_teste_equipe">Data do Teste *</Label>
+                  <Input
+                    id="data_teste_equipe"
+                    type="date"
+                    value={dataAvaliacao}
+                    onChange={(e) => setDataAvaliacao(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Botão Adicionar Participante */}
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Participantes da Equipe</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={adicionarParticipante}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Adicionar Participante
+                </Button>
+              </div>
+
+              {/* Lista de Participantes */}
+              {participantes.map((participante, index) => (
+                <Card key={participante.id} className="p-4 border-2">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-medium">Participante {index + 1}</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removerParticipante(participante.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Campos do Participante */}
+                  <div className="space-y-4">
+                    {/* Bombeiro e Faixa Etária */}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Bombeiro *</Label>
+                        <Select 
+                          value={participante.bombeiro_id} 
+                          onValueChange={(value) => atualizarParticipante(participante.id, 'bombeiro_id', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o bombeiro" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bombeiros?.filter(b => 
+                              !participantes.some(p => p.id !== participante.id && p.bombeiro_id === b.id)
+                            ).map((bombeiro) => (
+                              <SelectItem key={bombeiro.id} value={bombeiro.id}>
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4" />
+                                  {bombeiro.nome_completo || bombeiro.nome}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Faixa Etária *</Label>
+                        <Select 
+                          value={participante.faixa_etaria} 
+                          onValueChange={(value) => atualizarParticipante(participante.id, 'faixa_etaria', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="abaixo_40">Abaixo de 40 anos</SelectItem>
+                            <SelectItem value="acima_40">Acima de 40 anos</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="data_teste">Data do Teste *</Label>
-              <Input
-                id="data_teste"
-                type="date"
-                value={formData.data_teste}
-                onChange={(e) => handleInputChange('data_teste', e.target.value)}
-                className="w-full"
-              />
-            </div>
-          </div>
+                    {/* Metas */}
+                    {(() => {
+                      const metaParticipante = metas?.find(m => m.faixa_etaria === participante.faixa_etaria);
+                      return metaParticipante && (
+                        <Alert>
+                          <Target className="w-4 h-4" />
+                          <AlertDescription>
+                            <strong>Metas para {participante.faixa_etaria === 'abaixo_40' ? 'abaixo de 40 anos' : 'acima de 40 anos'}:</strong>
+                            <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
+                              <div>Flexões: <Badge variant="outline">{metaParticipante.meta_flexoes}</Badge></div>
+                              <div>Abdominais: <Badge variant="outline">{metaParticipante.meta_abdominais}</Badge></div>
+                              <div>Polichinelos: <Badge variant="outline">{metaParticipante.meta_polichinelos}</Badge></div>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                      );
+                    })()}
 
-          {/* Faixa Etária */}
-          <div className="space-y-2">
-            <Label>Faixa Etária *</Label>
-            <Select 
-              value={formData.faixa_etaria} 
-              onValueChange={(value) => handleInputChange('faixa_etaria', value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="abaixo_40">Abaixo de 40 anos</SelectItem>
-                <SelectItem value="acima_40">Acima de 40 anos</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+                    {/* Exercícios */}
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label>Flexões *</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={participante.flexoes_realizadas}
+                          onChange={(e) => atualizarParticipante(participante.id, 'flexoes_realizadas', e.target.value)}
+                          placeholder="Quantidade"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Abdominais *</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={participante.abdominais_realizadas}
+                          onChange={(e) => atualizarParticipante(participante.id, 'abdominais_realizadas', e.target.value)}
+                          placeholder="Quantidade"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Polichinelos *</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={participante.polichinelos_realizados}
+                          onChange={(e) => atualizarParticipante(participante.id, 'polichinelos_realizados', e.target.value)}
+                          placeholder="Quantidade"
+                        />
+                      </div>
+                    </div>
 
-          {/* Metas da Faixa Etária */}
-          {metaAtual && (
-            <Alert>
-              <Target className="w-4 h-4" />
-              <AlertDescription>
-                <strong>Metas para {formData.faixa_etaria === 'abaixo_40' ? 'abaixo de 40 anos' : 'acima de 40 anos'}:</strong>
-                <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
-                  <div>Flexões: <Badge variant="outline">{metaAtual.meta_flexoes}</Badge></div>
-                  <div>Abdominais: <Badge variant="outline">{metaAtual.meta_abdominais}</Badge></div>
-                  <div>Polichinelos: <Badge variant="outline">{metaAtual.meta_polichinelos}</Badge></div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <Separator />
-
-          {/* Exercícios */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              Exercícios Realizados
-            </h3>
-            
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="flexoes">Flexões *</Label>
-                <Input
-                  id="flexoes"
-                  type="number"
-                  min="0"
-                  value={formData.flexoes_realizadas}
-                  onChange={(e) => handleInputChange('flexoes_realizadas', e.target.value)}
-                  placeholder="Quantidade"
-                />
-                {metaAtual && formData.flexoes_realizadas && (
-                  <div className="flex items-center gap-1 text-xs">
-                    {parseInt(formData.flexoes_realizadas) >= metaAtual.meta_flexoes ? (
-                      <CheckCircle className="w-3 h-3 text-green-500" />
-                    ) : (
-                      <XCircle className="w-3 h-3 text-red-500" />
-                    )}
-                    <span>Meta: {metaAtual.meta_flexoes}</span>
+                    {/* Tempo */}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Tempo Realizado</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="3"
+                            value={participante.tempo_minutos}
+                            onChange={(e) => atualizarParticipante(participante.id, 'tempo_minutos', e.target.value)}
+                            placeholder="Min"
+                          />
+                          <span className="flex items-center">:</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="59"
+                            value={participante.tempo_segundos}
+                            onChange={(e) => atualizarParticipante(participante.id, 'tempo_segundos', e.target.value)}
+                            placeholder="Seg"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Status</Label>
+                        <div className="flex items-center gap-2 p-2 rounded border">
+                          {participante.aprovado !== undefined ? (
+                            participante.aprovado ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <span className="text-green-600 text-sm">Aprovado</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-4 h-4 text-red-500" />
+                                <span className="text-red-600 text-sm">Reprovado</span>
+                              </>
+                            )
+                          ) : (
+                            <>
+                              <Clock className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-500 text-sm">Pendente</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+                </Card>
+              ))}
 
-              <div className="space-y-2">
-                <Label htmlFor="abdominais">Abdominais *</Label>
-                <Input
-                  id="abdominais"
-                  type="number"
-                  min="0"
-                  value={formData.abdominais_realizadas}
-                  onChange={(e) => handleInputChange('abdominais_realizadas', e.target.value)}
-                  placeholder="Quantidade"
-                />
-                {metaAtual && formData.abdominais_realizadas && (
-                  <div className="flex items-center gap-1 text-xs">
-                    {parseInt(formData.abdominais_realizadas) >= metaAtual.meta_abdominais ? (
-                      <CheckCircle className="w-3 h-3 text-green-500" />
-                    ) : (
-                      <XCircle className="w-3 h-3 text-red-500" />
-                    )}
-                    <span>Meta: {metaAtual.meta_abdominais}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="polichinelos">Polichinelos *</Label>
-                <Input
-                  id="polichinelos"
-                  type="number"
-                  min="0"
-                  value={formData.polichinelos_realizados}
-                  onChange={(e) => handleInputChange('polichinelos_realizados', e.target.value)}
-                  placeholder="Quantidade"
-                />
-                {metaAtual && formData.polichinelos_realizados && (
-                  <div className="flex items-center gap-1 text-xs">
-                    {parseInt(formData.polichinelos_realizados) >= metaAtual.meta_polichinelos ? (
-                      <CheckCircle className="w-3 h-3 text-green-500" />
-                    ) : (
-                      <XCircle className="w-3 h-3 text-red-500" />
-                    )}
-                    <span>Meta: {metaAtual.meta_polichinelos}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Tempo Total */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Timer className="w-5 h-5" />
-              Tempo Total para Todos os Exercícios (3 minutos)
-            </h3>
-            
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Tempo Realizado</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="3"
-                    value={tempoFormatado.minutos}
-                    onChange={(e) => handleTempoChange('minutos', e.target.value)}
-                    placeholder="Min"
-                  />
-                  <span className="flex items-center">:</span>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="59"
-                    value={tempoFormatado.segundos}
-                    onChange={(e) => handleTempoChange('segundos', e.target.value)}
-                    placeholder="Seg"
-                  />
+              {participantes.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Nenhum participante adicionado ainda.</p>
+                  <p className="text-sm">Clique em "Adicionar Participante" para começar.</p>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Tempo limite: 3 minutos para flexões, abdominais e polichinelos
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Status do Tempo</Label>
-                <div className="flex items-center gap-2 p-2 rounded border">
-                  {formData.tempo_total_segundos ? (
-                    parseInt(formData.tempo_total_segundos) <= 180 ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="text-green-600 text-sm">Dentro do limite</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-4 h-4 text-red-500" />
-                        <span className="text-red-600 text-sm">Acima do limite</span>
-                      </>
-                    )
-                  ) : (
-                    <>
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-500 text-sm">Não definido</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Status de Aprovação */}
-          {aprovado !== null && (
-            <Alert className={aprovado ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-              {aprovado ? (
-                <CheckCircle className="w-4 h-4 text-green-600" />
-              ) : (
-                <XCircle className="w-4 h-4 text-red-600" />
               )}
-              <AlertDescription className={aprovado ? 'text-green-800' : 'text-red-800'}>
-                <strong>{aprovado ? 'APROVADO' : 'REPROVADO'}</strong>
-                {bombeiroSelecionado && (
-                  <div className="mt-1">
-                    {bombeiroSelecionado.nome_completo} - {format(new Date(formData.data_teste), 'dd/MM/yyyy', { locale: ptBR })}
-                  </div>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
+            </div>
 
-          {/* Botões */}
-          <div className="flex gap-4 pt-4">
+          <Separator />
+
+          {/* Botões de Ação */}
+          <div className="flex gap-4">
             <Button 
               type="submit" 
-              disabled={isSubmitting || loadingBombeiros || loadingMetas}
+              disabled={isSubmitting || loadingBombeiros || loadingMetas || participantes.length === 0}
               className="flex-1"
             >
-              <Save className="w-4 h-4 mr-2" />
-              {isSubmitting ? 'Salvando...' : (avaliacaoId ? 'Atualizar' : 'Salvar Avaliação')}
+              {isSubmitting ? (
+                <>
+                  <Timer className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {avaliacaoId ? 'Atualizar Avaliação' : `Salvar Avaliação da Equipe ${equipeSelecionada || ''}`}
+                </>
+              )}
             </Button>
           </div>
         </form>

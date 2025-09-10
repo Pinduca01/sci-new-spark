@@ -15,7 +15,7 @@ import Viaturas from "./pages/Viaturas";
 import Escalas from "./pages/Escalas";
 import Exercicios from "./pages/Exercicios";
 import PTRBA from "./pages/PTRBA";
-import Equipamentos from "./pages/Equipamentos";
+import AgentesExtintores from "./pages/AgentesExtintores";
 import TPUniformes from "./pages/TPUniformes";
 import AtividadesAcessorias from "./pages/AtividadesAcessorias";
 import OrdemServico from "./pages/OrdemServico";
@@ -52,7 +52,12 @@ const App = () => (
           <Route path="/veiculos" element={<MainLayout><Viaturas /></MainLayout>} />
           <Route path="/escalas" element={<MainLayout><Escalas /></MainLayout>} />
           <Route path="/exercicios" element={<MainLayout><Exercicios /></MainLayout>} />
-          <Route path="/equipamentos" element={<MainLayout><Equipamentos /></MainLayout>} />
+          <Route path="/equipamentos" element={<MainLayout><AgentesExtintores /></MainLayout>} />
+          <Route path="/agentes-extintores" element={<MainLayout><AgentesExtintores /></MainLayout>} />
+          <Route path="/agentes-extintores/estoque" element={<MainLayout><AgentesExtintores /></MainLayout>} />
+          <Route path="/agentes-extintores/checklist" element={<MainLayout><AgentesExtintores /></MainLayout>} />
+          <Route path="/agentes-extintores/movimentacao" element={<MainLayout><AgentesExtintores /></MainLayout>} />
+          <Route path="/agentes-extintores/relatorios" element={<MainLayout><AgentesExtintores /></MainLayout>} />
           <Route path="/equipamentos/tp-uniformes" element={<MainLayout><TPUniformes /></MainLayout>} />
           <Route path="/ptr-ba" element={<MainLayout><PTRBA /></MainLayout>} />
           <Route path="/atividades-acessorias" element={<MainLayout><AtividadesAcessorias /></MainLayout>} />

@@ -16,6 +16,8 @@ export interface TAFAvaliacao {
   tempo_limite_minutos: number;
   aprovado: boolean;
   observacoes?: string;
+  equipe?: string;
+  tipo_avaliacao?: string;
   created_at?: string;
   updated_at?: string;
   bombeiros?: {
@@ -39,6 +41,8 @@ export interface NovaAvaliacaoTAF {
   tempo_limite_minutos: number;
   aprovado: boolean;
   observacoes?: string;
+  equipe?: string;
+  tipo_avaliacao?: string;
 }
 
 export const useTAFAvaliacoes = () => {
@@ -53,6 +57,8 @@ export const useTAFAvaliacoes = () => {
   } = useQuery({
     queryKey: ['taf-avaliacoes'],
     queryFn: async (): Promise<TAFAvaliacao[]> => {
+      console.log('🔍 Buscando avaliações TAF do banco de dados...');
+      
       const { data, error } = await supabase
         .from('taf_avaliacoes')
         .select(`
@@ -71,6 +77,12 @@ export const useTAFAvaliacoes = () => {
         throw error;
       }
 
+      console.log('📊 Avaliações carregadas:', {
+        total: data?.length || 0,
+        equipes: [...new Set(data?.map(a => a.equipe) || [])],
+        datas: [...new Set(data?.map(a => a.data_teste) || [])]
+      });
+      
       return data || [];
     },
     staleTime: 2 * 60 * 1000, // 2 minutos
@@ -193,11 +205,23 @@ export const useTAFAvaliacoes = () => {
 
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes'] });
-      queryClient.invalidateQueries({ queryKey: ['taf-estatisticas'] });
-      queryClient.invalidateQueries({ queryKey: ['taf-avaliacao', data.id] });
-      queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes-bombeiro', data.bombeiro_id] });
+    onSuccess: async (data) => {
+      console.log('✅ Avaliação atualizada com sucesso:', {
+        id: data.id,
+        bombeiro_id: data.bombeiro_id,
+        equipe: data.equipe,
+        data_teste: data.data_teste
+      });
+      
+      // Aguardar a invalidação das queries para garantir que os dados sejam recarregados
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes'] }),
+        queryClient.invalidateQueries({ queryKey: ['taf-estatisticas'] }),
+        queryClient.invalidateQueries({ queryKey: ['taf-avaliacao', data.id] }),
+        queryClient.invalidateQueries({ queryKey: ['taf-avaliacoes-bombeiro', data.bombeiro_id] })
+      ]);
+      
+      console.log('🔄 Queries invalidadas, dados devem ser recarregados');
       toast.success('Avaliação TAF atualizada com sucesso!');
     },
     onError: (error) => {

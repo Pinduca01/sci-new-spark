@@ -68,7 +68,7 @@ export const LoteRecomendacao = () => {
         {recomendacao ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="font-medium">Lote: {recomendacao.lote}</span>
+              <span className="font-medium">Fabricante: {recomendacao.fabricante}</span>
               <Badge variant={getStatusBadge(recomendacao.dias_para_vencimento) as any}>
                 {recomendacao.dias_para_vencimento} dias
               </Badge>
@@ -95,11 +95,11 @@ export const LoteRecomendacao = () => {
           </div>
         ) : (
           <div className="text-center py-4">
-            <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Nenhum lote disponível
-            </p>
-          </div>
+              <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Nenhum agente disponível
+              </p>
+            </div>
         )}
       </CardContent>
     </Card>
@@ -111,7 +111,7 @@ export const LoteRecomendacao = () => {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-yellow-600" />
-            Recomendação de Lotes (FIFO)
+            Recomendação de Agentes (FIFO)
           </CardTitle>
           <Button 
             variant="outline" 
@@ -137,17 +137,11 @@ export const LoteRecomendacao = () => {
           />
         </div>
         
-        <div className="mt-4 p-4 bg-muted rounded-lg">
-          <div className="flex items-start gap-2">
-            <Lightbulb className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm">
-              <p className="font-medium">Regra FIFO (First In, First Out)</p>
-              <p className="text-muted-foreground">
-                O sistema recomenda sempre o lote mais antigo disponível para uso,
-                garantindo que os agentes extintores sejam utilizados antes do vencimento.
-              </p>
-            </div>
-          </div>
+        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>FIFO (First In, First Out):</strong> O sistema recomenda sempre utilizar primeiro os agentes 
+            com data de validade mais próxima, garantindo a rotatividade adequada do estoque.
+          </p>
         </div>
       </CardContent>
     </Card>

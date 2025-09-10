@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
+import { 
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -38,6 +38,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Search, 
   Filter, 
@@ -52,7 +60,10 @@ import {
   Activity,
   MoreHorizontal,
   AlertTriangle,
-  FileText
+  FileText,
+  Users,
+  CircleCheckBig,
+  CircleX
 } from "lucide-react";
 import { useTAFAvaliacoes } from '@/hooks/useTAFAvaliacoes';
 import { useBombeiros } from '@/hooks/useBombeiros';
@@ -68,6 +79,7 @@ interface TAFHistoricoProps {
 }
 
 const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDetails }) => {
+  const [tipoHistorico, setTipoHistorico] = useState<'individual' | 'equipe'>('equipe');
   const [filtros, setFiltros] = useState({
     busca: '',
     status: 'todos', // todos, aprovado, reprovado
@@ -84,9 +96,117 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
   const [avaliacaoParaExcluir, setAvaliacaoParaExcluir] = useState<string | null>(null);
   const [avaliacaoParaVisualizar, setAvaliacaoParaVisualizar] = useState<string | null>(null);
   const [avaliacaoParaEditar, setAvaliacaoParaEditar] = useState<string | null>(null);
+  const [itensPorPagina, setItensPorPagina] = useState(10);
+  
+  // Estados específicos para histórico por equipe
+  const [equipeParaVer, setEquipeParaVer] = useState<any>(null)
+  const [equipeParaEditar, setEquipeParaEditar] = useState<any>(null)
+  const [equipeParaExcluir, setEquipeParaExcluir] = useState<any>(null)
+  const [dadosEdicaoEquipe, setDadosEdicaoEquipe] = useState<any[]>([])
+  const [salvandoEquipe, setSalvandoEquipe] = useState(false)
+  const [excluindoEquipe, setExcluindoEquipe] = useState(false)
 
-  const { avaliacoes, isLoading, excluirAvaliacao } = useTAFAvaliacoes();
+  const { avaliacoes, isLoading, excluirAvaliacao, atualizarAvaliacao } = useTAFAvaliacoes();
   const { bombeiros } = useBombeiros();
+
+  // Função para calcular aprovação baseada nos critérios TAF
+  const calcularAprovacao = (avaliacao: any) => {
+    const { flexoes_realizadas, abdominais_realizadas, polichinelos_realizados, tempo_total_segundos, faixa_etaria } = avaliacao;
+    
+    // Critérios mínimos por faixa etária (exemplo - ajustar conforme necessário)
+    const criterios = {
+      'abaixo_40': {
+        flexoes_min: 20,
+        abdominais_min: 30,
+        polichinelos_min: 40,
+        tempo_max: 720 // 12 minutos
+      },
+      'acima_40': {
+        flexoes_min: 15,
+        abdominais_min: 25,
+        polichinelos_min: 35,
+        tempo_max: 780 // 13 minutos
+      }
+    };
+    
+    const criterio = criterios[faixa_etaria as keyof typeof criterios] || criterios['abaixo_40'];
+    
+    return (
+      flexoes_realizadas >= criterio.flexoes_min &&
+      abdominais_realizadas >= criterio.abdominais_min &&
+      polichinelos_realizados >= criterio.polichinelos_min &&
+      tempo_total_segundos <= criterio.tempo_max
+    );
+  };
+
+  // Função para agrupar avaliações por equipe e data
+  const avaliacoesAgrupadas = useMemo(() => {
+    const grupos: { [key: string]: {
+      equipe: string
+      data: string
+      participantes: any[]
+      status: 'aprovado' | 'reprovado' | 'parcial'
+    }} = {}
+
+    console.log('🔍 Agrupando avaliações:', avaliacoes?.length || 0, 'total')
+    
+    avaliacoes
+      ?.filter(avaliacao => avaliacao.equipe && avaliacao.tipo_avaliacao === 'equipe')
+      .forEach(avaliacao => {
+        const chave = `${avaliacao.equipe}-${avaliacao.data_teste}`
+        
+        console.log('📊 Processando avaliação:', {
+          id: avaliacao.id,
+          bombeiro_id: avaliacao.bombeiro_id,
+          equipe: avaliacao.equipe,
+          data_teste: avaliacao.data_teste,
+          chave
+        })
+        
+        if (!grupos[chave]) {
+          grupos[chave] = {
+            equipe: avaliacao.equipe,
+            data: avaliacao.data_teste,
+            participantes: [],
+            status: 'aprovado'
+          }
+          console.log('✨ Novo grupo criado:', chave)
+        }
+        
+        // Garantir que cada participante mantenha o data_teste original
+        const participanteComDataTeste = {
+          ...avaliacao,
+          data_teste: avaliacao.data_teste // Preservar explicitamente o data_teste original
+        }
+        
+        grupos[chave].participantes.push(participanteComDataTeste)
+      })
+
+    // Calcular status geral de cada grupo
+    Object.values(grupos).forEach(grupo => {
+      const aprovados = grupo.participantes.filter(p => p.aprovado).length
+      const total = grupo.participantes.length
+      
+      if (aprovados === total) {
+        grupo.status = 'aprovado'
+      } else if (aprovados === 0) {
+        grupo.status = 'reprovado'
+      } else {
+        grupo.status = 'parcial'
+      }
+    })
+
+    const gruposFinais = Object.values(grupos).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+    
+    console.log('🎯 Grupos finais criados:', gruposFinais.map(g => ({
+      equipe: g.equipe,
+      data: g.data,
+      participantes: g.participantes.length,
+      chave: `${g.equipe}-${g.data}`
+    })))
+    
+    return gruposFinais
+  }, [avaliacoes]);
 
   // Filtrar e paginar dados
   const dadosFiltrados = useMemo(() => {
@@ -254,6 +374,19 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <Tabs value={tipoHistorico} onValueChange={(value) => setTipoHistorico(value as 'individual' | 'equipe')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="equipe" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Histórico por Equipe
+            </TabsTrigger>
+            <TabsTrigger value="individual" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Histórico Individual
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="individual" className="space-y-6 mt-6">
         {/* Filtros */}
         <div className="space-y-4 mb-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -424,7 +557,9 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
                       <TableCell className="text-center">
                         <Badge 
                           variant={avaliacao.aprovado ? "default" : "destructive"}
-                          className="flex items-center gap-1 w-fit mx-auto"
+                          className={`flex items-center gap-1 w-fit mx-auto ${
+                            avaliacao.aprovado ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                          }`}
                         >
                           {avaliacao.aprovado ? (
                             <CheckCircle className="w-3 h-3" />
@@ -501,7 +636,163 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
             </div>
           </div>
         )}
-      </CardContent>
+            </TabsContent>
+            
+            <TabsContent value="equipe" className="space-y-6 mt-6">
+              {/* Filtros para equipe */}
+              <div className="space-y-4 mb-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por equipe..."
+                      value={filtros.busca}
+                      onChange={(e) => setFiltros(prev => ({ ...prev, busca: e.target.value }))}
+                      className="pl-10 h-12 rounded-lg border-input bg-white hover:bg-white focus:bg-white backdrop-blur-sm transition-all duration-300"
+                    />
+                  </div>
+                  <Select value={filtros.status} onValueChange={(value) => setFiltros(prev => ({ ...prev, status: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os status</SelectItem>
+                      <SelectItem value="aprovado">Aprovado</SelectItem>
+                      <SelectItem value="reprovado">Reprovado</SelectItem>
+                      <SelectItem value="parcial">Parcial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={filtros.periodo} onValueChange={(value) => setFiltros(prev => ({ ...prev, periodo: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os períodos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os períodos</SelectItem>
+                      <SelectItem value="ultima-semana">Última semana</SelectItem>
+                      <SelectItem value="ultimo-mes">Último mês</SelectItem>
+                      <SelectItem value="ultimos-3-meses">Últimos 3 meses</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Resumo dos resultados para equipe */}
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm text-muted-foreground">
+                  Mostrando {avaliacoesAgrupadas.length} registros de equipe
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Itens por página:</span>
+                  <Select value={itensPorPagina.toString()} onValueChange={(value) => setItensPorPagina(Number(value))}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Tabela de histórico por equipe */}
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Equipe</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Participantes</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-center">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {avaliacoesAgrupadas.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">Nenhum registro de equipe encontrado</p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      avaliacoesAgrupadas.map((grupo, index) => (
+                        <TableRow key={`${grupo.equipe}-${grupo.data}-${index}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-muted-foreground" />
+                              <div>
+                                <div className="font-medium">{grupo.equipe}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                              {new Date(grupo.data).toLocaleDateString('pt-BR')}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {grupo.participantes.length} bombeiro{grupo.participantes.length !== 1 ? 's' : ''}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge 
+                              variant={grupo.status === 'aprovado' ? 'default' : grupo.status === 'reprovado' ? 'destructive' : 'secondary'}
+                              className={`flex items-center gap-1 w-fit mx-auto ${
+                                grupo.status === 'aprovado' ? 'bg-green-500 text-white' :
+                                grupo.status === 'reprovado' ? 'bg-red-500 text-white' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
+                              {grupo.status === 'aprovado' ? (
+                                <CircleCheckBig className="w-3 h-3" />
+                              ) : grupo.status === 'reprovado' ? (
+                                <CircleX className="w-3 h-3" />
+                              ) : (
+                                <AlertTriangle className="w-3 h-3" />
+                              )}
+                              {grupo.status === 'aprovado' ? 'Aprovado' : 
+                               grupo.status === 'reprovado' ? 'Reprovado' : 'Parcial'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-9 w-9 p-0">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setEquipeParaVer(grupo)}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  Ver
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setEquipeParaEditar(grupo)}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => setEquipeParaExcluir(grupo)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
       </Card>
 
       {/* AlertDialog para confirmação de exclusão */}
@@ -555,6 +846,393 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
           }}
         />
       )}
+
+      {/* Modal de visualização detalhada da equipe */}
+      <Dialog open={!!equipeParaVer} onOpenChange={() => setEquipeParaVer(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Relatório Detalhado - Equipe {equipeParaVer?.equipe}
+            </DialogTitle>
+            <DialogDescription>
+              Avaliação realizada em {equipeParaVer && new Date(equipeParaVer.data).toLocaleDateString('pt-BR')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {equipeParaVer && (
+            <div className="space-y-6">
+              {/* Resumo da equipe */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="text-sm text-muted-foreground">Equipe</div>
+                  <div className="text-lg font-semibold">{equipeParaVer.equipe}</div>
+                </div>
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="text-sm text-muted-foreground">Participantes</div>
+                  <div className="text-lg font-semibold">{equipeParaVer.participantes.length}</div>
+                </div>
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <div className="text-sm text-muted-foreground">Status Geral</div>
+                  <Badge 
+                    variant={equipeParaVer.status === 'aprovado' ? 'default' : equipeParaVer.status === 'reprovado' ? 'destructive' : 'secondary'}
+                    className={`${
+                      equipeParaVer.status === 'aprovado' ? 'bg-green-500 text-white' :
+                      equipeParaVer.status === 'reprovado' ? 'bg-red-500 text-white' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {equipeParaVer.status === 'aprovado' ? 'Aprovado' : 
+                     equipeParaVer.status === 'reprovado' ? 'Reprovado' : 'Parcial'}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Lista de participantes e resultados */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Participantes e Resultados</h3>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Bombeiro</TableHead>
+                        <TableHead>Flexão</TableHead>
+                        <TableHead>Abdominal</TableHead>
+                        <TableHead>Polichinelos</TableHead>
+                        <TableHead>Tempo</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {equipeParaVer.participantes.map((participante: any, index: number) => {
+                        // Buscar dados do bombeiro usando o bombeiro_id
+                        const bombeiro = bombeiros?.find(b => b.id === participante.bombeiro_id);
+                        
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-muted-foreground" />
+                                <div>
+                                  <div className="font-medium">{bombeiro?.nome_completo || bombeiro?.nome || 'Nome não encontrado'}</div>
+                                  <div className="text-sm text-muted-foreground">{bombeiro?.matricula || 'Matrícula não encontrada'}</div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{participante.flexoes_realizadas || 0} repetições</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{participante.abdominais_realizadas || 0} repetições</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div>{participante.polichinelos_realizados || 0} repetições</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                <div className="text-muted-foreground">{formatarTempo(participante.tempo_total_segundos || 0)}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge 
+                                variant={participante.aprovado ? 'default' : 'destructive'}
+                                className={participante.aprovado ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}
+                              >
+                                {participante.aprovado ? 'Aprovado' : 'Reprovado'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de edição da equipe */}
+      <Dialog open={!!equipeParaEditar} onOpenChange={() => {
+        setEquipeParaEditar(null);
+        setDadosEdicaoEquipe([]);
+      }}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5" />
+              Editar Registro - Equipe {equipeParaEditar?.equipe}
+            </DialogTitle>
+            <DialogDescription>
+              Modifique os dados dos participantes da equipe
+            </DialogDescription>
+          </DialogHeader>
+          
+          {equipeParaEditar && (
+            <div className="space-y-6">
+              {/* Informações da equipe */}
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Equipe</div>
+                    <div className="text-lg font-semibold">{equipeParaEditar.equipe}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Data da Avaliação</div>
+                    <div className="text-lg font-semibold">{new Date(equipeParaEditar.data).toLocaleDateString('pt-BR')}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Formulário de edição dos participantes */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Editar Participantes</h3>
+                <div className="space-y-4">
+                  {(dadosEdicaoEquipe.length > 0 ? dadosEdicaoEquipe : equipeParaEditar.participantes).map((participante: any, index: number) => {
+                    const bombeiro = bombeiros?.find(b => b.id === participante.bombeiro_id);
+                    const dadosParticipante = dadosEdicaoEquipe[index] || participante;
+                    
+                    return (
+                      <div key={participante.id} className="border rounded-lg p-4 space-y-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">{bombeiro?.nome_completo || bombeiro?.nome || 'Nome não encontrado'}</div>
+                            <div className="text-sm text-muted-foreground">{bombeiro?.matricula || 'Matrícula não encontrada'}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Flexões</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={dadosParticipante.flexoes_realizadas || 0}
+                              onChange={(e) => {
+                                const novosDados = [...(dadosEdicaoEquipe.length > 0 ? dadosEdicaoEquipe : equipeParaEditar.participantes)];
+                                novosDados[index] = {
+                                  ...novosDados[index],
+                                  flexoes_realizadas: parseInt(e.target.value) || 0
+                                };
+                                setDadosEdicaoEquipe(novosDados);
+                              }}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium">Abdominais</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={dadosParticipante.abdominais_realizadas || 0}
+                              onChange={(e) => {
+                                const novosDados = [...(dadosEdicaoEquipe.length > 0 ? dadosEdicaoEquipe : equipeParaEditar.participantes)];
+                                novosDados[index] = {
+                                  ...novosDados[index],
+                                  abdominais_realizadas: parseInt(e.target.value) || 0
+                                };
+                                setDadosEdicaoEquipe(novosDados);
+                              }}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium">Polichinelos</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={dadosParticipante.polichinelos_realizados || 0}
+                              onChange={(e) => {
+                                const novosDados = [...(dadosEdicaoEquipe.length > 0 ? dadosEdicaoEquipe : equipeParaEditar.participantes)];
+                                novosDados[index] = {
+                                  ...novosDados[index],
+                                  polichinelos_realizados: parseInt(e.target.value) || 0
+                                };
+                                setDadosEdicaoEquipe(novosDados);
+                              }}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium">Tempo (segundos)</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={dadosParticipante.tempo_total_segundos || 0}
+                              onChange={(e) => {
+                                const novosDados = [...(dadosEdicaoEquipe.length > 0 ? dadosEdicaoEquipe : equipeParaEditar.participantes)];
+                                novosDados[index] = {
+                                  ...novosDados[index],
+                                  tempo_total_segundos: parseInt(e.target.value) || 0
+                                };
+                                setDadosEdicaoEquipe(novosDados);
+                              }}
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium">Observações</label>
+                          <Input
+                            value={dadosParticipante.observacoes || ''}
+                            onChange={(e) => {
+                              const novosDados = [...(dadosEdicaoEquipe.length > 0 ? dadosEdicaoEquipe : equipeParaEditar.participantes)];
+                              novosDados[index] = {
+                                ...novosDados[index],
+                                observacoes: e.target.value
+                              };
+                              setDadosEdicaoEquipe(novosDados);
+                            }}
+                            placeholder="Observações sobre a avaliação..."
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setEquipeParaEditar(null);
+                setDadosEdicaoEquipe([]);
+              }}
+              disabled={salvandoEquipe}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!equipeParaEditar || dadosEdicaoEquipe.length === 0) return;
+                
+                setSalvandoEquipe(true);
+                try {
+                  // Atualizar cada participante da equipe
+                  console.log('🔄 Iniciando atualização da equipe:', equipeParaEditar.equipe)
+                  console.log('📝 Dados para atualização:', dadosEdicaoEquipe.map(p => ({
+                    id: p.id,
+                    bombeiro_id: p.bombeiro_id,
+                    equipe: p.equipe,
+                    data_teste: p.data_teste
+                  })))
+                  
+                  const promises = dadosEdicaoEquipe.map(async (participante) => {
+                    // Calcular se foi aprovado baseado nos critérios TAF
+                    const aprovado = calcularAprovacao(participante);
+                    
+                    // CRÍTICO: Garantir que a data_teste NUNCA seja alterada
+                    const dataTesteOriginal = participante.data_teste || equipeParaEditar.data;
+                    
+                    const dadosAtualizacao = {
+                      flexoes_realizadas: participante.flexoes_realizadas,
+                      abdominais_realizadas: participante.abdominais_realizadas,
+                      polichinelos_realizados: participante.polichinelos_realizados,
+                      tempo_total_segundos: participante.tempo_total_segundos,
+                      observacoes: participante.observacoes,
+                      aprovado,
+                      // Preservar campos essenciais para manter a pessoa na mesma equipe e data
+                      equipe: participante.equipe,
+                      data_teste: dataTesteOriginal, // USAR SEMPRE A DATA ORIGINAL
+                      bombeiro_id: participante.bombeiro_id
+                    }
+                    
+                    console.log('💾 Atualizando participante:', {
+                      id: participante.id,
+                      dados: dadosAtualizacao
+                    })
+                    
+                    return atualizarAvaliacao.mutateAsync({
+                      id: participante.id,
+                      dados: dadosAtualizacao
+                    });
+                  });
+                  
+                  await Promise.all(promises);
+                  
+                  toast.success('Equipe atualizada com sucesso!');
+                  setEquipeParaEditar(null);
+                  setDadosEdicaoEquipe([]);
+                } catch (error) {
+                  console.error('Erro ao atualizar equipe:', error);
+                  toast.error('Erro ao atualizar equipe');
+                } finally {
+                  setSalvandoEquipe(false);
+                }
+              }}
+              disabled={salvandoEquipe || dadosEdicaoEquipe.length === 0}
+            >
+              {salvandoEquipe ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de confirmação de exclusão da equipe */}
+      <AlertDialog open={!!equipeParaExcluir} onOpenChange={() => setEquipeParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Confirmar Exclusão
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o registro da equipe <strong>{equipeParaExcluir?.equipe}</strong> 
+              realizado em <strong>{equipeParaExcluir && new Date(equipeParaExcluir.data).toLocaleDateString('pt-BR')}</strong>?
+              <br /><br />
+              Esta ação irá remover todos os dados dos {equipeParaExcluir?.participantes.length} participantes 
+              desta avaliação e não poderá ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEquipeParaExcluir(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={async () => {
+                if (!equipeParaExcluir) return;
+                
+                setExcluindoEquipe(true);
+                try {
+                  // Buscar todas as avaliações da equipe
+                  const avaliacoesEquipe = avaliacoes.filter(
+                    av => av.equipe === equipeParaExcluir.equipe && 
+                         av.data_teste === equipeParaExcluir.data
+                  );
+                  
+                  // Excluir todas as avaliações da equipe
+                  for (const avaliacao of avaliacoesEquipe) {
+                    await excluirAvaliacao.mutateAsync(avaliacao.id);
+                  }
+                  
+                  toast.success(`Equipe ${equipeParaExcluir.equipe} excluída com sucesso!`);
+                  setEquipeParaExcluir(null);
+                } catch (error) {
+                  console.error('Erro ao excluir equipe:', error);
+                  toast.error('Erro ao excluir equipe. Tente novamente.');
+                } finally {
+                  setExcluindoEquipe(false);
+                }
+              }}
+              disabled={excluindoEquipe}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {excluindoEquipe ? 'Excluindo...' : 'Excluir Registro'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

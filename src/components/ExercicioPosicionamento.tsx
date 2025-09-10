@@ -1,4 +1,4 @@
-import { MapPin, Plus, Crosshair, Users, Star } from "lucide-react";
+import { MapPin, Plus, Crosshair, Users, Star, Eye, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,13 +6,32 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import ExercicioPosicionamentoModal from "@/components/ExercicioPosicionamentoModal";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const ExercicioPosicionamento = () => {
   const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
+  const [exercicioParaEdicao, setExercicioParaEdicao] = useState(null);
+  const [exercicioParaExclusao, setExercicioParaExclusao] = useState(null);
+  const [exercicioParaVisualizacao, setExercicioParaVisualizacao] = useState(null);
   
   // Mock data para demonstração
-  const exercicios = [
+  const [exercicios, setExercicios] = useState([
     {
       id: 1,
       data: "2024-01-16",
@@ -46,7 +65,31 @@ const ExercicioPosicionamento = () => {
       tempoSetup: "9:15",
       status: "Em Revisão"
     }
-  ];
+  ]);
+
+  const handleVerExercicio = (exercicio) => {
+    setExercicioParaVisualizacao(exercicio);
+  };
+
+  const handleEditarExercicio = (exercicio) => {
+    setExercicioParaEdicao(exercicio);
+    setModalOpen(true);
+  };
+
+  const handleExcluirExercicio = (exercicio) => {
+    setExercicioParaExclusao(exercicio);
+  };
+
+  const confirmarExclusao = () => {
+    if (exercicioParaExclusao) {
+      setExercicios(exercicios.filter(ex => ex.id !== exercicioParaExclusao.id));
+      setExercicioParaExclusao(null);
+      toast({
+        title: "Sucesso",
+        description: "Exercício excluído com sucesso!"
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -190,10 +233,30 @@ const ExercicioPosicionamento = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm">Ver</Button>
-                      <Button variant="ghost" size="sm">Editar</Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                        Excluir
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleVerExercicio(exercicio)}
+                        title="Ver detalhes"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditarExercicio(exercicio)}
+                        title="Editar exercício"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleExcluirExercicio(exercicio)}
+                        title="Excluir exercício"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -206,15 +269,90 @@ const ExercicioPosicionamento = () => {
       
       <ExercicioPosicionamentoModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) {
+            setExercicioParaEdicao(null);
+          }
+        }}
+        exercicioParaEdicao={exercicioParaEdicao}
         onSave={(formulario) => {
           console.log('Formulário salvo:', formulario);
           toast({
             title: "Sucesso",
-            description: "Exercício de posicionamento criado com sucesso!"
+            description: exercicioParaEdicao ? "Exercício atualizado com sucesso!" : "Exercício de posicionamento criado com sucesso!"
           });
         }}
       />
+
+      <AlertDialog open={!!exercicioParaExclusao} onOpenChange={() => setExercicioParaExclusao(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o exercício da equipe {exercicioParaExclusao?.equipe}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarExclusao} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!exercicioParaVisualizacao} onOpenChange={() => setExercicioParaVisualizacao(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Exercício</DialogTitle>
+          </DialogHeader>
+          {exercicioParaVisualizacao && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Data:</label>
+                  <p>{new Date(exercicioParaVisualizacao.data).toLocaleDateString('pt-BR')}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Equipe:</label>
+                  <p>{exercicioParaVisualizacao.equipe}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Chefe de Equipe:</label>
+                  <p>{exercicioParaVisualizacao.chefeEquipe}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Cenário:</label>
+                  <p>{exercicioParaVisualizacao.cenario}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Coordenação:</label>
+                  <Badge variant={exercicioParaVisualizacao.coordenacao === "Excelente" ? "default" : exercicioParaVisualizacao.coordenacao === "Bom" ? "secondary" : "outline"}>
+                    {exercicioParaVisualizacao.coordenacao}
+                  </Badge>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Posicionamento:</label>
+                  <Badge variant={exercicioParaVisualizacao.posicionamento === "Adequado" ? "default" : "destructive"}>
+                    {exercicioParaVisualizacao.posicionamento}
+                  </Badge>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Tempo Setup:</label>
+                  <p>{exercicioParaVisualizacao.tempoSetup}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Status:</label>
+                  <Badge variant={exercicioParaVisualizacao.status === "Aprovado" ? "default" : "secondary"}>
+                    {exercicioParaVisualizacao.status}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
