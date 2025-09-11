@@ -133,6 +133,54 @@ function prepararDadosParaTemplate(dadosPtr: PTRData) {
   };
 }
 
+function prepararDadosParaPDF(dadosPtr: PTRData) {
+  const equipeNome = typeof dadosPtr.equipe === 'string' ? dadosPtr.equipe : dadosPtr.equipe.nome_equipe;
+  
+  // Preparar participantes com estatísticas para PDF
+  const participantesCompletos = [];
+  let participantesPresentes = 0;
+  let participantesAusentes = 0;
+  
+  dadosPtr.participantes.forEach((participante, index) => {
+    const presente = participante.presente;
+    if (presente) {
+      participantesPresentes++;
+    } else {
+      participantesAusentes++;
+    }
+    
+    participantesCompletos.push({
+      numeroLinha: index + 1,
+      funcao: participante.funcao || '',
+      nome: participante.nome || '',
+      situacao: presente ? 'PRESENTE' : 'AUSENTE',
+      presente: presente
+    });
+  });
+  
+  const totalParticipantes = dadosPtr.participantes.length;
+  
+  // Preparar PTRs formatados para PDF
+  const ptrs = dadosPtr.ptrs.map((ptr, index) => ({
+    numero: index + 1,
+    tipo: ptr.tipo || '',
+    horario: ptr.hora_inicio && ptr.hora_fim ? `${ptr.hora_inicio} às ${ptr.hora_fim}` : '',
+    duracao: ptr.duracao || '',
+    instrutor_nome: ptr.instrutor_nome || '',
+    observacoes: ptr.observacoes || ''
+  }));
+  
+  return {
+    data: dadosPtr.data,
+    equipe: equipeNome,
+    totalParticipantes,
+    participantesPresentes,
+    participantesAusentes,
+    participantesCompletos,
+    ptrs
+  };
+}
+
 async function gerarDOCXEstruturado(dadosPtr: PTRData, supabase: any): Promise<Response> {
   console.log('📄 Gerando DOCX a partir do template real...');
   
@@ -188,7 +236,7 @@ async function gerarDOCXEstruturado(dadosPtr: PTRData, supabase: any): Promise<R
 async function criarPDFEstruturado(dadosPtr: PTRData): Promise<Response> {
   console.log('📄 Criando PDF estruturado...');
   
-  const dadosTemplate = prepararDadosTemplate(dadosPtr);
+  const dadosTemplate = prepararDadosParaPDF(dadosPtr);
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595, 842]); // A4
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
