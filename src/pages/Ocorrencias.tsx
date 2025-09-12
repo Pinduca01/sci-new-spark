@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { TextareaWithAI } from "@/components/ui/textarea-with-ai";
 import { Plus, Search, Clock, Users, AlertTriangle, BarChart3, List, MapPin, Filter, MoreHorizontal, Eye, Edit, Grid, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -763,7 +764,7 @@ const Ocorrencias = () => {
                           <FormItem>
                             <FormLabel>Descricao Detalhada</FormLabel>
                             <FormControl>
-                              <Textarea {...field} placeholder="Descricao detalhada dos procedimentos realizados..." rows={4} />
+                              <TextareaWithAI {...field} placeholder="Descricao detalhada dos procedimentos realizados..." rows={4} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1401,7 +1402,7 @@ const Ocorrencias = () => {
                         <FormItem>
                           <FormLabel>Descricao Detalhada</FormLabel>
                           <FormControl>
-                            <Textarea {...field} placeholder="Descricao detalhada dos procedimentos realizados..." rows={4} />
+                            <TextareaWithAI {...field} placeholder="Descricao detalhada dos procedimentos realizados..." rows={4} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
