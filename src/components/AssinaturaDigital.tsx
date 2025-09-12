@@ -488,42 +488,7 @@ export const AssinaturaDigital: React.FC<AssinaturaDigitalProps> = ({
           </div>
         )}
 
-        {/* Detalhes do Status */}
-        {statusDetalhado && statusAssinatura !== 'pendente' && (
-          <div className="space-y-2">
-            <Label>Detalhes da Assinatura</Label>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div className="text-center p-2 bg-muted rounded">
-                <div className="font-semibold">{statusDetalhado.signatures_count}</div>
-                <div className="text-xs text-muted-foreground">Total</div>
-              </div>
-              <div className="text-center p-2 bg-green-50 rounded">
-                <div className="font-semibold text-green-600">{statusDetalhado.signed_count}</div>
-                <div className="text-xs text-muted-foreground">Assinados</div>
-              </div>
-              <div className="text-center p-2 bg-red-50 rounded">
-                <div className="font-semibold text-red-600">{statusDetalhado.rejected_count}</div>
-                <div className="text-xs text-muted-foreground">Rejeitados</div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Mensagem de Erro */}
-        {mensagemErro && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive">
-            <AlertCircle className="w-4 h-4 inline mr-2" />
-            {mensagemErro}
-          </div>
-        )}
-
-        {/* Erro da API */}
-        {error && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive">
-            <AlertCircle className="w-4 h-4 inline mr-2" />
-            {error}
-          </div>
-        )}
 
         {/* Link de Assinatura */}
         {linkAssinatura && (statusAssinatura === 'enviado' || statusAssinatura === 'assinado') && (

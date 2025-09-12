@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Clock, Users, AlertTriangle, BarChart3, List, MapPin, Filter, MoreHorizontal, Eye, Edit, Grid, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -58,13 +58,18 @@ const EQUIPES = ["Alfa", "Bravo", "Charlie", "Delta"];
 
 const formSchema = z.object({
   tipo_ocorrencia: z.string().min(1, "Selecione o tipo de ocorrencia"),
+  identificacao_aeroporto: z.string().min(1, "Informe a identificação do aeroporto"),
   local_mapa_grade: z.string().optional(),
   data_ocorrencia: z.string().min(1, "Informe a data da ocorrencia"),
+  hora_ocorrencia: z.string().min(1, "Informe a hora da ocorrencia"),
   hora_acionamento: z.string().min(1, "Informe a hora do acionamento"),
   hora_chegada_local: z.string().optional(),
   hora_termino: z.string().optional(),
+  hora_retorno_sci: z.string().optional(),
   equipe: z.string().min(1, "Selecione a equipe"),
+  numero_bombeiros_envolvidos: z.number().min(1, "Informe o número de bombeiros envolvidos"),
   bombeiros_envolvidos: z.array(z.string()).default([]),
+  contador_ocorrencia: z.number().optional(),
   quantidade_vitimas: z.number().min(0).default(0),
   quantidade_obitos: z.number().min(0).default(0),
   viaturas: z.string().optional(),
@@ -78,15 +83,20 @@ type FormData = z.infer<typeof formSchema>;
 interface Ocorrencia {
   id: string;
   tipo_ocorrencia: string;
+  identificacao_aeroporto: string;
   local_mapa_grade?: string;
   data_ocorrencia: string;
+  hora_ocorrencia: string;
   hora_acionamento: string;
   hora_chegada_local?: string;
   hora_termino?: string;
+  hora_retorno_sci?: string;
   tempo_gasto_minutos?: number;
   equipe: string;
+  numero_bombeiros_envolvidos: number;
   bombeiros_envolvidos: string[];
   quantidade_bombeiros: number;
+  contador_ocorrencia?: number;
   quantidade_vitimas: number;
   quantidade_obitos: number;
   viaturas?: string;
@@ -100,6 +110,8 @@ interface Bombeiro {
   id: string;
   nome: string;
   equipe: string;
+  funcao: string;
+  funcao_completa: string;
 }
 
 const Ocorrencias = () => {
@@ -124,13 +136,18 @@ const Ocorrencias = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       tipo_ocorrencia: "",
+      identificacao_aeroporto: "",
       local_mapa_grade: "",
       data_ocorrencia: "",
+      hora_ocorrencia: "",
       hora_acionamento: "",
       hora_chegada_local: "",
       hora_termino: "",
+
       equipe: "",
+      numero_bombeiros_envolvidos: 1,
       bombeiros_envolvidos: [],
+      contador_ocorrencia: undefined,
       quantidade_vitimas: 0,
       quantidade_obitos: 0,
       viaturas: "",
@@ -173,13 +190,31 @@ const Ocorrencias = () => {
     try {
       const { data, error } = await supabase
         .from('bombeiros')
-        .select('*')
+        .select('id, nome, funcao, funcao_completa, equipe')
         .order('nome');
 
       if (error) throw error;
       setBombeiros(data || []);
     } catch (error) {
       console.error("Erro ao carregar bombeiros:", error);
+    }
+  };
+
+  const generateContadorOcorrencia = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ocorrencias')
+        .select('contador_ocorrencia')
+        .order('contador_ocorrencia', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      
+      const ultimoContador = data?.[0]?.contador_ocorrencia || 0;
+      return ultimoContador + 1;
+    } catch (error) {
+      console.error('Erro ao gerar contador:', error);
+      return 1;
     }
   };
 
@@ -201,11 +236,13 @@ const Ocorrencias = () => {
       if (!user) throw new Error("Usuario nao autenticado");
 
       const tempoGasto = calculateTempoGasto(values.hora_acionamento, values.hora_termino);
+      const contadorOcorrencia = await generateContadorOcorrencia();
       
       const ocorrenciaData = {
         ...values,
         tempo_gasto_minutos: tempoGasto,
         quantidade_bombeiros: values.bombeiros_envolvidos.length,
+        contador_ocorrencia: contadorOcorrencia,
         user_id: user.id
       };
 
@@ -213,15 +250,20 @@ const Ocorrencias = () => {
         .from('ocorrencias')
         .insert({
           tipo_ocorrencia: values.tipo_ocorrencia,
+          identificacao_aeroporto: values.identificacao_aeroporto,
           local_mapa_grade: values.local_mapa_grade,
           data_ocorrencia: values.data_ocorrencia,
+          hora_ocorrencia: values.hora_ocorrencia,
           hora_acionamento: values.hora_acionamento,
           hora_chegada_local: values.hora_chegada_local,
           hora_termino: values.hora_termino,
+
           tempo_gasto_minutos: tempoGasto,
           equipe: values.equipe,
+          numero_bombeiros_envolvidos: values.numero_bombeiros_envolvidos,
           bombeiros_envolvidos: values.bombeiros_envolvidos,
           quantidade_bombeiros: values.bombeiros_envolvidos.length,
+          contador_ocorrencia: contadorOcorrencia,
           quantidade_vitimas: values.quantidade_vitimas,
           quantidade_obitos: values.quantidade_obitos,
           viaturas: values.viaturas,
@@ -479,6 +521,20 @@ const Ocorrencias = () => {
 
                         <FormField
                           control={form.control}
+                          name="identificacao_aeroporto"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Identificação do Aeroporto</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Ex: SBGR, SBSP, SBRJ" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
                           name="local_mapa_grade"
                           render={({ field }) => (
                             <FormItem>
@@ -495,11 +551,93 @@ const Ocorrencias = () => {
                           control={form.control}
                           name="data_ocorrencia"
                           render={({ field }) => (
-                            <FormItem className="md:col-span-2">
+                            <FormItem>
                               <FormLabel>Data da Ocorrencia</FormLabel>
                               <FormControl>
                                 <Input {...field} type="date" />
                               </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="hora_ocorrencia"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hora da Ocorrencia</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="time" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="equipe"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Equipe</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione a equipe" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {EQUIPES.map((equipe) => (
+                                    <SelectItem key={equipe} value={equipe}>
+                                      {equipe}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="numero_bombeiros_envolvidos"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Número de Bombeiros Envolvidos</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  min="1" 
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                  placeholder="Ex: 3" 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="contador_ocorrencia"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Contador de Ocorrência</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  type="number" 
+                                  disabled
+                                  placeholder="Gerado automaticamente"
+                                  className="bg-muted"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Numeração automática gerada pelo sistema
+                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -513,7 +651,7 @@ const Ocorrencias = () => {
                         Controle de Horarios
                       </h3>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <FormField
                           control={form.control}
                           name="hora_acionamento"
@@ -555,6 +693,8 @@ const Ocorrencias = () => {
                             </FormItem>
                           )}
                         />
+
+
                       </div>
 
                       {horaAcionamento && horaTermino && (
@@ -570,7 +710,7 @@ const Ocorrencias = () => {
                                   const minutos = duracao % 60;
                                   return `${horas}h ${minutos}min`;
                                 }
-                                return "Calcular duracao";
+                                return "--";
                               })()}
                             </span>
                           </div>
@@ -585,31 +725,6 @@ const Ocorrencias = () => {
                       </h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="equipe"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Equipe</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione a equipe" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {EQUIPES.map((equipe) => (
-                                    <SelectItem key={equipe} value={equipe}>
-                                      {equipe}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
                         <FormField
                           control={form.control}
                           name="bombeiros_envolvidos"
@@ -632,7 +747,7 @@ const Ocorrencias = () => {
                                 <SelectContent>
                                   {bombeirosByEquipe.map((bombeiro) => (
                                     <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                                      {bombeiro.nome}
+                                      {bombeiro.nome} - {bombeiro.funcao}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -642,7 +757,7 @@ const Ocorrencias = () => {
                                   const bombeiro = bombeiros.find(b => b.id === bombeiroId);
                                   return bombeiro ? (
                                     <Badge key={bombeiroId} variant="secondary" className="gap-1">
-                                      {bombeiro.nome}
+                                      {bombeiro.nome} - {bombeiro.funcao}
                                       <button
                                         type="button"
                                         onClick={() => field.onChange((field.value || []).filter(id => id !== bombeiroId))}
@@ -678,7 +793,7 @@ const Ocorrencias = () => {
                           name="equipamentos"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Equipamentos Utilizados</FormLabel>
+                              <FormLabel>Recursos utilizados</FormLabel>
                               <FormControl>
                                 <Input {...field} placeholder="Ex: Espuma, Mangueiras, EPIs" />
                               </FormControl>
@@ -1018,6 +1133,14 @@ const Ocorrencias = () => {
                         </p>
                       </div>
                       <div>
+                        <label className="text-sm font-medium text-muted-foreground">Hora da Ocorrencia</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.hora_ocorrencia || "Nao informado"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Identificacao do Aeroporto</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.identificacao_aeroporto || "Nao informado"}</p>
+                      </div>
+                      <div>
                         <label className="text-sm font-medium text-muted-foreground">Equipe</label>
                         <p className="text-sm mt-1">{selectedOcorrencia.equipe}</p>
                       </div>
@@ -1035,6 +1158,14 @@ const Ocorrencias = () => {
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Termino</label>
                         <p className="text-sm mt-1">{selectedOcorrencia.hora_termino || "Nao informado"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Retorno à SCI</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.hora_retorno_sci || "Nao informado"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Numero de Bombeiros Envolvidos</label>
+                        <p className="text-sm mt-1">{selectedOcorrencia.numero_bombeiros_envolvidos || "Nao informado"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Duracao Total</label>

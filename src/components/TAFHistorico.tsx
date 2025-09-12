@@ -909,7 +909,7 @@ const TAFHistorico: React.FC<TAFHistoricoProps> = ({ onEditAvaliacao, onViewDeta
                         const bombeiro = bombeiros?.find(b => b.id === participante.bombeiro_id);
                         
                         return (
-                          <TableRow key={index}>
+                          <TableRow key={`participante-${participante.bombeiro_id}-${index}`}>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <User className="w-4 h-4 text-muted-foreground" />

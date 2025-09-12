@@ -80,7 +80,7 @@ export const BombeiroDocumentsModal: React.FC<BombeiroDocumentsModalProps> = ({
             <div className="grid gap-3">
               {documentos.map((documento, index) => (
                 <div 
-                  key={index}
+                  key={`doc-${bombeiro.id}-${index}-${documento.slice(-10)}`}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
                 >
                   <div className="flex items-center gap-3">

@@ -97,7 +97,7 @@ export const PTRBACalendario: React.FC<PTRBACalendarioProps> = ({
               }
             }}
             components={{
-              Day: ({ date, ...props }) => {
+              Day: ({ date, displayMonth, ...props }) => {
                 const instructionsCount = getInstructionsCount(date);
                 const hasInstr = instructionsCount > 0;
                 

@@ -1,15 +1,19 @@
 
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShieldCheck, Droplets, Package, BarChart3, Shirt } from "lucide-react";
 import TPUniformesDashboard from "@/components/TPUniformesDashboard";
 import TPVerificacaoForm from "@/components/TPVerificacaoForm";
 import TPUniformesVerificacaoForm from "@/components/TPUniformesVerificacaoForm";
+import TPUniformesVerificacaoDashboard from "@/components/TPUniformesVerificacaoDashboard";
 import TPHigienizacaoForm from "@/components/TPHigienizacaoForm";
 
-import TPVerificacoesHistorico from "@/components/TPVerificacoesHistorico";
+import TPVerificacaoDashboard from "@/components/TPVerificacaoDashboard";
 
 const TPUniformes = () => {
+  const [showNovaVerificacaoUniformes, setShowNovaVerificacaoUniformes] = useState(false);
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
@@ -55,22 +59,19 @@ const TPUniformes = () => {
 
         <TabsContent value="verificacao" className="space-y-4">
           <TPVerificacaoForm />
-          <TPVerificacoesHistorico />
+          <TPVerificacaoDashboard />
         </TabsContent>
 
         <TabsContent value="verificacao-uniformes" className="space-y-4">
-          <TPUniformesVerificacaoForm />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Verificações de Uniformes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <p>Funcionalidade de histórico em desenvolvimento</p>
-              </div>
-            </CardContent>
-          </Card>
+          {showNovaVerificacaoUniformes ? (
+            <TPUniformesVerificacaoForm 
+              onSuccess={() => setShowNovaVerificacaoUniformes(false)}
+            />
+          ) : (
+            <TPUniformesVerificacaoDashboard 
+              onNovaVerificacao={() => setShowNovaVerificacaoUniformes(true)}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="higienizacao" className="space-y-4">

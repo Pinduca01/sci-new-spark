@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationCenter } from "@/components/NotificationCenter";
@@ -21,12 +22,12 @@ interface MainLayoutProps {
 const MainLayout = ({ children }: MainLayoutProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { profile, loading: profileLoading, error: profileError } = useUserProfile(user);
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -50,11 +51,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         
         if (!session?.user) {
           navigate('/login');
-        } else {
-          // Fetch user profile when authenticated
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
         }
       }
     );
@@ -66,8 +62,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       
       if (!session?.user) {
         navigate('/login');
-      } else {
-        fetchUserProfile(session.user.id);
       }
       setIsLoading(false);
     });
@@ -75,25 +69,20 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+  // Show profile error as toast if needed
+  useEffect(() => {
+    if (profileError) {
+      toast({
+        title: "Aviso",
+        description: "Erro ao carregar perfil do usuário. Usando dados padrão.",
+        variant: "default",
+      });
     }
-  };
+  }, [profileError, toast]);
 
-  if (isLoading) {
+
+
+  if (isLoading || (user && profileLoading)) {
     return (
       <div className="min-h-screen abstract-bg flex items-center justify-center">
         <Card className="glass-card">

@@ -17,6 +17,7 @@ import { DocumentUpload } from '@/components/DocumentUpload';
 import { BombeiroDetailsModal } from '@/components/BombeiroDetailsModal';
 import { BombeiroEditModal } from '@/components/BombeiroEditModal';
 import { BombeiroDocumentsModal } from '@/components/BombeiroDocumentsModal';
+import { useBombeirosPorEquipe } from '@/hooks/useBombeiros';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -45,12 +46,15 @@ interface Bombeiro {
 }
 
 const ControlePessoal: React.FC = () => {
-  const [bombeiros, setBombeiros] = useState<Bombeiro[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [funcaoFilter, setFuncaoFilter] = useState('todas');
   const [equipeFilter, setEquipeFilter] = useState('todas');
   const [feristaFilter, setFeristaFilter] = useState('todos');
+  const [equipeSelecionada, setEquipeSelecionada] = useState<string>('');
+  
+  // Usar o hook para buscar bombeiros filtrados por equipe
+  const { bombeiros, isLoading: bombeirosLoading, error: bombeirosError, refetch } = useBombeirosPorEquipe(equipeSelecionada);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -80,31 +84,17 @@ const ControlePessoal: React.FC = () => {
     documentos_certificados: [] as string[],
   });
 
+  // Efeito para mostrar erros de carregamento
   useEffect(() => {
-    console.log('ControlePessoal useEffect running...');
-    fetchBombeiros();
-  }, []);
-
-  const fetchBombeiros = async () => {
-    console.log('Fetching bombeiros...');
-    try {
-      const { data, error } = await supabase
-        .from('bombeiros')
-        .select('*')
-        .order('nome');
-
-      if (error) throw error;
-      console.log('Bombeiros loaded:', data);
-      setBombeiros(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar bombeiros:', error);
+    if (bombeirosError) {
+      console.error('Erro ao buscar bombeiros:', bombeirosError);
       toast({
         title: "Erro",
         description: "Erro ao carregar dados dos bombeiros.",
         variant: "destructive",
       });
     }
-  };
+  }, [bombeirosError]);
 
   const filteredPersonnel = bombeiros.filter(person => {
     const matchesSearch = person.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,8 +107,11 @@ const ControlePessoal: React.FC = () => {
     const matchesFerista = feristaFilter === 'todos' || 
                           (feristaFilter === 'sim' && person.ferista) ||
                           (feristaFilter === 'nao' && !person.ferista);
+    
+    // Filtragem por equipe selecionada (botões de equipe)
+    const matchesEquipeSelecionada = !equipeSelecionada || person.equipe === equipeSelecionada;
 
-    return matchesSearch && matchesStatus && matchesFuncao && matchesEquipe && matchesFerista;
+    return matchesSearch && matchesStatus && matchesFuncao && matchesEquipe && matchesFerista && matchesEquipeSelecionada;
   });
 
   const getStatusColor = (status: string) => {
@@ -220,7 +213,7 @@ const ControlePessoal: React.FC = () => {
         data_vencimento_cve: '',
         documentos_certificados: [],
       });
-      fetchBombeiros();
+      refetch();
     } catch (error) {
       console.error('Erro ao adicionar bombeiro:', error);
       toast({
@@ -247,7 +240,7 @@ const ControlePessoal: React.FC = () => {
         description: "Bombeiro removido com sucesso.",
       });
 
-      fetchBombeiros();
+      refetch();
     } catch (error) {
       console.error('Erro ao remover bombeiro:', error);
       toast({
@@ -643,18 +636,68 @@ const ControlePessoal: React.FC = () => {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" onClick={() => {
+              <Button 
+                variant="outline" 
+                onClick={() => {
                 setSearchTerm('');
                 setStatusFilter('todos');
                 setFuncaoFilter('todas');
                 setEquipeFilter('todas');
                 setFeristaFilter('todos');
+                setEquipeSelecionada('');
+                // Refetch para mostrar todos os bombeiros
+                setTimeout(() => refetch(), 100);
               }}>
                 <Filter className="h-4 w-4 mr-2" />
                 Limpar
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Seleção Rápida de Equipes */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Seleção Rápida de Equipes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={equipeSelecionada === '' ? 'default' : 'outline'}
+              onClick={() => setEquipeSelecionada('')}
+              className="flex items-center space-x-2"
+            >
+              <Users className="h-4 w-4" />
+              <span>Todas as Equipes</span>
+            </Button>
+            {['Alfa', 'Bravo', 'Charlie', 'Delta'].map((equipe) => (
+              <Button
+                key={equipe}
+                variant={equipeSelecionada === equipe ? 'default' : 'outline'}
+                onClick={() => setEquipeSelecionada(equipe)}
+                className={`flex items-center space-x-2 ${
+                  equipeSelecionada === equipe 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'hover:bg-muted'
+                }`}
+              >
+                <span className="font-medium">Equipe {equipe}</span>
+                {equipeSelecionada === equipe && (
+                  <span className="text-xs bg-primary-foreground text-primary px-1 rounded">
+                    {filteredPersonnel.filter(p => p.equipe === equipe).length}
+                  </span>
+                )}
+              </Button>
+            ))}
+          </div>
+          {equipeSelecionada && (
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Exibindo {filteredPersonnel.length} bombeiro(s) da Equipe {equipeSelecionada}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -679,7 +722,16 @@ const ControlePessoal: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPersonnel.map((person) => {
+                {bombeirosLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-muted-foreground">Carregando bombeiros...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredPersonnel.map((person) => {
                   const IconComponent = getFuncaoIcon(person.funcao);
                   return (
                     <TableRow key={person.id} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
@@ -820,7 +872,7 @@ const ControlePessoal: React.FC = () => {
         bombeiro={selectedBombeiro}
         open={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
-        onSuccess={fetchBombeiros}
+        onSuccess={() => refetch()}
       />
 
       <BombeiroDocumentsModal

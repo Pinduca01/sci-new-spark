@@ -1,590 +1,770 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useCreateTPVerificacao } from "@/hooks/useTPVerificacoes";
-import { useBombeiros } from "@/hooks/useBombeiros";
+import React, { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Checkbox } from '@/components/ui/checkbox'
+import { CheckCircle, XCircle, Clock, ArrowLeft, ArrowRight, Users, FileText, AlertTriangle } from 'lucide-react'
+import { useCreateTPVerificacaoUniformes, useUpdateTPVerificacaoUniformes, type TPVerificacaoUniformes } from '@/hooks/useTPVerificacoesUniformes'
+import { toast } from 'sonner'
 
-type FormData = {
-  // Identificação do Aeroporto
-  aeroporto: string;
-  data: string;
-  responsavel_id: string;
-  responsavel_nome: string;
-  colaborador_id: string;
-  colaborador_nome: string;
+type VerificacaoStatus = 'conforme' | 'nao_conforme' | 'nao_verificado'
+
+interface FormData {
+  data_verificacao: string
+  local: string
+  responsavel: string
+  equipe: 'Alfa' | 'Bravo' | 'Charlie' | 'Delta' | ''
+}
+
+interface CategoriaVerificacao {
+  id: string
+  nome: string
+  perguntas: {
+    id: string
+    texto: string
+    status: VerificacaoStatus
+    membrosAfetados: string[]
+    observacoes: string
+  }[]
+}
+
+interface HistoricoVerificacao {
+  id: string
+  data: string
+  equipe: string
+  responsavel: string
+  status: string
+  percentualConformidade: number
+  totalConformes: number
+  totalNaoConformes: number
+  totalNaoVerificados: number
+}
+
+interface TPUniformesVerificacaoFormProps {
+  verificacaoExistente?: TPVerificacaoUniformes
+  onSalvar?: (verificacao: TPVerificacaoUniformes) => void
+}
+
+const EQUIPES = {
+  Alfa: ['João Silva', 'Maria Santos', 'Pedro Oliveira', 'Ana Costa'],
+  Bravo: ['Carlos Lima', 'Lucia Ferreira', 'Roberto Alves', 'Fernanda Souza'],
+  Charlie: ['Marcos Pereira', 'Julia Rodrigues', 'Antonio Barbosa', 'Camila Martins'],
+  Delta: ['Rafael Gomes', 'Beatriz Carvalho', 'Eduardo Nascimento', 'Patrícia Dias']
+}
+
+const RESPONSAVEIS = [
+  { nome: 'João Silva', cargo: 'Supervisor de Operações' },
+  { nome: 'Maria Santos', cargo: 'Coordenadora de Segurança' },
+  { nome: 'Pedro Oliveira', cargo: 'Chefe de Equipe' },
+  { nome: 'Ana Costa', cargo: 'Inspetora de Qualidade' }
+]
+
+function TPUniformesVerificacaoForm({ verificacaoExistente, onSalvar }: TPUniformesVerificacaoFormProps) {
+  const [etapaAtual, setEtapaAtual] = useState(1)
+  const [isSaving, setIsSaving] = useState(false)
+  const [membrosEquipeSelecionada, setMembrosEquipeSelecionada] = useState<string[]>([])
+  const [modalNaoConformidade, setModalNaoConformidade] = useState<{
+    aberto: boolean
+    perguntaId: string
+    categoriaId: string
+  }>({ aberto: false, perguntaId: '', categoriaId: '' })
   
-  // Itens de verificação de uniformes
-  gandolas_bombeiro: "CONFORME" | "NAO_CONFORME";
-  calcas_bombeiro: "CONFORME" | "NAO_CONFORME";
-  cinto_bombeiro: "CONFORME" | "NAO_CONFORME";
-  bota_seguranca: "CONFORME" | "NAO_CONFORME";
-  camisas_bombeiro: "CONFORME" | "NAO_CONFORME";
-  bermudas_bombeiro: "CONFORME" | "NAO_CONFORME";
-  tarjeta_identificacao: "CONFORME" | "NAO_CONFORME";
-  oculos_protetor: "CONFORME" | "NAO_CONFORME";
+  const createMutation = useCreateTPVerificacaoUniformes()
+  const updateMutation = useUpdateTPVerificacaoUniformes()
   
-  // Campos condicionais para não conformidades
-  gandolas_observacoes?: string;
-  gandolas_imagem?: FileList;
-  calcas_observacoes?: string;
-  calcas_imagem?: FileList;
-  cinto_observacoes?: string;
-  cinto_imagem?: FileList;
-  bota_observacoes?: string;
-  bota_imagem?: FileList;
-  camisas_observacoes?: string;
-  camisas_imagem?: FileList;
-  bermudas_observacoes?: string;
-  bermudas_imagem?: FileList;
-  tarjeta_observacoes?: string;
-  tarjeta_imagem?: FileList;
-  oculos_observacoes?: string;
-  oculos_imagem?: FileList;
-};
-
-const TPUniformesVerificacaoForm = () => {
-  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<FormData>();
-  const createVerificacao = useCreateTPVerificacao();
-  const { bombeiros = [] } = useBombeiros();
-  const [equipmentStatus, setEquipmentStatus] = useState({
-    gandolas: "CONFORME" as "CONFORME" | "NAO_CONFORME",
-    calcas: "CONFORME" as "CONFORME" | "NAO_CONFORME",
-    cinto: "CONFORME" as "CONFORME" | "NAO_CONFORME",
-    bota: "CONFORME" as "CONFORME" | "NAO_CONFORME",
-    camisas: "CONFORME" as "CONFORME" | "NAO_CONFORME",
-    bermudas: "CONFORME" as "CONFORME" | "NAO_CONFORME",
-    tarjeta: "CONFORME" as "CONFORME" | "NAO_CONFORME",
-    oculos: "CONFORME" as "CONFORME" | "NAO_CONFORME"
-  });
-
-  const mesAtual = new Date().getMonth() + 1;
-  const anoAtual = new Date().getFullYear();
-
-  const onSubmit = async (data: FormData) => {
-    // Validar se há observações ou imagens para itens não conformes
-    const hasNonConformity = Object.values(equipmentStatus).some(status => status === "NAO_CONFORME");
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
+    defaultValues: {
+      data_verificacao: new Date().toISOString().split('T')[0],
+      local: 'Santa Genoveva - GYN',
+      responsavel: '',
+      equipe: ''
+    }
+  })
+  
+  const equipeSelecionada = watch('equipe')
+  
+  const [categorias, setCategorias] = useState<CategoriaVerificacao[]>([
+    {
+      id: 'uniformes',
+      nome: 'Uniformes',
+      perguntas: [
+        {
+          id: 'gandolas',
+          texto: 'COLABORADOR POSSUI 2 GANDOLAS DE BOMBEIRO DE AERODROMO',
+          status: 'nao_verificado',
+          membrosAfetados: [],
+          observacoes: ''
+        },
+        {
+          id: 'calcas',
+          texto: 'COLABORADOR POSSUI 2 CALÇAS DE BOMBEIRO DE AERODROMO',
+          status: 'nao_verificado',
+          membrosAfetados: [],
+          observacoes: ''
+        },
+        {
+          id: 'cinto',
+          texto: 'COLABORADOR POSSUI 1 CINTO DE BOMBEIRO DE AERODROMO',
+          status: 'nao_verificado',
+          membrosAfetados: [],
+          observacoes: ''
+        },
+        {
+          id: 'bota',
+          texto: 'COLABORADOR POSSUI BOTA DE SEGURANÇA DE BOMBEIRO DE AERODROMO',
+          status: 'nao_verificado',
+          membrosAfetados: [],
+          observacoes: ''
+        },
+        {
+          id: 'camisas',
+          texto: 'COLABORADOR POSSUI 4 CAMISAS DE BOMBEIRO DE AERODROMO',
+          status: 'nao_verificado',
+          membrosAfetados: [],
+          observacoes: ''
+        },
+        {
+          id: 'bermudas',
+          texto: 'COLABORADOR POSSUI 2 BERMUDAS DE BOMBEIRO DE AERODROMO',
+          status: 'nao_verificado',
+          membrosAfetados: [],
+          observacoes: ''
+        },
+        {
+          id: 'tarjeta',
+          texto: 'COLABORADOR POSSUI TARJETA DE NOME/FUNÇÃO/NUMERAÇÃO FRENTE E COSTAS',
+          status: 'nao_verificado',
+          membrosAfetados: [],
+          observacoes: ''
+        },
+        {
+          id: 'oculos',
+          texto: 'COLABORADOR POSSUI ÓCULOS DE PROTEÇÃO/PROTETOR AURICULAR',
+          status: 'nao_verificado',
+          membrosAfetados: [],
+          observacoes: ''
+        }
+      ]
+    }
+  ])
+  
+  // Atualizar membros da equipe quando equipe for selecionada
+  useEffect(() => {
+    if (equipeSelecionada && equipeSelecionada !== '') {
+      setMembrosEquipeSelecionada(EQUIPES[equipeSelecionada] || [])
+    } else {
+      setMembrosEquipeSelecionada([])
+    }
+  }, [equipeSelecionada])
+  
+  // Carregar dados da verificação existente
+  useEffect(() => {
+    if (verificacaoExistente) {
+      setValue('data_verificacao', verificacaoExistente.data_verificacao.split('T')[0])
+      setValue('local', verificacaoExistente.local)
+      setValue('responsavel', verificacaoExistente.responsavel)
+      setValue('equipe', verificacaoExistente.equipe)
+      setEtapaAtual(verificacaoExistente.etapa_atual)
+      
+      // Carregar status das perguntas
+      const novasCategorias = [...categorias]
+      const categoria = novasCategorias[0]
+      
+      categoria.perguntas[0].status = verificacaoExistente.cat1_gandolas || 'nao_verificado'
+      categoria.perguntas[0].membrosAfetados = verificacaoExistente.cat1_gandolas_membros || []
+      categoria.perguntas[0].observacoes = verificacaoExistente.cat1_gandolas_observacoes || ''
+      
+      categoria.perguntas[1].status = verificacaoExistente.cat1_calcas || 'nao_verificado'
+      categoria.perguntas[1].membrosAfetados = verificacaoExistente.cat1_calcas_membros || []
+      categoria.perguntas[1].observacoes = verificacaoExistente.cat1_calcas_observacoes || ''
+      
+      categoria.perguntas[2].status = verificacaoExistente.cat1_cinto || 'nao_verificado'
+      categoria.perguntas[2].membrosAfetados = verificacaoExistente.cat1_cinto_membros || []
+      categoria.perguntas[2].observacoes = verificacaoExistente.cat1_cinto_observacoes || ''
+      
+      categoria.perguntas[3].status = verificacaoExistente.cat1_bota || 'nao_verificado'
+      categoria.perguntas[3].membrosAfetados = verificacaoExistente.cat1_bota_membros || []
+      categoria.perguntas[3].observacoes = verificacaoExistente.cat1_bota_observacoes || ''
+      
+      categoria.perguntas[4].status = verificacaoExistente.cat1_camisas || 'nao_verificado'
+      categoria.perguntas[4].membrosAfetados = verificacaoExistente.cat1_camisas_membros || []
+      categoria.perguntas[4].observacoes = verificacaoExistente.cat1_camisas_observacoes || ''
+      
+      categoria.perguntas[5].status = verificacaoExistente.cat1_bermudas || 'nao_verificado'
+      categoria.perguntas[5].membrosAfetados = verificacaoExistente.cat1_bermudas_membros || []
+      categoria.perguntas[5].observacoes = verificacaoExistente.cat1_bermudas_observacoes || ''
+      
+      categoria.perguntas[6].status = verificacaoExistente.cat1_tarjeta || 'nao_verificado'
+      categoria.perguntas[6].membrosAfetados = verificacaoExistente.cat1_tarjeta_membros || []
+      categoria.perguntas[6].observacoes = verificacaoExistente.cat1_tarjeta_observacoes || ''
+      
+      categoria.perguntas[7].status = verificacaoExistente.cat1_oculos || 'nao_verificado'
+      categoria.perguntas[7].membrosAfetados = verificacaoExistente.cat1_oculos_membros || []
+      categoria.perguntas[7].observacoes = verificacaoExistente.cat1_oculos_observacoes || ''
+      
+      setCategorias(novasCategorias)
+    }
+  }, [verificacaoExistente])
+  
+  const marcarResposta = (categoriaId: string, perguntaId: string, status: VerificacaoStatus) => {
+    if (status === 'nao_conforme') {
+      setModalNaoConformidade({ aberto: true, perguntaId, categoriaId })
+      return
+    }
     
-    if (hasNonConformity) {
-      const missingObservations = [];
-      if (equipmentStatus.gandolas === "NAO_CONFORME" && !data.gandolas_observacoes && !data.gandolas_imagem?.[0]) {
-        missingObservations.push("Gandolas de Bombeiro");
+    setCategorias(prev => prev.map(categoria => {
+      if (categoria.id === categoriaId) {
+        return {
+          ...categoria,
+          perguntas: categoria.perguntas.map(pergunta => {
+            if (pergunta.id === perguntaId) {
+              return {
+                ...pergunta,
+                status,
+                membrosAfetados: status === 'conforme' ? [] : pergunta.membrosAfetados,
+                observacoes: status === 'conforme' ? '' : pergunta.observacoes
+              }
+            }
+            return pergunta
+          })
+        }
       }
-      if (equipmentStatus.calcas === "NAO_CONFORME" && !data.calcas_observacoes && !data.calcas_imagem?.[0]) {
-        missingObservations.push("Calças de Bombeiro");
+      return categoria
+    }))
+  }
+  
+  const confirmarNaoConformidade = (membrosAfetados: string[], observacoes: string) => {
+    const { categoriaId, perguntaId } = modalNaoConformidade
+    
+    setCategorias(prev => prev.map(categoria => {
+      if (categoria.id === categoriaId) {
+        return {
+          ...categoria,
+          perguntas: categoria.perguntas.map(pergunta => {
+            if (pergunta.id === perguntaId) {
+              return {
+                ...pergunta,
+                status: 'nao_conforme' as VerificacaoStatus,
+                membrosAfetados,
+                observacoes
+              }
+            }
+            return pergunta
+          })
+        }
       }
-      if (equipmentStatus.cinto === "NAO_CONFORME" && !data.cinto_observacoes && !data.cinto_imagem?.[0]) {
-        missingObservations.push("Cinto de Bombeiro");
-      }
-      if (equipmentStatus.bota === "NAO_CONFORME" && !data.bota_observacoes && !data.bota_imagem?.[0]) {
-        missingObservations.push("Bota de Segurança");
-      }
-      if (equipmentStatus.camisas === "NAO_CONFORME" && !data.camisas_observacoes && !data.camisas_imagem?.[0]) {
-        missingObservations.push("Camisas de Bombeiro");
-      }
-      if (equipmentStatus.bermudas === "NAO_CONFORME" && !data.bermudas_observacoes && !data.bermudas_imagem?.[0]) {
-        missingObservations.push("Bermudas de Bombeiro");
-      }
-      if (equipmentStatus.tarjeta === "NAO_CONFORME" && !data.tarjeta_observacoes && !data.tarjeta_imagem?.[0]) {
-        missingObservations.push("Tarjeta de Identificação");
-      }
-      if (equipmentStatus.oculos === "NAO_CONFORME" && !data.oculos_observacoes && !data.oculos_imagem?.[0]) {
-        missingObservations.push("Óculos de Proteção/Protetor Auricular");
-      }
-      
-      if (missingObservations.length > 0) {
-        alert(`Observações ou imagens são obrigatórias para itens não conformes: ${missingObservations.join(", ")}`);
-        return;
-      }
+      return categoria
+    }))
+    
+    setModalNaoConformidade({ aberto: false, perguntaId: '', categoriaId: '' })
+  }
+  
+  const calcularEstatisticas = () => {
+    const todasPerguntas = categorias.flatMap(cat => cat.perguntas)
+    const conformes = todasPerguntas.filter(p => p.status === 'conforme').length
+    const naoConformes = todasPerguntas.filter(p => p.status === 'nao_conforme').length
+    const naoVerificados = todasPerguntas.filter(p => p.status === 'nao_verificado').length
+    const percentual = todasPerguntas.length > 0 ? (conformes / todasPerguntas.length) * 100 : 0
+    
+    return { conformes, naoConformes, naoVerificados, percentual }
+  }
+  
+  const resetFormulario = () => {
+    setEtapaAtual(1)
+    setValue('data_verificacao', new Date().toISOString().split('T')[0])
+    setValue('local', 'Santa Genoveva - GYN')
+    setValue('responsavel', '')
+    setValue('equipe', '')
+    setMembrosEquipeSelecionada([])
+    
+    setCategorias(prev => prev.map(categoria => ({
+      ...categoria,
+      perguntas: categoria.perguntas.map(pergunta => ({
+        ...pergunta,
+        status: 'nao_verificado' as VerificacaoStatus,
+        membrosAfetados: [],
+        observacoes: ''
+      }))
+    })))
+  }
+  
+  const salvarVerificacao = async (formData: FormData) => {
+    if (!formData.equipe || !formData.responsavel) {
+      toast.error('Por favor, preencha todos os campos obrigatórios')
+      return
     }
-
+    
+    setIsSaving(true)
+    
     try {
-      // Contar itens conformes e não conformes
-      const itensConformes = Object.values(equipmentStatus).filter(status => status === "CONFORME").length;
-      const itensNaoConformes = Object.values(equipmentStatus).filter(status => status === "NAO_CONFORME").length;
+      const stats = calcularEstatisticas()
+      const categoria = categorias[0]
       
-      // Adaptar dados para o formato esperado pelo backend
-      const adaptedData = {
-        base: data.aeroporto,
-        responsavel_id: data.responsavel_id,
-        responsavel_nome: data.responsavel_nome,
-        data_verificacao: data.data,
-        equipe_id: null,
-        mes_referencia: mesAtual,
-        ano_referencia: anoAtual,
-        tp_conformes: itensConformes,
-        tp_nao_conformes: itensNaoConformes,
-        total_verificados: 8, // Total de itens verificados
-        observacoes: `Colaborador: ${data.colaborador_nome}\nVerificação de Uniformes de Bombeiro de Aeródromo`
-      };
+      const dadosVerificacao = {
+        data_verificacao: formData.data_verificacao,
+        local: formData.local,
+        responsavel: formData.responsavel,
+        equipe: formData.equipe,
+        membros_equipe: membrosEquipeSelecionada,
+        status: 'concluida' as const,
+        etapa_atual: etapaAtual,
+        total_conformes: stats.conformes,
+        total_nao_conformes: stats.naoConformes,
+        total_nao_verificados: stats.naoVerificados,
+        percentual_conformidade: stats.percentual,
+        
+        // Mapear perguntas para colunas da tabela
+        cat1_gandolas: categoria.perguntas[0].status,
+        cat1_gandolas_membros: categoria.perguntas[0].membrosAfetados,
+        cat1_gandolas_observacoes: categoria.perguntas[0].observacoes,
+        
+        cat1_calcas: categoria.perguntas[1].status,
+        cat1_calcas_membros: categoria.perguntas[1].membrosAfetados,
+        cat1_calcas_observacoes: categoria.perguntas[1].observacoes,
+        
+        cat1_cinto: categoria.perguntas[2].status,
+        cat1_cinto_membros: categoria.perguntas[2].membrosAfetados,
+        cat1_cinto_observacoes: categoria.perguntas[2].observacoes,
+        
+        cat1_bota: categoria.perguntas[3].status,
+        cat1_bota_membros: categoria.perguntas[3].membrosAfetados,
+        cat1_bota_observacoes: categoria.perguntas[3].observacoes,
+        
+        cat1_camisas: categoria.perguntas[4].status,
+        cat1_camisas_membros: categoria.perguntas[4].membrosAfetados,
+        cat1_camisas_observacoes: categoria.perguntas[4].observacoes,
+        
+        cat1_bermudas: categoria.perguntas[5].status,
+        cat1_bermudas_membros: categoria.perguntas[5].membrosAfetados,
+        cat1_bermudas_observacoes: categoria.perguntas[5].observacoes,
+        
+        cat1_tarjeta: categoria.perguntas[6].status,
+        cat1_tarjeta_membros: categoria.perguntas[6].membrosAfetados,
+        cat1_tarjeta_observacoes: categoria.perguntas[6].observacoes,
+        
+        cat1_oculos: categoria.perguntas[7].status,
+        cat1_oculos_membros: categoria.perguntas[7].membrosAfetados,
+        cat1_oculos_observacoes: categoria.perguntas[7].observacoes
+      }
       
-      await createVerificacao.mutateAsync(adaptedData);
-      reset();
-      setEquipmentStatus({
-        gandolas: "CONFORME",
-        calcas: "CONFORME",
-        cinto: "CONFORME",
-        bota: "CONFORME",
-        camisas: "CONFORME",
-        bermudas: "CONFORME",
-        tarjeta: "CONFORME",
-        oculos: "CONFORME"
-      });
+      if (verificacaoExistente) {
+        const resultado = await updateMutation.mutateAsync({
+          id: verificacaoExistente.id,
+          ...dadosVerificacao
+        })
+        onSalvar?.(resultado)
+      } else {
+        const resultado = await createMutation.mutateAsync(dadosVerificacao)
+        onSalvar?.(resultado)
+      }
+      
+      toast.success('Verificação de uniformes salva com sucesso!')
+      resetFormulario()
+      
     } catch (error) {
-      console.error("Erro ao salvar verificação:", error);
+      console.error('Erro ao salvar verificação:', error)
+      toast.error('Erro ao salvar verificação de uniformes')
+    } finally {
+      setIsSaving(false)
     }
-  };
-
+  }
+  
+  const stats = calcularEstatisticas()
+  const progressoGeral = (stats.conformes + stats.naoConformes) / (stats.conformes + stats.naoConformes + stats.naoVerificados) * 100
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Verificação de Uniformes</CardTitle>
-        <CardDescription>
-          Registre a verificação dos uniformes de bombeiro de aeródromo.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* IDENTIFICAÇÃO DO AEROPORTO */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary border-b pb-2">Identificação do Aeroporto</h3>
+    <div className="space-y-6">
+      {/* Cabeçalho com Progresso */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Verificação de Uniformes</span>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                  etapaAtual >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+                }`}>1</div>
+                <div className={`w-12 h-1 ${
+                  etapaAtual >= 2 ? 'bg-blue-500' : 'bg-gray-200'
+                }`} />
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                  etapaAtual >= 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+                }`}>2</div>
+                <div className={`w-12 h-1 ${
+                  etapaAtual >= 3 ? 'bg-blue-500' : 'bg-gray-200'
+                }`} />
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                  etapaAtual >= 3 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+                }`}>3</div>
+              </div>
+            </div>
+          </CardTitle>
+        </CardHeader>
+      </Card>
+      
+      {/* Etapa 1: Informações Básicas */}
+      {etapaAtual === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Informações Básicas</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="aeroporto">Aeroporto *</Label>
-                <Select onValueChange={(value) => setValue("aeroporto", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o aeroporto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SBSV">SBSV - Salvador</SelectItem>
-                    <SelectItem value="SBIL">SBIL - Ilhéus</SelectItem>
-                    <SelectItem value="SBPS">SBPS - Porto Seguro</SelectItem>
-                    <SelectItem value="SBTF">SBTF - Teixeira de Freitas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="data">Data *</Label>
+              <div>
+                <Label htmlFor="data_verificacao">Data da Verificação</Label>
                 <Input
-                  id="data"
+                  id="data_verificacao"
                   type="date"
-                  {...register("data", { required: "Campo obrigatório" })}
+                  {...register('data_verificacao', { required: 'Data é obrigatória' })}
                 />
-                {errors.data && (
-                  <p className="text-sm text-destructive">{errors.data.message}</p>
+                {errors.data_verificacao && (
+                  <p className="text-sm text-red-500 mt-1">{errors.data_verificacao.message}</p>
                 )}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="responsavel">Responsável *</Label>
-                <Select onValueChange={(value) => {
-                  const bombeiro = bombeiros.find(b => b.id === value);
-                  if (bombeiro) {
-                    setValue("responsavel_id", bombeiro.id);
-                    setValue("responsavel_nome", bombeiro.nome);
-                  }
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o responsável" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bombeiros.map((bombeiro) => (
-                      <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                        {bombeiro.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="colaborador">Colaborador *</Label>
-                <Select onValueChange={(value) => {
-                  const bombeiro = bombeiros.find(b => b.id === value);
-                  if (bombeiro) {
-                    setValue("colaborador_id", bombeiro.id);
-                    setValue("colaborador_nome", bombeiro.nome);
-                  }
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o colaborador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bombeiros.map((bombeiro) => (
-                      <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                        {bombeiro.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              
+              <div>
+                <Label htmlFor="local">Local</Label>
+                <Input
+                  id="local"
+                  {...register('local', { required: 'Local é obrigatório' })}
+                />
+                {errors.local && (
+                  <p className="text-sm text-red-500 mt-1">{errors.local.message}</p>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* ITENS DE VERIFICAÇÃO */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-primary border-b pb-2">Itens de Verificação</h3>
             
-            <div className="grid grid-cols-1 gap-6">
-              {/* 1. Gandolas de Bombeiro */}
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label className="text-base font-medium">COLABORADOR POSSUI 2 GANDOLAS DE BOMBEIRO DE AERODROMO</Label>
-                <RadioGroup 
-                  value={equipmentStatus.gandolas}
-                  onValueChange={(value: "CONFORME" | "NAO_CONFORME") => {
-                    setEquipmentStatus(prev => ({ ...prev, gandolas: value }));
-                  }}
-                  className="flex gap-6"
+            <div>
+              <Label htmlFor="responsavel">Responsável</Label>
+              <Select onValueChange={(value) => setValue('responsavel', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RESPONSAVEIS.map((resp) => (
+                    <SelectItem key={resp.nome} value={resp.nome}>
+                      {resp.nome} - {resp.cargo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.responsavel && (
+                <p className="text-sm text-red-500 mt-1">{errors.responsavel.message}</p>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
+              <Button 
+                onClick={() => setEtapaAtual(2)}
+                disabled={!watch('responsavel')}
+                className="flex items-center space-x-2"
+              >
+                <span>Iniciar Verificação</span>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Etapa 2: Seleção de Equipe */}
+      {etapaAtual === 2 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="h-5 w-5" />
+              <span>Seleção de Equipe</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.keys(EQUIPES).map((equipe) => (
+                <Card 
+                  key={equipe}
+                  className={`cursor-pointer transition-all hover:shadow-md ${
+                    equipeSelecionada === equipe ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                  }`}
+                  onClick={() => setValue('equipe', equipe as any)}
                 >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONFORME" id="gandolas-conforme" />
-                    <Label htmlFor="gandolas-conforme">CONFORME</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="NAO_CONFORME" id="gandolas-nao-conforme" />
-                    <Label htmlFor="gandolas-nao-conforme">NÃO CONFORME</Label>
-                  </div>
-                </RadioGroup>
-                
-                {equipmentStatus.gandolas === "NAO_CONFORME" && (
-                  <div className="space-y-3 mt-4 p-3 bg-red-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="gandolas_observacoes">Observações (obrigatório)</Label>
-                      <Textarea
-                        id="gandolas_observacoes"
-                        placeholder="Descreva o problema encontrado..."
-                        {...register("gandolas_observacoes")}
-                      />
+                  <CardContent className="p-4 text-center">
+                    <div className="text-lg font-bold text-blue-600">{equipe}</div>
+                    <div className="text-sm text-gray-500">
+                      {EQUIPES[equipe as keyof typeof EQUIPES].length} membros
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gandolas_imagem">Upload de Imagem</Label>
-                      <Input
-                        id="gandolas_imagem"
-                        type="file"
-                        accept="image/*"
-                        {...register("gandolas_imagem")}
-                      />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            {equipeSelecionada && membrosEquipeSelecionada.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3">Membros da Equipe {equipeSelecionada}</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {membrosEquipeSelecionada.map((membro) => (
+                    <div key={membro} className="bg-gray-100 p-3 rounded-lg text-center">
+                      <div className="font-medium">{membro}</div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
+            )}
+            
+            <div className="flex justify-between">
+              <Button 
+                variant="outline" 
+                onClick={() => setEtapaAtual(1)}
+                className="flex items-center space-x-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Voltar</span>
+              </Button>
+              
+              <Button 
+                onClick={() => setEtapaAtual(3)}
+                disabled={!equipeSelecionada}
+                className="flex items-center space-x-2"
+              >
+                <span>Continuar</span>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Etapa 3: Verificação por Categorias */}
+      {etapaAtual === 3 && (
+        <div className="space-y-6">
+          {/* Painel de Estatísticas */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Progresso da Verificação</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{stats.conformes}</div>
+                  <div className="text-sm text-gray-500">Conformes</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{stats.naoConformes}</div>
+                  <div className="text-sm text-gray-500">Não Conformes</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-600">{stats.naoVerificados}</div>
+                  <div className="text-sm text-gray-500">Não Verificados</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{stats.percentual.toFixed(1)}%</div>
+                  <div className="text-sm text-gray-500">Conformidade</div>
+                </div>
+              </div>
+              <Progress value={progressoGeral} className="h-2" />
+            </CardContent>
+          </Card>
+          
+          {/* Cards de Verificação */}
+          {categorias.map((categoria) => (
+            <Card key={categoria.id}>
+              <CardHeader>
+                <CardTitle>{categoria.nome}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {categoria.perguntas.map((pergunta) => (
+                  <div key={pergunta.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <p className="font-medium">{pergunta.texto}</p>
+                        {pergunta.status === 'nao_conforme' && pergunta.membrosAfetados.length > 0 && (
+                          <div className="mt-2">
+                            <p className="text-sm text-gray-600">Membros afetados:</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {pergunta.membrosAfetados.map((membro) => (
+                                <Badge key={membro} variant="destructive" className="text-xs">
+                                  {membro}
+                                </Badge>
+                              ))}
+                            </div>
+                            {pergunta.observacoes && (
+                              <p className="text-sm text-gray-600 mt-2">
+                                <strong>Observações:</strong> {pergunta.observacoes}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 ml-4">
+                        {pergunta.status === 'conforme' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                        {pergunta.status === 'nao_conforme' && <XCircle className="h-5 w-5 text-red-500" />}
+                        {pergunta.status === 'nao_verificado' && <Clock className="h-5 w-5 text-gray-400" />}
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant={pergunta.status === 'conforme' ? 'default' : 'outline'}
+                        onClick={() => marcarResposta(categoria.id, pergunta.id, 'conforme')}
+                        className={`flex items-center space-x-1 ${
+                          pergunta.status === 'conforme' ? 'bg-green-600 hover:bg-green-700' : 'hover:bg-green-50'
+                        }`}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        <span>CONFORME</span>
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant={pergunta.status === 'nao_conforme' ? 'destructive' : 'outline'}
+                        onClick={() => marcarResposta(categoria.id, pergunta.id, 'nao_conforme')}
+                        className="flex items-center space-x-1"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        <span>NÃO CONFORME</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+          
+          {/* Botões de Navegação */}
+          <div className="flex justify-between">
+            <Button 
+              variant="outline" 
+              onClick={() => setEtapaAtual(2)}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Voltar</span>
+            </Button>
+            
+            <Button 
+              onClick={handleSubmit(salvarVerificacao)}
+              disabled={isSaving || stats.naoVerificados > 0}
+              className="flex items-center space-x-2"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  <span>Salvando...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Finalizar Verificação</span>
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de Não Conformidade */}
+      <ModalNaoConformidade
+        aberto={modalNaoConformidade.aberto}
+        membrosEquipe={membrosEquipeSelecionada}
+        onConfirmar={confirmarNaoConformidade}
+        onCancelar={() => setModalNaoConformidade({ aberto: false, perguntaId: '', categoriaId: '' })}
+      />
+    </div>
+  )
+}
 
-              {/* 2. Calças de Bombeiro */}
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label className="text-base font-medium">COLABORADOR POSSUI 2 CALÇAS DE BOMBEIRO DE AERODROMO</Label>
-                <RadioGroup 
-                  value={equipmentStatus.calcas}
-                  onValueChange={(value: "CONFORME" | "NAO_CONFORME") => {
-                    setEquipmentStatus(prev => ({ ...prev, calcas: value }));
-                  }}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONFORME" id="calcas-conforme" />
-                    <Label htmlFor="calcas-conforme">CONFORME</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="NAO_CONFORME" id="calcas-nao-conforme" />
-                    <Label htmlFor="calcas-nao-conforme">NÃO CONFORME</Label>
-                  </div>
-                </RadioGroup>
-                
-                {equipmentStatus.calcas === "NAO_CONFORME" && (
-                  <div className="space-y-3 mt-4 p-3 bg-red-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="calcas_observacoes">Observações (obrigatório)</Label>
-                      <Textarea
-                        id="calcas_observacoes"
-                        placeholder="Descreva o problema encontrado..."
-                        {...register("calcas_observacoes")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="calcas_imagem">Upload de Imagem</Label>
-                      <Input
-                        id="calcas_imagem"
-                        type="file"
-                        accept="image/*"
-                        {...register("calcas_imagem")}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+export default TPUniformesVerificacaoForm
 
-              {/* 3. Cinto de Bombeiro */}
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label className="text-base font-medium">COLABORADOR POSSUI CINTO DE BOMBEIRO DE AERODROMO</Label>
-                <RadioGroup 
-                  value={equipmentStatus.cinto}
-                  onValueChange={(value: "CONFORME" | "NAO_CONFORME") => {
-                    setEquipmentStatus(prev => ({ ...prev, cinto: value }));
-                  }}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONFORME" id="cinto-conforme" />
-                    <Label htmlFor="cinto-conforme">CONFORME</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="NAO_CONFORME" id="cinto-nao-conforme" />
-                    <Label htmlFor="cinto-nao-conforme">NÃO CONFORME</Label>
-                  </div>
-                </RadioGroup>
-                
-                {equipmentStatus.cinto === "NAO_CONFORME" && (
-                  <div className="space-y-3 mt-4 p-3 bg-red-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="cinto_observacoes">Observações (obrigatório)</Label>
-                      <Textarea
-                        id="cinto_observacoes"
-                        placeholder="Descreva o problema encontrado..."
-                        {...register("cinto_observacoes")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cinto_imagem">Upload de Imagem</Label>
-                      <Input
-                        id="cinto_imagem"
-                        type="file"
-                        accept="image/*"
-                        {...register("cinto_imagem")}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+// Componente Modal de Não Conformidade
+interface ModalNaoConformidadeProps {
+  aberto: boolean
+  membrosEquipe: string[]
+  onConfirmar: (membrosAfetados: string[], observacoes: string) => void
+  onCancelar: () => void
+}
 
-              {/* 4. Bota de Segurança */}
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label className="text-base font-medium">COLABORADOR POSSUI BOTA DE SEGURANÇA</Label>
-                <RadioGroup 
-                  value={equipmentStatus.bota}
-                  onValueChange={(value: "CONFORME" | "NAO_CONFORME") => {
-                    setEquipmentStatus(prev => ({ ...prev, bota: value }));
-                  }}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONFORME" id="bota-conforme" />
-                    <Label htmlFor="bota-conforme">CONFORME</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="NAO_CONFORME" id="bota-nao-conforme" />
-                    <Label htmlFor="bota-nao-conforme">NÃO CONFORME</Label>
-                  </div>
-                </RadioGroup>
-                
-                {equipmentStatus.bota === "NAO_CONFORME" && (
-                  <div className="space-y-3 mt-4 p-3 bg-red-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="bota_observacoes">Observações (obrigatório)</Label>
-                      <Textarea
-                        id="bota_observacoes"
-                        placeholder="Descreva o problema encontrado..."
-                        {...register("bota_observacoes")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bota_imagem">Upload de Imagem</Label>
-                      <Input
-                        id="bota_imagem"
-                        type="file"
-                        accept="image/*"
-                        {...register("bota_imagem")}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 5. Camisas de Bombeiro */}
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label className="text-base font-medium">COLABORADOR POSSUI 2 CAMISAS DE BOMBEIRO DE AERODROMO</Label>
-                <RadioGroup 
-                  value={equipmentStatus.camisas}
-                  onValueChange={(value: "CONFORME" | "NAO_CONFORME") => {
-                    setEquipmentStatus(prev => ({ ...prev, camisas: value }));
-                  }}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONFORME" id="camisas-conforme" />
-                    <Label htmlFor="camisas-conforme">CONFORME</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="NAO_CONFORME" id="camisas-nao-conforme" />
-                    <Label htmlFor="camisas-nao-conforme">NÃO CONFORME</Label>
-                  </div>
-                </RadioGroup>
-                
-                {equipmentStatus.camisas === "NAO_CONFORME" && (
-                  <div className="space-y-3 mt-4 p-3 bg-red-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="camisas_observacoes">Observações (obrigatório)</Label>
-                      <Textarea
-                        id="camisas_observacoes"
-                        placeholder="Descreva o problema encontrado..."
-                        {...register("camisas_observacoes")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="camisas_imagem">Upload de Imagem</Label>
-                      <Input
-                        id="camisas_imagem"
-                        type="file"
-                        accept="image/*"
-                        {...register("camisas_imagem")}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 6. Bermudas de Bombeiro */}
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label className="text-base font-medium">COLABORADOR POSSUI 2 BERMUDAS DE BOMBEIRO DE AERODROMO</Label>
-                <RadioGroup 
-                  value={equipmentStatus.bermudas}
-                  onValueChange={(value: "CONFORME" | "NAO_CONFORME") => {
-                    setEquipmentStatus(prev => ({ ...prev, bermudas: value }));
-                  }}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONFORME" id="bermudas-conforme" />
-                    <Label htmlFor="bermudas-conforme">CONFORME</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="NAO_CONFORME" id="bermudas-nao-conforme" />
-                    <Label htmlFor="bermudas-nao-conforme">NÃO CONFORME</Label>
-                  </div>
-                </RadioGroup>
-                
-                {equipmentStatus.bermudas === "NAO_CONFORME" && (
-                  <div className="space-y-3 mt-4 p-3 bg-red-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="bermudas_observacoes">Observações (obrigatório)</Label>
-                      <Textarea
-                        id="bermudas_observacoes"
-                        placeholder="Descreva o problema encontrado..."
-                        {...register("bermudas_observacoes")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bermudas_imagem">Upload de Imagem</Label>
-                      <Input
-                        id="bermudas_imagem"
-                        type="file"
-                        accept="image/*"
-                        {...register("bermudas_imagem")}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 7. Tarjeta de Nome/Função */}
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label className="text-base font-medium">COLABORADOR POSSUI TARJETA DE NOME/FUNÇÃO</Label>
-                <RadioGroup 
-                  value={equipmentStatus.tarjeta}
-                  onValueChange={(value: "CONFORME" | "NAO_CONFORME") => {
-                    setEquipmentStatus(prev => ({ ...prev, tarjeta: value }));
-                  }}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONFORME" id="tarjeta-conforme" />
-                    <Label htmlFor="tarjeta-conforme">CONFORME</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="NAO_CONFORME" id="tarjeta-nao-conforme" />
-                    <Label htmlFor="tarjeta-nao-conforme">NÃO CONFORME</Label>
-                  </div>
-                </RadioGroup>
-                
-                {equipmentStatus.tarjeta === "NAO_CONFORME" && (
-                  <div className="space-y-3 mt-4 p-3 bg-red-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="tarjeta_observacoes">Observações (obrigatório)</Label>
-                      <Textarea
-                        id="tarjeta_observacoes"
-                        placeholder="Descreva o problema encontrado..."
-                        {...register("tarjeta_observacoes")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="tarjeta_imagem">Upload de Imagem</Label>
-                      <Input
-                        id="tarjeta_imagem"
-                        type="file"
-                        accept="image/*"
-                        {...register("tarjeta_imagem")}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 8. Óculos de Proteção/Protetor Auricular */}
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label className="text-base font-medium">COLABORADOR POSSUI ÓCULOS DE PROTEÇÃO/PROTETOR AURICULAR</Label>
-                <RadioGroup 
-                  value={equipmentStatus.oculos}
-                  onValueChange={(value: "CONFORME" | "NAO_CONFORME") => {
-                    setEquipmentStatus(prev => ({ ...prev, oculos: value }));
-                  }}
-                  className="flex gap-6"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CONFORME" id="oculos-conforme" />
-                    <Label htmlFor="oculos-conforme">CONFORME</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="NAO_CONFORME" id="oculos-nao-conforme" />
-                    <Label htmlFor="oculos-nao-conforme">NÃO CONFORME</Label>
-                  </div>
-                </RadioGroup>
-                
-                {equipmentStatus.oculos === "NAO_CONFORME" && (
-                  <div className="space-y-3 mt-4 p-3 bg-red-50 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="oculos_observacoes">Observações (obrigatório)</Label>
-                      <Textarea
-                        id="oculos_observacoes"
-                        placeholder="Descreva o problema encontrado..."
-                        {...register("oculos_observacoes")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="oculos_imagem">Upload de Imagem</Label>
-                      <Input
-                        id="oculos_imagem"
-                        type="file"
-                        accept="image/*"
-                        {...register("oculos_imagem")}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+function ModalNaoConformidade({ aberto, membrosEquipe, onConfirmar, onCancelar }: ModalNaoConformidadeProps) {
+  const [membrosAfetados, setMembrosAfetados] = useState<string[]>([])
+  const [observacoes, setObservacoes] = useState('')
+  
+  const handleConfirmar = () => {
+    onConfirmar(membrosAfetados, observacoes)
+    setMembrosAfetados([])
+    setObservacoes('')
+  }
+  
+  const handleCancelar = () => {
+    onCancelar()
+    setMembrosAfetados([])
+    setObservacoes('')
+  }
+  
+  const toggleMembro = (membro: string) => {
+    setMembrosAfetados(prev => 
+      prev.includes(membro) 
+        ? prev.filter(m => m !== membro)
+        : [...prev, membro]
+    )
+  }
+  
+  return (
+    <Dialog open={aberto} onOpenChange={handleCancelar}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center space-x-2">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <span>Registrar Não Conformidade</span>
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Membros Afetados (opcional)</Label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {membrosEquipe.map((membro) => (
+                <div key={membro} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={membro}
+                    checked={membrosAfetados.includes(membro)}
+                    onCheckedChange={() => toggleMembro(membro)}
+                  />
+                  <Label htmlFor={membro} className="text-sm">{membro}</Label>
+                </div>
+              ))}
             </div>
           </div>
-
-          <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
-            FINALIZAR CHECKLIST MENSAL
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default TPUniformesVerificacaoForm;
+          
+          <div>
+            <Label htmlFor="observacoes" className="text-sm font-medium">Observações (opcional)</Label>
+            <Textarea
+              id="observacoes"
+              placeholder="Descreva o problema encontrado..."
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={handleCancelar}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmar} className="bg-red-600 hover:bg-red-700">
+              Confirmar Não Conformidade
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}

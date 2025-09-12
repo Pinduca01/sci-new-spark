@@ -2166,7 +2166,6 @@ export type Database = {
           observacoes: string | null
           responsavel_id: string | null
           responsavel_nome: string
-          status_assinatura: string | null
           total_verificados: number
           tp_conformes: number
           tp_nao_conformes: number
@@ -2185,7 +2184,6 @@ export type Database = {
           observacoes?: string | null
           responsavel_id?: string | null
           responsavel_nome: string
-          status_assinatura?: string | null
           total_verificados?: number
           tp_conformes?: number
           tp_nao_conformes?: number
@@ -2204,7 +2202,6 @@ export type Database = {
           observacoes?: string | null
           responsavel_id?: string | null
           responsavel_nome?: string
-          status_assinatura?: string | null
           total_verificados?: number
           tp_conformes?: number
           tp_nao_conformes?: number

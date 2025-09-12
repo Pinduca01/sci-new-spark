@@ -2,6 +2,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface Equipe {
+  nome_equipe: string;
+  cor_identificacao?: string;
+}
+
 export interface Bombeiro {
   id: string;
   nome: string;
@@ -16,21 +21,28 @@ export interface Bombeiro {
   status: string;
   matricula?: string;
   data_admissao: string;
+  equipes?: Equipe; // Relacionamento com a tabela equipes
 }
 
-export const useBombeiros = () => {
+export const useBombeiros = (equipeFilter?: string) => {
   const {
     data: bombeiros = [],
     isLoading,
     error
   } = useQuery({
-    queryKey: ['bombeiros'],
+    queryKey: ['bombeiros', equipeFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('bombeiros')
         .select('*')
-        .eq('status', 'ativo')
-        .order('nome');
+        .eq('status', 'ativo');
+      
+      // Aplicar filtro por equipe se fornecido
+      if (equipeFilter && equipeFilter !== 'todas') {
+        query = query.eq('equipe', equipeFilter);
+      }
+      
+      const { data, error } = await query.order('nome');
 
       if (error) throw error;
       return data as Bombeiro[];
@@ -64,5 +76,40 @@ export const useBombeiros = () => {
     error,
     buscarPorEquipe,
     buscarPorTurno
+  };
+};
+
+// Hook específico para filtrar bombeiros por equipe
+export const useBombeirosPorEquipe = (equipe?: string) => {
+  const {
+    data: bombeiros = [],
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['bombeiros-por-equipe', equipe],
+    queryFn: async () => {
+      let query = supabase
+        .from('bombeiros')
+        .select('*');
+      
+      // Aplicar filtro por equipe se fornecido
+      if (equipe && equipe !== 'todas' && equipe !== '') {
+        query = query.eq('equipe', equipe);
+      }
+      
+      const { data, error } = await query.order('nome');
+
+      if (error) throw error;
+      return data as Bombeiro[];
+    },
+    enabled: true // Sempre habilitado para permitir consultas dinâmicas
+  });
+
+  return {
+    bombeiros,
+    isLoading,
+    error,
+    refetch
   };
 };

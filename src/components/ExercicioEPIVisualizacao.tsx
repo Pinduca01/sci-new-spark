@@ -1,11 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ExercicioEPIAgrupado, secondsToTime } from "@/types/exercicioEPI";
 
 interface ExercicioEPIVisualizacaoProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  exercicio: any;
+  exercicio: ExercicioEPIAgrupado | null;
 }
 
 const ExercicioEPIVisualizacao = ({ open, onOpenChange, exercicio }: ExercicioEPIVisualizacaoProps) => {
@@ -25,17 +26,20 @@ const ExercicioEPIVisualizacao = ({ open, onOpenChange, exercicio }: ExercicioEP
               <div className="grid grid-cols-3 border-b border-gray-800">
                 <div className="col-span-2 border-r border-gray-800 p-3">
                   <div className="font-bold text-sm">
-                    IDENTIFICAÇÃO DO AEROPORTO: {exercicio.identificacaoLocal}
+                    IDENTIFICAÇÃO: {exercicio.identificacao_local || 'AEROPORTO INTERNACIONAL SANTA GENOVEVA - GYN'}
                   </div>
                 </div>
                 <div className="grid grid-cols-2">
                   <div className="border-r border-gray-800 p-3 text-center">
                     <div className="font-bold text-xs">DATA:</div>
                     <div className="text-sm">{new Date(exercicio.data).toLocaleDateString('pt-BR')}</div>
+                    {exercicio.hora && (
+                      <div className="text-xs mt-1">{exercicio.hora}</div>
+                    )}
                   </div>
                   <div className="p-3 text-center">
-                    <div className="font-bold text-xs">HORA:</div>
-                    <div className="text-sm">{exercicio.hora}</div>
+                    <div className="font-bold text-xs">TIPO:</div>
+                    <div className="text-sm">{exercicio.tipo_epi || 'EPI'}</div>
                   </div>
                 </div>
               </div>
@@ -75,29 +79,29 @@ const ExercicioEPIVisualizacao = ({ open, onOpenChange, exercicio }: ExercicioEP
                   </tr>
                 </thead>
                 <tbody>
-                  {exercicio.bombeiros?.map((bombeiro: any, index: number) => (
-                    <tr key={index}>
+                  {exercicio.bombeiros?.map((bombeiro, index) => (
+                    <tr key={`visualizacao-bombeiro-${index}-${bombeiro.bombeiro_nome || 'bombeiro'}`}>
                       <td className="border border-gray-800 p-2 text-sm font-medium">
-                        {bombeiro.nome.toUpperCase()}
+                        {bombeiro.bombeiro_nome || `BOMBEIRO ${index + 1}`}
                       </td>
                       <td className="border border-gray-800 p-2 text-sm text-center">
-                        {bombeiro.funcao}
+                        {bombeiro.bombeiro_funcao || 'BOMBEIRO'}
                       </td>
                       {/* Calça + Bota */}
                       <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.calcaBota || '-'}
+                        {bombeiro.tempo_calca_bota ? secondsToTime(bombeiro.tempo_calca_bota) : '--:--'}
                       </td>
                       {/* TP Completo */}
                       <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.tpCompleto || '-'}
+                        {bombeiro.tempo_tp_completo ? secondsToTime(bombeiro.tempo_tp_completo) : '--:--'}
                       </td>
                       {/* EPR + TP Completo */}
                       <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprTpCompleto || '-'}
+                        {bombeiro.tempo_epr_tp_completo ? secondsToTime(bombeiro.tempo_epr_tp_completo) : '--:--'}
                       </td>
                       {/* EPR sem TP */}
                       <td className="border border-gray-800 p-1 text-xs text-center">
-                        {bombeiro.eprSemTp || '-'}
+                        {bombeiro.tempo_epr_sem_tp ? secondsToTime(bombeiro.tempo_epr_sem_tp) : '--:--'}
                       </td>
                     </tr>
                   ))}
@@ -125,16 +129,14 @@ const ExercicioEPIVisualizacao = ({ open, onOpenChange, exercicio }: ExercicioEP
                   <div className="text-center">
                     <div className="border-b-2 border-gray-800 mb-2 pb-8"></div>
                     <div className="font-bold text-sm">Chefe de Equipe</div>
-                    {exercicio.chefeEquipe && (
-                      <div className="text-sm mt-1">{exercicio.chefeEquipe}</div>
+                    {exercicio.chefe_equipe && (
+                      <div className="text-sm mt-1">{exercicio.chefe_equipe}</div>
                     )}
                   </div>
                   <div className="text-center">
                     <div className="border-b-2 border-gray-800 mb-2 pb-8"></div>
                     <div className="font-bold text-sm">Gerente SCI</div>
-                    {exercicio.gerenteSCI && (
-                      <div className="text-sm mt-1">{exercicio.gerenteSCI}</div>
-                    )}
+                    <div className="text-sm mt-1">Status: {exercicio.status}</div>
                   </div>
                 </div>
               </div>

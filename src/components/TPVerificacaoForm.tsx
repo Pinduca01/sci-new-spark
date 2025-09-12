@@ -3,577 +3,939 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateTPVerificacao, type TPVerificacao } from "@/hooks/useTPVerificacoes";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useBombeiros } from "@/hooks/useBombeiros";
 import { useEquipes } from "@/hooks/useEquipes";
-import { AssinaturaDigital } from "@/components/AssinaturaDigital";
 import { useToast } from "@/hooks/use-toast";
-
-
+import { supabase } from "@/lib/supabase";
+import { ClipboardCheck, AlertCircle, CheckCircle, XCircle, Clock, Users, ArrowRight, ArrowLeft, Save, Eye } from "lucide-react";
 
 type FormData = {
-  // Cabeçalho do formulário
+  // Informações básicas
   data_verificacao: string;
-  local_contrato: string;
-  ba_ce_id: string;
-  ba_ce_nome: string;
-  equipe_id: string;
-  responsavel_id: string;
-  responsavel_nome: string;
-  
-  // Integrantes da equipe (12 campos uniformes)
-  integrante_1_id?: string;
-  integrante_2_id?: string;
-  integrante_3_id?: string;
-  integrante_4_id?: string;
-  integrante_5_id?: string;
-  integrante_6_id?: string;
-  integrante_7_id?: string;
-  integrante_8_id?: string;
-  integrante_9_id?: string;
-  integrante_10_id?: string;
-  integrante_11_id?: string;
-  integrante_12_id?: string;
-  
-  // Checklist de verificação (8 itens das imagens)
-  item1_conforme: "S" | "N"; // As vestimentas possuem algum tipo de dano?
-  item1_observacoes?: string;
-  
-  item2_conforme: "S" | "N"; // Existem vestimentas nos moldes dos pontos de verificação?
-  item2_observacoes?: string;
-  
-  item3_conforme: "S" | "N"; // Os capacetes possuem avarias de qualquer natureza?
-  item3_observacoes?: string;
-  
-  item4_conforme: "S" | "N"; // As botas apresentam algum tipo de alteração?
-  item4_observacoes?: string;
-  
-  item5_conforme: "S" | "N"; // As luvas apresentam algum tipo de alteração?
-  item5_observacoes?: string;
-  
-  item6_conforme: "S" | "N"; // As botas apresentam algum tipo de alteração?
-  item6_observacoes?: string;
-  
-  item7_conforme: "S" | "N"; // As luvas apresentam algum tipo de alteração?
-  item7_observacoes?: string;
-  
-  item8_conforme: "S" | "N"; // Os botas dos vestimentas estão funcionando?
-  item8_observacoes?: string;
+  local: string;
+  responsavel: string;
+  equipe: string;
+  membros_equipe: string[];
+};
+
+type VerificacaoStatus = 'conforme' | 'nao_conforme' | 'nao_verificado';
+
+type CategoriaVerificacao = {
+  id: string;
+  titulo: string;
+  perguntas: {
+    id: string;
+    texto: string;
+    status: VerificacaoStatus;
+    membros_afetados: string[];
+    observacoes: string;
+  }[];
+};
+
+type HistoricoVerificacao = {
+  id: string;
+  data_verificacao: string;
+  local: string;
+  responsavel: string;
+  equipe: string;
+  status: string;
+  percentual_conformidade: number;
+  total_conformes: number;
+  total_nao_conformes: number;
 };
 
 const TPVerificacaoForm = () => {
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<FormData>();
-  const createVerificacao = useCreateTPVerificacao();
   const { bombeiros = [] } = useBombeiros();
   const { data: equipes = [] } = useEquipes();
   const { toast } = useToast();
-  const [checklistItems, setChecklistItems] = useState({
-    item1: "S" as "S" | "N",
-    item2: "S" as "S" | "N",
-    item3: "S" as "S" | "N",
-    item4: "S" as "S" | "N",
-    item5: "S" as "S" | "N",
-    item6: "S" as "S" | "N",
-    item7: "S" as "S" | "N",
-    item8: "S" as "S" | "N"
-  });
   
-  // Estados para assinatura digital
-  const [assinatura, setAssinatura] = useState<{
-    documentoId: string;
-    linkAssinatura: string;
-    status: string;
-    assinaturaBase64?: string;
-  } | null>(null);
-  const [documentoEnviado, setDocumentoEnviado] = useState(false);
-  const [statusAssinatura, setStatusAssinatura] = useState<'rascunho' | 'enviado' | 'assinado'>('rascunho');
-
-  // Rastrear bombeiros selecionados nos campos de integrantes
-  const integrantesSelecionados = {
-    integrante_1_id: watch('integrante_1_id'),
-    integrante_2_id: watch('integrante_2_id'),
-    integrante_3_id: watch('integrante_3_id'),
-    integrante_4_id: watch('integrante_4_id'),
-    integrante_5_id: watch('integrante_5_id'),
-    integrante_6_id: watch('integrante_6_id'),
-    integrante_7_id: watch('integrante_7_id'),
-    integrante_8_id: watch('integrante_8_id'),
-    integrante_9_id: watch('integrante_9_id'),
-    integrante_10_id: watch('integrante_10_id'),
-    integrante_11_id: watch('integrante_11_id'),
-    integrante_12_id: watch('integrante_12_id')
-  };
-
-  // Função para obter bombeiros disponíveis para um campo específico
-  const getBombeirosDisponiveis = (campoAtual: string) => {
-    const bombeirosSelecionados = Object.entries(integrantesSelecionados)
-      .filter(([campo, valor]) => campo !== campoAtual && valor)
-      .map(([_, valor]) => valor);
-    
-    return bombeiros.filter(bombeiro => !bombeirosSelecionados.includes(bombeiro.id));
-  };
+  // Estados do sistema
+  const [etapaAtual, setEtapaAtual] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [verificacaoId, setVerificacaoId] = useState<string | null>(null);
+  const [membrosEquipeSelecionada, setMembrosEquipeSelecionada] = useState<string[]>([]);
+  const [modalNaoConforme, setModalNaoConforme] = useState<{aberto: boolean; perguntaId: string; categoriaId: string}>({aberto: false, perguntaId: '', categoriaId: ''});
+  const [membrosAfetados, setMembrosAfetados] = useState<string[]>([]);
+  const [observacoesModal, setObservacoesModal] = useState('');
+  const [historicoVerificacoes, setHistoricoVerificacoes] = useState<HistoricoVerificacao[]>([]);
   
-
-
-  const mesAtual = new Date().getMonth() + 1;
-  const anoAtual = new Date().getFullYear();
-
+  // Dados do formulário
+  const equipeSelecionada = watch('equipe');
+  const localSelecionado = watch('local');
+  const responsavelSelecionado = watch('responsavel');
+  
   // Pré-preencher campos com valores padrão
   useEffect(() => {
     const hoje = new Date();
-    const dataFormatada = hoje.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    const dataFormatada = hoje.toISOString().split('T')[0];
     setValue('data_verificacao', dataFormatada);
-    setValue('local_contrato', 'Santa Genoveva - GYN'); // Valor padrão temporário
+    setValue('local', 'Santa Genoveva - GYN');
   }, [setValue]);
-
-  // Observar mudanças na equipe selecionada para permitir seleção manual se necessário
-  const equipeId = watch('equipe_id');
-
-
-
-  const onSubmit = async (data: FormData) => {
-    // Verificar se há assinatura
-    if (!assinatura || assinatura.status !== 'assinado') {
-      toast({
-        title: "Assinatura obrigatória",
-        description: "Por favor, aguarde a conclusão da assinatura digital antes de salvar.",
-        variant: "destructive"
-      });
-      return;
+  
+  // Atualizar membros da equipe quando equipe for selecionada
+  useEffect(() => {
+    if (equipeSelecionada && bombeiros.length > 0) {
+      // Buscar bombeiros que pertencem à equipe selecionada
+      const membrosDaEquipe = bombeiros.filter(bombeiro => 
+        bombeiro.equipe === equipeSelecionada && bombeiro.status === 'ativo'
+      );
+      const nomesMembros = membrosDaEquipe.map(bombeiro => bombeiro.nome);
+      setMembrosEquipeSelecionada(nomesMembros);
+      setValue('membros_equipe', nomesMembros);
     }
+  }, [equipeSelecionada, bombeiros, setValue]);
 
-    // Validar se há observações para itens não conformes
-    const nonConformItems = [];
-    if (checklistItems.item1 === "N" && !data.item1_observacoes) nonConformItems.push("Item 1");
-    if (checklistItems.item2 === "N" && !data.item2_observacoes) nonConformItems.push("Item 2");
-    if (checklistItems.item3 === "N" && !data.item3_observacoes) nonConformItems.push("Item 3");
-    if (checklistItems.item4 === "N" && !data.item4_observacoes) nonConformItems.push("Item 4");
-    if (checklistItems.item5 === "N" && !data.item5_observacoes) nonConformItems.push("Item 5");
-    if (checklistItems.item6 === "N" && !data.item6_observacoes) nonConformItems.push("Item 6");
-    if (checklistItems.item7 === "N" && !data.item7_observacoes) nonConformItems.push("Item 7");
-    if (checklistItems.item8 === "N" && !data.item8_observacoes) nonConformItems.push("Item 8");
-    
-    if (nonConformItems.length > 0) {
-      toast({
-        title: "Observações obrigatórias",
-        description: `Observações são obrigatórias para itens não conformes: ${nonConformItems.join(", ")}`,
-        variant: "destructive"
-      });
-      return;
+  // Estrutura das categorias de verificação
+  const [categorias, setCategorias] = useState<CategoriaVerificacao[]>([
+    {
+      id: 'cat1',
+      titulo: 'IDENTIFICAÇÃO E VALIDADE',
+      perguntas: [
+        { id: 'etiquetas_visiveis', texto: 'Todos os EPIs estão com etiquetas legíveis e visíveis?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'ca_valido', texto: 'Todos os EPIs possuem CA válido e dentro da validade?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+      ]
+    },
+    {
+      id: 'cat2',
+      titulo: 'CAPACETES',
+      perguntas: [
+        { id: 'capacetes_integros', texto: 'Os capacetes estão íntegros, sem avarias, exposição térmica/química ou desgastes que comprometam a segurança?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+      ]
+    },
+    {
+      id: 'cat3',
+      titulo: 'VESTIMENTAS',
+      perguntas: [
+        { id: 'vestimentas_integras', texto: 'As vestimentas estão íntegras, sem avarias, deformidades, defeitos ou ganchos que comprometam a segurança?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'bom_estado', texto: 'As vestimentas estão em bom estado, sem rasgos, desgastes ou manchas excessivas?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'faixas_reflexivas', texto: 'As faixas reflexivas das vestimentas estão íntegras e com reflexibilidade adequada?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'bolsos_dispositivos', texto: 'Os bolsos e dispositivos das vestimentas estão funcionando adequadamente?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'costuras_integras', texto: 'As costuras das vestimentas estão íntegras e sem danos?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'barreira_umidade', texto: 'A barreira de umidade das vestimentas está preservada (sem furos, manchas ou rasgos)?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'punhos_elasticidade', texto: 'Os punhos das vestimentas mantêm elasticidade adequada e o sistema de encaixe está funcionando perfeitamente?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'costuras_seladas', texto: 'Todas as costuras estão devidamente seladas e em perfeitas condições?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+      ]
+    },
+    {
+      id: 'cat4',
+      titulo: 'CALÇADOS',
+      perguntas: [
+        { id: 'botas_bom_estado', texto: 'As botas estão em bom estado, sem mudança de cor excessiva, rasgos, desgastes ou manchas que comprometam sua função?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'solas_integras', texto: 'As solas das botas estão íntegras e sem alterações que interfiram na performance do equipamento?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+      ]
+    },
+    {
+      id: 'cat5',
+      titulo: 'LUVAS',
+      perguntas: [
+        { id: 'luvas_bom_estado', texto: 'As luvas estão em bom estado, sem mudança de cor excessiva, rasgos, desgastes ou manchas que comprometam sua função?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+        { id: 'costuras_luvas', texto: 'As costuras das luvas estão íntegras e sem desgastes que interfiram na performance do equipamento?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+      ]
+    },
+    {
+      id: 'cat6',
+      titulo: 'CAPUZES/BALACLAVAS',
+      perguntas: [
+        { id: 'capuzes_bom_estado', texto: 'Os capuzes/balaclavas estão em bom estado, sem mudança de cor excessiva, rasgos, desgastes, manchas ou danos que interfiram na performance do equipamento?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+      ]
     }
-
+  ]);
+  
+  // Carregar histórico de verificações
+  useEffect(() => {
+    carregarHistorico();
+  }, []);
+  
+  const carregarHistorico = async () => {
     try {
-      // Contar itens conformes e não conformes
-      const itensConformes = Object.values(checklistItems).filter(status => status === "S").length;
-      const itensNaoConformes = Object.values(checklistItems).filter(status => status === "N").length;
+      const { data, error } = await supabase
+        .from('tp_verificacoes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
       
-      // Compilar observações
-      const observacoes = [
-        data.item1_observacoes && `Item 1: ${data.item1_observacoes}`,
-        data.item2_observacoes && `Item 2: ${data.item2_observacoes}`,
-        data.item3_observacoes && `Item 3: ${data.item3_observacoes}`,
-        data.item4_observacoes && `Item 4: ${data.item4_observacoes}`,
-        data.item5_observacoes && `Item 5: ${data.item5_observacoes}`,
-        data.item6_observacoes && `Item 6: ${data.item6_observacoes}`,
-        data.item7_observacoes && `Item 7: ${data.item7_observacoes}`,
-        data.item8_observacoes && `Item 8: ${data.item8_observacoes}`
-      ].filter(Boolean).join("\n");
+      if (error) throw error;
       
-      // Adaptar dados para o formato esperado pelo backend
-      const adaptedData = {
-        base: data.local_contrato,
-        responsavel_id: data.responsavel_id,
-        responsavel_nome: data.responsavel_nome,
-        data_verificacao: data.data_verificacao,
-        equipe_id: data.equipe_id,
-        mes_referencia: mesAtual,
-        ano_referencia: anoAtual,
-        tp_conformes: itensConformes,
-        tp_nao_conformes: itensNaoConformes,
-        total_verificados: 8, // Total de itens verificados
-        observacoes: `Verificação de ${data.data_verificacao}\n${observacoes}`,
-        // Adicionar dados da assinatura
-        documento_autentique_id: assinatura.documentoId,
-        status_assinatura: assinatura.status,
-        assinatura_data: new Date().toISOString(),
-        assinatura_base64: assinatura.assinaturaBase64,
-        documento_enviado: documentoEnviado
+      if (data) {
+        setHistoricoVerificacoes(data.map(item => ({
+          id: item.id,
+          data_verificacao: new Date(item.data_verificacao).toLocaleDateString('pt-BR'),
+          local: item.local,
+          responsavel: item.responsavel,
+          equipe: item.equipe,
+          status: item.status,
+          percentual_conformidade: item.percentual_conformidade || 0,
+          total_conformes: item.total_conformes || 0,
+          total_nao_conformes: item.total_nao_conformes || 0
+        })));
+      }
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+    }
+  };
+  
+  // Função para marcar resposta
+  const marcarResposta = (categoriaId: string, perguntaId: string, status: VerificacaoStatus) => {
+    if (status === 'nao_conforme') {
+      setModalNaoConforme({ aberto: true, perguntaId, categoriaId });
+      setMembrosAfetados([]);
+      setObservacoesModal('');
+    } else {
+      setCategorias(prev => prev.map(cat => 
+        cat.id === categoriaId 
+          ? {
+              ...cat,
+              perguntas: cat.perguntas.map(p => 
+                p.id === perguntaId 
+                  ? { ...p, status, membros_afetados: [], observacoes: '' }
+                  : p
+              )
+            }
+          : cat
+      ));
+    }
+  };
+  
+  // Confirmar não conformidade
+  const confirmarNaoConformidade = () => {
+    const { categoriaId, perguntaId } = modalNaoConforme;
+    
+    setCategorias(prev => prev.map(cat => 
+      cat.id === categoriaId 
+        ? {
+            ...cat,
+            perguntas: cat.perguntas.map(p => 
+              p.id === perguntaId 
+                ? { 
+                    ...p, 
+                    status: 'nao_conforme', 
+                    membros_afetados: membrosAfetados,
+                    observacoes: observacoesModal
+                  }
+                : p
+            )
+          }
+        : cat
+    ));
+    
+    setModalNaoConforme({ aberto: false, perguntaId: '', categoriaId: '' });
+    setMembrosAfetados([]);
+    setObservacoesModal('');
+  };
+  
+  // Calcular estatísticas
+  const calcularEstatisticas = () => {
+    let totalPerguntas = 0;
+    let conformes = 0;
+    let naoConformes = 0;
+    let naoVerificados = 0;
+    
+    categorias.forEach(cat => {
+      cat.perguntas.forEach(pergunta => {
+        totalPerguntas++;
+        if (pergunta.status === 'conforme') conformes++;
+        else if (pergunta.status === 'nao_conforme') naoConformes++;
+        else naoVerificados++;
+      });
+    });
+    
+    const percentualConformidade = totalPerguntas > 0 ? (conformes / totalPerguntas) * 100 : 0;
+    
+    return { totalPerguntas, conformes, naoConformes, naoVerificados, percentualConformidade };
+  };
+
+  // Função para resetar o formulário ao estado inicial
+  const resetFormulario = () => {
+    // Reset da etapa atual
+    setEtapaAtual(1);
+    
+    // Reset dos estados do sistema
+    setIsSaving(false);
+    setVerificacaoId(null);
+    setMembrosEquipeSelecionada([]);
+    setModalNaoConforme({aberto: false, perguntaId: '', categoriaId: ''});
+    setMembrosAfetados([]);
+    setObservacoesModal('');
+    
+    // Reset do formulário react-hook-form
+    reset({
+      data_verificacao: new Date().toISOString().split('T')[0],
+      local: 'Santa Genoveva - GYN',
+      responsavel: '',
+      equipe: '',
+      membros_equipe: []
+    });
+    
+    // Reset das categorias ao estado inicial
+    setCategorias([
+      {
+        id: 'cat1',
+        titulo: 'IDENTIFICAÇÃO E VALIDADE',
+        perguntas: [
+          { id: 'etiquetas_visiveis', texto: 'Todos os EPIs estão com etiquetas legíveis e visíveis?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'ca_valido', texto: 'Todos os EPIs possuem CA válido e dentro da validade?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+        ]
+      },
+      {
+        id: 'cat2',
+        titulo: 'CAPACETES',
+        perguntas: [
+          { id: 'capacetes_integros', texto: 'Os capacetes estão íntegros, sem avarias, exposição térmica/química ou desgastes que comprometam a segurança?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+        ]
+      },
+      {
+        id: 'cat3',
+        titulo: 'VESTIMENTAS',
+        perguntas: [
+          { id: 'vestimentas_integras', texto: 'As vestimentas estão íntegras, sem avarias, deformidades, defeitos ou ganchos que comprometam a segurança?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'bom_estado', texto: 'As vestimentas estão em bom estado, sem rasgos, desgastes ou manchas excessivas?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'faixas_reflexivas', texto: 'As faixas reflexivas das vestimentas estão íntegras e com reflexibilidade adequada?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'bolsos_dispositivos', texto: 'Os bolsos e dispositivos das vestimentas estão funcionando adequadamente?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'costuras_integras', texto: 'As costuras das vestimentas estão íntegras e sem danos?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'barreira_umidade', texto: 'A barreira de umidade das vestimentas está preservada (sem furos, manchas ou rasgos)?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'punhos_elasticidade', texto: 'Os punhos das vestimentas mantêm elasticidade adequada e o sistema de encaixe está funcionando perfeitamente?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'costuras_seladas', texto: 'Todas as costuras estão devidamente seladas e em perfeitas condições?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+        ]
+      },
+      {
+        id: 'cat4',
+        titulo: 'CALÇADOS',
+        perguntas: [
+          { id: 'botas_bom_estado', texto: 'As botas estão em bom estado, sem mudança de cor excessiva, rasgos, desgastes ou manchas que comprometam sua função?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'solas_integras', texto: 'As solas das botas estão íntegras e sem alterações que interfiram na performance do equipamento?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+        ]
+      },
+      {
+        id: 'cat5',
+        titulo: 'LUVAS',
+        perguntas: [
+          { id: 'luvas_bom_estado', texto: 'As luvas estão em bom estado, sem mudança de cor excessiva, rasgos, desgastes ou manchas que comprometam sua função?', status: 'nao_verificado', membros_afetados: [], observacoes: '' },
+          { id: 'costuras_luvas', texto: 'As costuras das luvas estão íntegras e sem desgastes que interfiram na performance do equipamento?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+        ]
+      },
+      {
+        id: 'cat6',
+        titulo: 'CAPUZES/BALACLAVAS',
+        perguntas: [
+          { id: 'capuzes_bom_estado', texto: 'Os capuzes/balaclavas estão em bom estado, sem mudança de cor excessiva, rasgos, desgastes, manchas ou danos que interfiram na performance do equipamento?', status: 'nao_verificado', membros_afetados: [], observacoes: '' }
+        ]
+      }
+    ]);
+  };
+  
+  // Salvar verificação
+  const salvarVerificacao = async () => {
+    const dados = watch();
+    const stats = calcularEstatisticas();
+    
+    if (!dados.local || !dados.responsavel || !dados.equipe) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos básicos antes de salvar.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    try {
+      // Preparar dados para o Supabase
+      const dadosSupabase: any = {
+        data_verificacao: dados.data_verificacao,
+        local: dados.local,
+        responsavel: dados.responsavel,
+        equipe: dados.equipe,
+        membros_equipe: dados.membros_equipe || [],
+        status: stats.naoVerificados === 0 ? 'concluida' : 'em_andamento',
+        etapa_atual: etapaAtual,
+        total_conformes: stats.conformes,
+        total_nao_conformes: stats.naoConformes,
+        total_nao_verificados: stats.naoVerificados,
+        percentual_conformidade: stats.percentualConformidade
       };
       
-      await createVerificacao.mutateAsync(adaptedData);
-      reset();
-      setChecklistItems({
-        item1: "S",
-        item2: "S",
-        item3: "S",
-        item4: "S",
-        item5: "S",
-        item6: "S",
-        item7: "S",
-        item8: "S"
+      // Adicionar dados das categorias com mapeamento correto
+      categorias.forEach(cat => {
+        cat.perguntas.forEach(pergunta => {
+          // Mapear nomes das colunas conforme estrutura da tabela
+          let nomeCampo = '';
+          
+          if (cat.id === 'cat1') {
+            if (pergunta.id === 'etiquetas_visiveis') {
+              nomeCampo = 'cat1_etiquetas_visiveis';
+            } else if (pergunta.id === 'ca_valido') {
+              nomeCampo = 'cat1_ca_valido';
+            }
+          } else if (cat.id === 'cat2') {
+            if (pergunta.id === 'capacetes_integros') {
+              nomeCampo = 'cat2_capacetes_integros';
+            }
+          } else if (cat.id === 'cat3') {
+            if (pergunta.id === 'vestimentas_integras') {
+              nomeCampo = 'cat3_vestimentas_integras';
+            } else if (pergunta.id === 'bom_estado') {
+              nomeCampo = 'cat3_bom_estado';
+            } else if (pergunta.id === 'faixas_reflexivas') {
+              nomeCampo = 'cat3_faixas_reflexivas';
+            } else if (pergunta.id === 'bolsos_dispositivos') {
+              nomeCampo = 'cat3_bolsos_dispositivos';
+            } else if (pergunta.id === 'costuras_integras') {
+              nomeCampo = 'cat3_costuras_integras';
+            } else if (pergunta.id === 'barreira_umidade') {
+              nomeCampo = 'cat3_barreira_umidade';
+            } else if (pergunta.id === 'punhos_elasticidade') {
+              nomeCampo = 'cat3_punhos_elasticidade';
+            } else if (pergunta.id === 'costuras_seladas') {
+              nomeCampo = 'cat3_costuras_seladas';
+            }
+          } else if (cat.id === 'cat4') {
+            if (pergunta.id === 'botas_bom_estado') {
+              nomeCampo = 'cat4_botas_bom_estado';
+            } else if (pergunta.id === 'solas_integras') {
+              nomeCampo = 'cat4_solas_integras';
+            }
+          } else if (cat.id === 'cat5') {
+            if (pergunta.id === 'luvas_bom_estado') {
+              nomeCampo = 'cat5_luvas_bom_estado';
+            } else if (pergunta.id === 'costuras_luvas') {
+              nomeCampo = 'cat5_costuras_luvas';
+            }
+          } else if (cat.id === 'cat6') {
+            if (pergunta.id === 'capuzes_bom_estado') {
+              nomeCampo = 'cat6_capuzes_bom_estado';
+            }
+          }
+          
+          if (nomeCampo) {
+            dadosSupabase[nomeCampo] = pergunta.status;
+            
+            // Mapear colunas de membros conforme estrutura da tabela
+             if (cat.id === 'cat1' && pergunta.id === 'etiquetas_visiveis') {
+               dadosSupabase['cat1_etiquetas_membros'] = pergunta.membros_afetados;
+               dadosSupabase['cat1_etiquetas_observacoes'] = pergunta.observacoes;
+             } else if (cat.id === 'cat1' && pergunta.id === 'ca_valido') {
+               dadosSupabase['cat1_ca_membros'] = pergunta.membros_afetados;
+               dadosSupabase['cat1_ca_observacoes'] = pergunta.observacoes;
+             } else if (cat.id === 'cat2' && pergunta.id === 'capacetes_integros') {
+               dadosSupabase['cat2_capacetes_membros'] = pergunta.membros_afetados;
+               dadosSupabase['cat2_capacetes_observacoes'] = pergunta.observacoes;
+             } else if (cat.id === 'cat3') {
+               if (pergunta.id === 'vestimentas_integras') {
+                 dadosSupabase['cat3_vestimentas_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat3_vestimentas_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'bom_estado') {
+                 dadosSupabase['cat3_bom_estado_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat3_bom_estado_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'faixas_reflexivas') {
+                 dadosSupabase['cat3_faixas_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat3_faixas_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'bolsos_dispositivos') {
+                 dadosSupabase['cat3_bolsos_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat3_bolsos_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'costuras_integras') {
+                 dadosSupabase['cat3_costuras_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat3_costuras_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'barreira_umidade') {
+                 dadosSupabase['cat3_barreira_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat3_barreira_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'punhos_elasticidade') {
+                 dadosSupabase['cat3_punhos_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat3_punhos_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'costuras_seladas') {
+                 dadosSupabase['cat3_seladas_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat3_seladas_observacoes'] = pergunta.observacoes;
+               }
+             } else if (cat.id === 'cat4') {
+               if (pergunta.id === 'botas_bom_estado') {
+                 dadosSupabase['cat4_botas_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat4_botas_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'solas_integras') {
+                 dadosSupabase['cat4_solas_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat4_solas_observacoes'] = pergunta.observacoes;
+               }
+             } else if (cat.id === 'cat5') {
+               if (pergunta.id === 'luvas_bom_estado') {
+                 dadosSupabase['cat5_luvas_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat5_luvas_observacoes'] = pergunta.observacoes;
+               } else if (pergunta.id === 'costuras_luvas') {
+                 dadosSupabase['cat5_costuras_membros'] = pergunta.membros_afetados;
+                 dadosSupabase['cat5_costuras_observacoes'] = pergunta.observacoes;
+               }
+             } else if (cat.id === 'cat6' && pergunta.id === 'capuzes_bom_estado') {
+               dadosSupabase['cat6_capuzes_membros'] = pergunta.membros_afetados;
+               dadosSupabase['cat6_capuzes_observacoes'] = pergunta.observacoes;
+             }
+          }
+        });
       });
       
-      // Reset assinatura
-      setAssinatura(null);
-      setDocumentoEnviado(false);
-      setStatusAssinatura('rascunho');
+      let resultado;
+      if (verificacaoId) {
+        resultado = await supabase
+          .from('tp_verificacoes')
+          .update(dadosSupabase)
+          .eq('id', verificacaoId);
+      } else {
+        resultado = await supabase
+          .from('tp_verificacoes')
+          .insert([dadosSupabase])
+          .select();
+        
+        if (resultado.data && resultado.data[0]) {
+          setVerificacaoId(resultado.data[0].id);
+        }
+      }
+      
+      if (resultado.error) throw resultado.error;
       
       toast({
         title: "Verificação salva",
-        description: "Verificação de TP salva com sucesso!"
+        description: "Os dados foram salvos com sucesso.",
+        variant: "default"
       });
+      
+      // Recarregar histórico
+      carregarHistorico();
+      
+      // Reset automático do formulário após salvamento bem-sucedido
+      setTimeout(() => {
+        resetFormulario();
+        toast({
+          title: "Formulário resetado",
+          description: "O checklist foi resetado e está pronto para uma nova verificação.",
+          variant: "default"
+        });
+      }, 1500); // Pequeno delay para mostrar o sucesso
+      
     } catch (error) {
-      console.error("Erro ao salvar verificação:", error);
+      console.error('Erro ao salvar:', error);
       toast({
         title: "Erro ao salvar",
-        description: "Erro ao salvar verificação. Tente novamente.",
+        description: "Ocorreu um erro ao salvar a verificação.",
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
+  
+  const onSubmit = async (data: FormData) => {
+    await salvarVerificacao();
+  };
 
-  // Definir os itens do checklist conforme as imagens
-  const checklistItemsData = [
-    { id: 'item1', text: 'Todos os TPs estão com etiquetas legíveis?' },
-    { id: 'item2', text: 'Todos os TPs estão com CA legível?' },
-    { id: 'item3', text: 'Os capacetes possuem sinais de avarias, exposição a agentes térmicos, químicos, desgastes ou qualquer outro dano que possam comprometer a integridade física dos bombeiros?' },
-    { id: 'item4', text: 'As vestimentas possuem sinais de avarias, deformidades, defeitos, gambiarras nos botões de pressão, no mosquetão, zíper e fecho de argolas e ganchos que possam comprometer a integridade física dos bombeiros?' },
-    { id: 'item5', text: 'As vestimentas possuem rasgos, desgastes excessivos, manchas ou qualquer tipo de variação fora do usual?' },
-    { id: 'item6', text: 'As faixas reflexivas das vestimentas estão danificadas, rasgadas ou perderam a refletividade?' },
-    { id: 'item7', text: 'As vestimentas possuem sinais de avarias nos bolsos ou em qualquer dispositivo instalado nas mesmas?' },
-    { id: 'item8', text: 'Os bolsos das vestimentas estão funcionando perfeitamente?' },
-    { id: 'item9', text: 'As costuras possuem algum tipo de dano?' },
-    { id: 'item10', text: 'Existem buracos, manchas, rasgos que possam comprometer a barreira de umidade das vestimentas?' },
-    { id: 'item11', text: 'Existe resistência das malhas dos punhos das vestimentas? A elasticidade está dentro da normalidade? O sistema de encaixe do polegar, quando existente, está em perfeitas condições?' },
-    { id: 'item12', text: 'Todas as costuras estão seladas e em perfeitas condições?' },
-    { id: 'item13', text: 'As botas apresentam algum tipo de mudança de cor, rasgos, desgastes excessivos, manchas ou qualquer tipo de variação fora do usual?' },
-    { id: 'item14', text: 'As botas apresentam algum tipo de alteração na sola ou qualquer outro dano, desgaste que interfira na performance do equipamento?' },
-    { id: 'item15', text: 'As luvas apresentam algum tipo de mudança de cor, rasgos, desgastes excessivos, manchas ou qualquer tipo de variação que seja fora do usual?' },
-    { id: 'item16', text: 'As luvas apresentam algum tipo de dano nas costuras ou qualquer desgaste que interfira na performance do equipamento?' },
-    { id: 'item17', text: 'Os capuzes balaclavas apresentam algum tipo de mudança de cor, rasgos, desgastes excessivos, manchas ou qualquer tipo de variação fora do usual ou dano que interfira na performance do equipamento?' }
-  ];
-
+  const stats = calcularEstatisticas();
+  
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white">
-      {/* Cabeçalho */}
-      <div className="text-center mb-6">
-        <h1 className="text-xl font-bold text-orange-600 mb-4">VERIFICAÇÃO DE TRAJES DE PROTEÇÃO - TP</h1>
-        <div className="text-right text-sm mb-4">2024</div>
-      </div>
+    <div className="container mx-auto p-6 max-w-6xl">
+      <div className="space-y-6">
+        {/* Cabeçalho com indicador de progresso */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ClipboardCheck className="h-6 w-6" />
+                Verificação de Traje de Proteção (TP)
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={etapaAtual === 1 ? "default" : "secondary"}>1</Badge>
+                <ArrowRight className="h-4 w-4" />
+                <Badge variant={etapaAtual === 2 ? "default" : "secondary"}>2</Badge>
+                <ArrowRight className="h-4 w-4" />
+                <Badge variant={etapaAtual === 3 ? "default" : "secondary"}>3</Badge>
+              </div>
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        
+        {/* Etapa 1: Informações Básicas */}
+        {etapaAtual === 1 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600 font-semibold">1</span>
+                </div>
+                Informações Básicas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="data_verificacao">Data da Verificação *</Label>
+                  <Input
+                    id="data_verificacao"
+                    type="date"
+                    {...register('data_verificacao', { required: 'Data é obrigatória' })}
+                  />
+                  {errors.data_verificacao && (
+                    <p className="text-sm text-red-600">{errors.data_verificacao.message}</p>
+                  )}
+                </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Seção de Identificação */}
-        <div className="border border-gray-400">
-          <div className="bg-gray-100 p-2 text-center font-semibold border-b border-gray-400">
-            REGISTRAR NOVA VERIFICAÇÃO
-          </div>
-          <div className="p-4">
-            <div className="grid grid-cols-1 gap-4 mb-4">
-              <div>
-                <Label className="text-sm font-semibold">RESPONSÁVEL PELA VERIFICAÇÃO:</Label>
-                <Select onValueChange={(value) => {
-                  const bombeiro = bombeiros.find(b => b.id === value);
-                  if (bombeiro) {
-                    setValue("responsavel_nome", bombeiro.nome);
-                    setValue("responsavel_id", bombeiro.id);
-                    // Preencher automaticamente a equipe baseada no bombeiro selecionado
-                    if (bombeiro.equipe_id) {
-                      setValue("equipe_id", bombeiro.equipe_id);
-                      
-                      // Preencher automaticamente os integrantes da equipe
-                      const bombeirosDaEquipe = bombeiros.filter(b => b.equipe_id === bombeiro.equipe_id);
-                      
-                      // Preencher os 12 campos uniformes com os bombeiros da equipe
-                      bombeirosDaEquipe.slice(0, 12).forEach((bombeiroEquipe, index) => {
-                        setValue(`integrante_${index + 1}_id` as keyof FormData, bombeiroEquipe.id);
+                <div className="space-y-2">
+                  <Label htmlFor="local">Local *</Label>
+                  <Input
+                    id="local"
+                    placeholder="Ex: Santa Genoveva - GYN"
+                    {...register('local', { required: 'Local é obrigatório' })}
+                  />
+                  {errors.local && (
+                    <p className="text-sm text-red-600">{errors.local.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="responsavel">Responsável *</Label>
+                  <Select onValueChange={(value) => setValue('responsavel', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o responsável" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bombeiros.map((bombeiro) => (
+                        <SelectItem key={bombeiro.id} value={bombeiro.nome}>
+                          {bombeiro.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.responsavel && (
+                    <p className="text-sm text-red-600">{errors.responsavel.message}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <Button 
+                  onClick={() => {
+                    if (localSelecionado && responsavelSelecionado) {
+                      setEtapaAtual(2);
+                    } else {
+                      toast({
+                        title: "Campos obrigatórios",
+                        description: "Preencha todos os campos antes de continuar.",
+                        variant: "destructive"
                       });
                     }
-                  }
-                }}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Selecione" />
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Iniciar Verificação
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Etapa 2: Seleção de Equipe */}
+        {etapaAtual === 2 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <span className="text-green-600 font-semibold">2</span>
+                </div>
+                Seleção de Equipe
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="equipe">Equipe *</Label>
+                <Select onValueChange={(value) => setValue('equipe', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a equipe" />
                   </SelectTrigger>
                   <SelectContent>
-                    {bombeiros.filter(bombeiro => bombeiro.funcao === 'BA-CE').map((bombeiro) => (
-                      <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                        {bombeiro.nome}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="Alfa">Alfa</SelectItem>
+                    <SelectItem value="Bravo">Bravo</SelectItem>
+                    <SelectItem value="Charlie">Charlie</SelectItem>
+                    <SelectItem value="Delta">Delta</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <Label className="text-sm font-semibold">LOCAL/CONTRATO:</Label>
-                <Input
-                  className="mt-1"
-                  {...register("local_contrato", { required: true })}
-                  placeholder="Ex: SBSV - Salvador"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-semibold">DATA:</Label>
-                <Input
-                  type="date"
-                  className="mt-1"
-                  {...register("data_verificacao", { required: true })}
-                />
-              </div>
-            </div>
-            
-            {/* Seção de Equipe */}
-            <div className="mb-4">
-              <Label className="text-sm font-semibold">EQUIPE:</Label>
-              <Select value={watch("equipe_id") || ""} onValueChange={(value) => setValue("equipe_id", value)}>
-                <SelectTrigger className="mt-1 max-w-xs">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipes.filter(equipe => equipe.ativa).map((equipe) => (
-                    <SelectItem key={equipe.id} value={equipe.id}>
-                      {equipe.nome_equipe}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Seção de Integrantes da Equipe */}
-            <div className="border-t pt-3">
-              <Label className="text-sm font-semibold text-gray-700 mb-3 block">INTEGRANTES DA EQUIPE:</Label>
               
-              {/* 12 Campos Uniformes de Integrantes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => {
-                  const campoAtual = `integrante_${num}_id`;
-                  const bombeirosDisponiveis = getBombeirosDisponiveis(campoAtual);
-                  const valorAtual = watch(campoAtual as keyof FormData);
-                  
-                  return (
-                    <div key={`integrante_${num}`}>
-                      <Label className="text-xs font-medium text-gray-600">Integrante {num}:</Label>
-                      <Select 
-                        value={valorAtual || ""} 
-                        onValueChange={(value) => {
-                          if (value === "__clear__") {
-                            setValue(`integrante_${num}_id` as keyof FormData, undefined);
-                          } else {
-                            setValue(`integrante_${num}_id` as keyof FormData, value);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="mt-1 h-8 text-xs">
-                          <SelectValue placeholder="Selecionar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__clear__">-- Limpar seleção --</SelectItem>
-                          {bombeirosDisponiveis.map((bombeiro) => (
-                            <SelectItem key={bombeiro.id} value={bombeiro.id}>
-                              {bombeiro.nome} - {bombeiro.funcao}
-                            </SelectItem>
-                          ))}
-                          {/* Mostrar o bombeiro atualmente selecionado mesmo se já foi usado em outro campo */}
-                          {valorAtual && !bombeirosDisponiveis.find(b => b.id === valorAtual) && (
-                            (() => {
-                              const bombeiroSelecionado = bombeiros.find(b => b.id === valorAtual);
-                              return bombeiroSelecionado ? (
-                                <SelectItem key={bombeiroSelecionado.id} value={bombeiroSelecionado.id}>
-                                  {bombeiroSelecionado.nome} - {bombeiroSelecionado.funcao}
-                                </SelectItem>
-                              ) : null;
-                            })()
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Checklist de Verificação */}
-        <div className="border border-gray-400 mt-6">
-          <div className="bg-gray-100 p-2 text-center font-semibold border-b border-gray-400">
-            CHECKLIST DE VERIFICAÇÃO DE TRAJES DE PROTEÇÃO (TP-1)
-          </div>
-          
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="border border-gray-400 p-2 text-sm font-semibold w-12">ITEM</th>
-                <th className="border border-gray-400 p-2 text-sm font-semibold">VERIFICAÇÃO</th>
-                <th className="border border-gray-400 p-2 text-sm font-semibold w-16">S</th>
-                <th className="border border-gray-400 p-2 text-sm font-semibold w-16">N</th>
-                <th className="border border-gray-400 p-2 text-sm font-semibold w-64">DESCRIÇÃO DA NÃO CONFORMIDADE/ AÇÃO CORRETIVA ADOTADA</th>
-              </tr>
-            </thead>
-            <tbody>
-              {checklistItemsData.map((item, index) => (
-                <tr key={item.id}>
-                  <td className="border border-gray-400 p-2 text-center font-semibold">{index + 1}</td>
-                  <td className="border border-gray-400 p-2 text-sm">{item.text}</td>
-                  <td className="border border-gray-400 p-2 text-center">
-                    <input
-                      type="radio"
-                      name={`${item.id}_conforme`}
-                      value="S"
-                      checked={checklistItems[item.id] === "S"}
-                      onChange={() => setChecklistItems(prev => ({ ...prev, [item.id]: "S" }))}
-                      className="w-4 h-4"
-                    />
-                  </td>
-                  <td className="border border-gray-400 p-2 text-center">
-                    <input
-                      type="radio"
-                      name={`${item.id}_conforme`}
-                      value="N"
-                      checked={checklistItems[item.id] === "N"}
-                      onChange={() => setChecklistItems(prev => ({ ...prev, [item.id]: "N" }))}
-                      className="w-4 h-4"
-                    />
-                  </td>
-                  <td className="border border-gray-400 p-1">
-                    <Textarea
-                      placeholder={checklistItems[item.id] === "N" ? "Descreva a não conformidade..." : ""}
-                      className="min-h-[60px] text-xs border-0 resize-none"
-                      {...register(`item${index + 1}_observacoes` as keyof FormData, {
-                        required: checklistItems[item.id] === "N" ? "Campo obrigatório para não conformidade" : false
-                      })}
-                      disabled={checklistItems[item.id] === "S"}
-                    />
-                    {errors[`${item.id}_observacoes` as keyof typeof errors] && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {errors[`${item.id}_observacoes` as keyof typeof errors]?.message}
-                      </p>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Seção de Assinatura */}
-        <div className="border border-gray-400 mt-6">
-          <div className="bg-gray-100 p-2 text-center font-semibold border-b border-gray-400">
-            ASSINATURA DIGITAL DO RESPONSÁVEL
-          </div>
-          
-          <div className="p-4">
-            <div className="space-y-4">
-              <div className="text-sm text-gray-600 mb-4">
-                <p><strong>LEGENDA:</strong> S = SIM | N = NÃO QUANDO "NÃO" DESCREVER A NÃO CONFORMIDADE</p>
-              </div>
-              
-              <AssinaturaDigital
-                onAssinaturaConcluida={(dados) => {
-                  setAssinatura(dados);
-                  setStatusAssinatura('assinado');
-                  toast({
-                    title: "Assinatura concluída",
-                    description: "A assinatura foi concluída com sucesso."
-                  });
-                }}
-                signatarios={[
-                  {
-                    nome: watch("responsavel_nome") || "Responsável",
-                    email: "responsavel@bombeiros.gov.br"
-                  }
-                ]}
-                verificacaoData={{
-                  data_verificacao: watch("data_verificacao") || new Date().toISOString().split('T')[0],
-                  local_contrato: watch("local_contrato") || "",
-                  ba_ce_nome: watch("ba_ce_nome") || "",
-                  responsavel_nome: watch("responsavel_nome") || "",
-                  equipe_id: watch("equipe_id") || "",
-                  integrantes: [
-                    watch("integrante_1_id"),
-                    watch("integrante_2_id"),
-                    watch("integrante_3_id"),
-                    watch("integrante_4_id"),
-                    watch("integrante_5_id"),
-                    watch("integrante_6_id"),
-                    watch("integrante_7_id"),
-                    watch("integrante_8_id"),
-                    watch("integrante_9_id"),
-                    watch("integrante_10_id"),
-                    watch("integrante_11_id"),
-                    watch("integrante_12_id")
-                  ].filter(Boolean) as string[],
-                  checklist: [
-                    {
-                      item: "As vestimentas possuem algum tipo de dano?",
-                      conforme: (watch("item1_conforme") || "N") as "S" | "N",
-                      observacoes: watch("item1_observacoes") || ""
-                    },
-                    {
-                      item: "Existem vestimentas nos moldes dos pontos de verificação?",
-                      conforme: (watch("item2_conforme") || "N") as "S" | "N",
-                      observacoes: watch("item2_observacoes") || ""
-                    },
-                    {
-                      item: "Os capacetes possuem avarias de qualquer natureza?",
-                      conforme: (watch("item3_conforme") || "N") as "S" | "N",
-                      observacoes: watch("item3_observacoes") || ""
-                    },
-                    {
-                      item: "As botas apresentam algum tipo de alteração?",
-                      conforme: (watch("item4_conforme") || "N") as "S" | "N",
-                      observacoes: watch("item4_observacoes") || ""
-                    },
-                    {
-                      item: "As luvas apresentam algum tipo de alteração?",
-                      conforme: (watch("item5_conforme") || "N") as "S" | "N",
-                      observacoes: watch("item5_observacoes") || ""
-                    },
-                    {
-                      item: "As botas apresentam algum tipo de alteração? (Item 6)",
-                      conforme: (watch("item6_conforme") || "N") as "S" | "N",
-                      observacoes: watch("item6_observacoes") || ""
-                    },
-                    {
-                      item: "As luvas apresentam algum tipo de alteração? (Item 7)",
-                      conforme: (watch("item7_conforme") || "N") as "S" | "N",
-                      observacoes: watch("item7_observacoes") || ""
-                    },
-                    {
-                      item: "Os botas dos vestimentas estão funcionando?",
-                      conforme: (watch("item8_conforme") || "N") as "S" | "N",
-                      observacoes: watch("item8_observacoes") || ""
-                    }
-                  ]
-                }}
-              />
-              
-              {assinatura && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>Status:</strong> {assinatura.status === 'assinado' ? 'Documento assinado' : 'Processando assinatura'}
-                  </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    <strong>ID do Documento:</strong> {assinatura.documentoId}
-                  </p>
+              {membrosEquipeSelecionada.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Membros da Equipe {equipeSelecionada}</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {membrosEquipeSelecionada.map((membro, index) => (
+                      <Badge key={index} variant="outline" className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {membro}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
+              
+              <div className="flex justify-between">
+                <Button 
+                  variant="outline"
+                  onClick={() => setEtapaAtual(1)}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Voltar
+                </Button>
+                <Button 
+                  onClick={() => {
+                    if (equipeSelecionada) {
+                      setEtapaAtual(3);
+                    } else {
+                      toast({
+                        title: "Selecione uma equipe",
+                        description: "É necessário selecionar uma equipe para continuar.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Continuar Verificação
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Etapa 3: Verificação por Categorias */}
+        {etapaAtual === 3 && (
+          <>
+            {/* Painel de estatísticas */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold text-green-600">{stats.conformes}</div>
+                    <div className="text-sm text-gray-600">Conformes</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold text-red-600">{stats.naoConformes}</div>
+                    <div className="text-sm text-gray-600">Não Conformes</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold text-gray-600">{stats.naoVerificados}</div>
+                    <div className="text-sm text-gray-600">Não Verificados</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold text-blue-600">{stats.percentualConformidade.toFixed(1)}%</div>
+                    <div className="text-sm text-gray-600">Conformidade</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Cards das categorias */}
+            {categorias.map((categoria) => (
+              <Card key={categoria.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">{categoria.titulo}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {categoria.perguntas.map((pergunta) => (
+                    <div key={pergunta.id} className="border rounded-lg p-4 space-y-3">
+                      <p className="font-medium">{pergunta.texto}</p>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          variant={pergunta.status === 'conforme' ? 'default' : 'outline'}
+                          className={`flex-1 ${pergunta.status === 'conforme' ? 'bg-green-600 hover:bg-green-700' : 'hover:bg-green-50'}`}
+                          onClick={() => marcarResposta(categoria.id, pergunta.id, 'conforme')}
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          ✓ CONFORME
+                        </Button>
+                        
+                        <Button
+                          variant={pergunta.status === 'nao_conforme' ? 'destructive' : 'outline'}
+                          className="flex-1"
+                          onClick={() => marcarResposta(categoria.id, pergunta.id, 'nao_conforme')}
+                        >
+                          <XCircle className="mr-2 h-4 w-4" />
+                          ✗ NÃO CONFORME
+                        </Button>
+                      </div>
+                      
+                      {pergunta.status === 'nao_conforme' && pergunta.membros_afetados.length > 0 && (
+                        <div className="bg-red-50 p-3 rounded-lg space-y-2">
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-sm font-medium text-red-700">Membros afetados:</span>
+                            {pergunta.membros_afetados.map((membro, index) => (
+                              <Badge key={index} variant="destructive" className="text-xs">
+                                {membro}
+                              </Badge>
+                            ))}
+                          </div>
+                          {pergunta.observacoes && (
+                            <p className="text-sm text-red-700">
+                              <strong>Observações:</strong> {pergunta.observacoes}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {pergunta.status === 'nao_verificado' && (
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Clock className="h-4 w-4" />
+                          <span className="text-sm">Aguardando verificação</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+            
+            {/* Botões de navegação e salvamento */}
+            <div className="flex justify-between">
+              <Button 
+                variant="outline"
+                onClick={() => setEtapaAtual(2)}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+              </Button>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={salvarVerificacao}
+                  disabled={isSaving}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? 'Salvando...' : 'Salvar Progresso'}
+                </Button>
+                
+                {stats.naoVerificados === 0 && (
+                  <Button 
+                    onClick={handleSubmit(onSubmit)}
+                    disabled={isSaving}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                    Finalizar Verificação
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Botões de Ação */}
-        <div className="flex justify-center space-x-4 mt-6">
-          <Button type="button" variant="outline" onClick={() => window.history.back()}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={createVerificacao.isPending} className="bg-orange-600 hover:bg-orange-700">
-            {createVerificacao.isPending ? "Salvando..." : "Salvar Verificação"}
-          </Button>
-        </div>
-      </form>
+          </>
+        )}
+        
+        {/* Modal para não conformidades */}
+        <Dialog open={modalNaoConforme.aberto} onOpenChange={(aberto) => setModalNaoConforme(prev => ({ ...prev, aberto }))}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Registrar Não Conformidade</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Membros Afetados</Label>
+                <div className="space-y-2">
+                  {membrosEquipeSelecionada.map((membro) => (
+                    <div key={membro} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={membro}
+                        checked={membrosAfetados.includes(membro)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setMembrosAfetados(prev => [...prev, membro]);
+                          } else {
+                            setMembrosAfetados(prev => prev.filter(m => m !== membro));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={membro}>{membro}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="observacoes">Observações (opcional)</Label>
+                <Textarea
+                  id="observacoes"
+                  placeholder="Descreva detalhes da não conformidade..."
+                  value={observacoesModal}
+                  onChange={(e) => setObservacoesModal(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Sugestões de Ações Corretivas</Label>
+                <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700">
+                  • Substituir equipamento danificado<br/>
+                  • Realizar limpeza adequada<br/>
+                  • Verificar validade dos EPIs<br/>
+                  • Solicitar manutenção preventiva
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setModalNaoConforme(prev => ({ ...prev, aberto: false }))}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={confirmarNaoConformidade}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Confirmar Não Conformidade
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Histórico de Verificações */}
+        {historicoVerificacoes.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Histórico de Verificações
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {historicoVerificacoes.map((item) => (
+                  <div key={item.id} className="border rounded-lg p-4 flex justify-between items-center">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{item.data_verificacao}</span>
+                        <Badge variant={item.status === 'concluida' ? 'default' : 'secondary'}>
+                          {item.status === 'concluida' ? 'Concluída' : 'Em Andamento'}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {item.local} • Equipe {item.equipe} • {item.responsavel}
+                      </div>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <div className="text-lg font-semibold text-blue-600">
+                        {item.percentual_conformidade.toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {item.total_conformes}C / {item.total_nao_conformes}NC
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

@@ -131,7 +131,7 @@ const EscalaCalendario = ({ escalas, mes, ano, onBack, onViewIndividual, onReloa
           <div className="grid grid-cols-7 gap-3">
             {celulasCalendario.map((celula, index) => (
               <div
-                key={index}
+                key={celula ? `dia-${celula.dia}` : `empty-${index}`}
                 className={`
                   aspect-square p-3 border-2 rounded-xl flex flex-col items-center justify-center text-sm transition-all duration-300
                   ${celula ? "bg-white hover:bg-accent/20 hover:scale-105 hover:shadow-lg border-border/50 hover:border-primary/30" : "border-transparent"}

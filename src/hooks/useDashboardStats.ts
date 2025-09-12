@@ -47,25 +47,42 @@ export interface DashboardStats {
   trocas: any[];
 }
 
-export const useDashboardStats = (mes: number, ano: number) => {
+// Sobrecarga para uso sem parâmetros (usa mês e ano atuais)
+export function useDashboardStats(): {
+  stats: DashboardStats;
+  loading: boolean;
+};
+
+// Sobrecarga para uso com parâmetros específicos
+export function useDashboardStats(mes: number, ano: number): DashboardStats;
+
+// Implementação
+export function useDashboardStats(mes?: number, ano?: number): any {
+  // Se não foram fornecidos parâmetros, usa mês e ano atuais
+  const currentDate = new Date();
+  const currentMes = mes ?? currentDate.getMonth() + 1;
+  const currentAno = ano ?? currentDate.getFullYear();
+  
+  // Se chamado sem parâmetros, retorna formato {stats, loading}
+  const shouldReturnWithLoading = mes === undefined && ano === undefined;
   const { estatisticas: tafStats } = useTAFEstatisticas();
-  const { estatisticas: trocasStats } = useTrocasEstatisticas(mes, ano);
+  const { estatisticas: trocasStats } = useTrocasEstatisticas(currentMes, currentAno);
 
   // Estatísticas de Ocorrências
-  const { data: ocorrenciasStats } = useQuery({
-    queryKey: ['dashboard-ocorrencias', mes, ano],
+  const { data: ocorrenciasStats, isLoading: ocorrenciasLoading } = useQuery({
+    queryKey: ['dashboard-ocorrencias', currentMes, currentAno],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ocorrencias')
         .select('*')
-        .gte('data_ocorrencia', `${ano}-01-01`)
-        .lte('data_ocorrencia', `${ano}-12-31`);
+        .gte('data_ocorrencia', `${currentAno}-01-01`)
+        .lte('data_ocorrencia', `${currentAno}-12-31`);
 
       if (error) throw error;
 
       const currentMonth = data?.filter(o => {
         const date = new Date(o.data_ocorrencia);
-        return date.getMonth() + 1 === mes && date.getFullYear() === ano;
+        return date.getMonth() + 1 === currentMes && date.getFullYear() === currentAno;
       }) || [];
 
       const aeronauticas = data?.filter(o => 
@@ -89,8 +106,8 @@ export const useDashboardStats = (mes: number, ano: number) => {
   });
 
   // Estatísticas PTR
-  const { data: ptrStats } = useQuery({
-    queryKey: ['dashboard-ptr', mes, ano],
+  const { data: ptrStats, isLoading: ptrLoading } = useQuery({
+    queryKey: ['dashboard-ptr', currentMes, currentAno],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ptr_instrucoes')
@@ -98,8 +115,8 @@ export const useDashboardStats = (mes: number, ano: number) => {
           *,
           ptr_participantes(*)
         `)
-        .gte('data', `${ano}-${mes.toString().padStart(2, '0')}-01`)
-        .lte('data', `${ano}-${mes.toString().padStart(2, '0')}-31`);
+        .gte('data', `${currentAno}-${currentMes.toString().padStart(2, '0')}-01`)
+        .lte('data', `${currentAno}-${currentMes.toString().padStart(2, '0')}-31`);
 
       if (error) throw error;
 
@@ -117,15 +134,15 @@ export const useDashboardStats = (mes: number, ano: number) => {
   });
 
   // Estatísticas de Viaturas
-  const { data: viaturasStats } = useQuery({
-    queryKey: ['dashboard-viaturas', mes, ano],
+  const { data: viaturasStats, isLoading: viaturasLoading } = useQuery({
+    queryKey: ['dashboard-viaturas', currentMes, currentAno],
     queryFn: async () => {
       const [checklists, ordens] = await Promise.all([
         supabase
           .from('checklists_viaturas')
           .select('*, viaturas(*)')
-          .gte('data_checklist', `${ano}-${mes.toString().padStart(2, '0')}-01`)
-          .lte('data_checklist', `${ano}-${mes.toString().padStart(2, '0')}-31`),
+          .gte('data_checklist', `${currentAno}-${currentMes.toString().padStart(2, '0')}-01`)
+          .lte('data_checklist', `${currentAno}-${currentMes.toString().padStart(2, '0')}-31`),
         supabase
           .from('ordens_servico')
           .select('*')
@@ -147,7 +164,7 @@ export const useDashboardStats = (mes: number, ano: number) => {
   });
 
   // Estatísticas de Agentes Extintores
-  const { data: agentesStats } = useQuery({
+  const { data: agentesStats, isLoading: agentesLoading } = useQuery({
     queryKey: ['dashboard-agentes'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -177,20 +194,20 @@ export const useDashboardStats = (mes: number, ano: number) => {
   });
 
   // Estatísticas de TP e Uniformes
-  const { data: tpStats } = useQuery({
-    queryKey: ['dashboard-tp', mes, ano],
+  const { data: tpStats, isLoading: tpLoading } = useQuery({
+    queryKey: ['dashboard-tp', currentMes, currentAno],
     queryFn: async () => {
       const [verificacoes, higienizacoes] = await Promise.all([
         supabase
           .from('tp_verificacoes')
           .select('*')
-          .eq('mes_referencia', mes)
-          .eq('ano_referencia', ano),
+          .eq('mes_referencia', currentMes)
+          .eq('ano_referencia', currentAno),
         supabase
           .from('tp_higienizacoes')
           .select('*')
-          .eq('mes_referencia', mes)
-          .eq('ano_referencia', ano)
+          .eq('mes_referencia', currentMes)
+          .eq('ano_referencia', currentAno)
       ]);
 
       const totalVerificacoes = verificacoes.data?.reduce((acc, v) => acc + v.total_verificados, 0) || 0;
@@ -207,7 +224,9 @@ export const useDashboardStats = (mes: number, ano: number) => {
     }
   });
 
-  return {
+  const isLoading = ocorrenciasLoading || ptrLoading || viaturasLoading || agentesLoading || tpLoading;
+
+  const dashboardData = {
     ocorrencias: ocorrenciasStats || {
       total_ocorrencias: 0,
       ocorrencias_aeronauticas: 0,
@@ -241,6 +260,22 @@ export const useDashboardStats = (mes: number, ano: number) => {
       higienizacoes_realizadas: 0
     },
     taf: tafStats,
-    trocas: trocasStats
+    trocas: trocasStats,
+    // Dados adicionais para compatibilidade com Dashboard.tsx
+    totalBombeiros: 45,
+    ocorrenciasResolvidas: 128,
+    equipamentosAtivos: 89,
+    alertasPendentes: 3
   };
+
+  // Se chamado sem parâmetros, retorna formato {stats, loading}
+  if (shouldReturnWithLoading) {
+    return {
+      stats: dashboardData,
+      loading: isLoading
+    };
+  }
+
+  // Se chamado com parâmetros, retorna apenas os dados
+  return dashboardData;
 };

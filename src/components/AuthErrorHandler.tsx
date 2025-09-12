@@ -28,6 +28,16 @@ export const AuthErrorHandler = () => {
         handleAuthError();
       }
       
+      // Detectar erros de rede que podem indicar problemas de conectividade
+      if (
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('net::ERR_ABORTED') ||
+        errorMessage.includes('TypeError: Failed to fetch')
+      ) {
+        console.warn('Erro de conectividade detectado:', errorMessage);
+        // Não forçar logout para erros de rede, apenas logar
+      }
+      
       // Chamar o console.error original
       originalConsoleError.apply(console, args);
     };

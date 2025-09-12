@@ -1,6 +1,6 @@
 
 import { useMemo } from 'react';
-import { DashboardStats } from './useDashboardStats';
+import { DashboardStats, useDashboardStats } from './useDashboardStats';
 
 interface Insight {
   tipo: 'comparativo' | 'alerta' | 'recomendacao' | 'sucesso';
@@ -11,97 +11,136 @@ interface Insight {
   prioridade?: 'alta' | 'media' | 'baixa';
 }
 
-export const useInsights = (dados: DashboardStats, mesAnterior?: DashboardStats): Insight[] => {
+// Sobrecarga para uso sem parâmetros (usa dados atuais)
+export function useInsights(): {
+  insights: Insight[];
+  loading: boolean;
+};
+
+// Sobrecarga para uso com parâmetros específicos
+export function useInsights(dados: DashboardStats): Insight[];
+
+// Implementação
+export function useInsights(dados?: DashboardStats): any {
+  // Se não foram fornecidos dados, busca dados atuais
+  const shouldReturnWithLoading = dados === undefined;
+  
+  // Hook para buscar dados quando não fornecidos
+  const currentDate = new Date();
+  const currentMes = currentDate.getMonth() + 1;
+  const currentAno = currentDate.getFullYear();
+  
+  // Usar useDashboardStats quando necessário
+  const currentData = shouldReturnWithLoading ? useDashboardStats(currentMes, currentAno) : dados;
+  const mesAnterior = undefined; // Para manter compatibilidade
   return useMemo(() => {
     const insights: Insight[] = [];
 
-    // Insights de Ocorrências
-    if (mesAnterior) {
-      const diferencaOcorrencias = dados.ocorrencias.total_ocorrencias - mesAnterior.ocorrencias.total_ocorrencias;
-      if (diferencaOcorrencias !== 0) {
-        insights.push({
-          tipo: 'comparativo',
-          titulo: 'Comparativo de Ocorrências',
-          descricao: `Este mês tivemos ${Math.abs(diferencaOcorrencias)} ${diferencaOcorrencias > 0 ? 'ocorrências a mais' : 'ocorrências a menos'} que o mês anterior`,
-          valor: `${diferencaOcorrencias > 0 ? '+' : ''}${diferencaOcorrencias}`,
-          tendencia: diferencaOcorrencias > 0 ? 'negativa' : 'positiva',
-          prioridade: Math.abs(diferencaOcorrencias) > 5 ? 'alta' : 'media'
-        });
+    // Verificação de segurança para dados
+    if (!currentData) {
+      if (shouldReturnWithLoading) {
+        return { insights: [], loading: true };
       }
+      return insights;
     }
 
-    // Insights de TAF
-    if (dados.taf?.taxa_aprovacao) {
-      if (dados.taf.taxa_aprovacao >= 85) {
-        insights.push({
-          tipo: 'sucesso',
-          titulo: 'Excelente Performance TAF',
-          descricao: 'Taxa de aprovação acima da meta de 85%. Parabéns à equipe!',
-          valor: `${dados.taf.taxa_aprovacao.toFixed(1)}%`,
-          prioridade: 'baixa'
-        });
-      } else if (dados.taf.taxa_aprovacao < 70) {
+    // Insights de Ocorrências - com verificação de segurança
+    if (mesAnterior && currentData.ocorrencias && mesAnterior.ocorrencias) {
+      const variacaoOcorrencias = currentData.ocorrencias.ocorrencias_mes_atual - mesAnterior.ocorrencias.ocorrencias_mes_atual;
+      if (variacaoOcorrencias > 5) {
         insights.push({
           tipo: 'alerta',
-          titulo: 'Taxa TAF Baixa',
-          descricao: 'Taxa de aprovação abaixo de 70%. Considere intensificar os treinamentos.',
-          valor: `${dados.taf.taxa_aprovacao.toFixed(1)}%`,
+          titulo: 'Aumento de Ocorrências',
+          descricao: `Aumento de ${variacaoOcorrencias} ocorrências em relação ao mês anterior.`,
+          valor: `+${variacaoOcorrencias}`,
           prioridade: 'alta'
         });
       }
     }
 
-    // Insights de Viaturas
-    const viaturasProblemas = dados.viaturas.total_viaturas - dados.viaturas.viaturas_operacionais;
-    if (viaturasProblemas > 0) {
-      insights.push({
-        tipo: 'alerta',
-        titulo: 'Viaturas em Manutenção',
-        descricao: `${viaturasProblemas} ${viaturasProblemas === 1 ? 'viatura precisa' : 'viaturas precisam'} de atenção para manter a frota operacional`,
-        valor: `${viaturasProblemas}`,
-        prioridade: viaturasProblemas > 2 ? 'alta' : 'media'
-      });
-    }
-
-    // Insights de Agentes Extintores
-    if (dados.agentes_extintores.vencimento_proximo > 0) {
-      const percentualVencimento = (dados.agentes_extintores.vencimento_proximo / (dados.agentes_extintores.total_lge + dados.agentes_extintores.total_pqs)) * 100;
-      
-      if (percentualVencimento > 20) {
+    // Insights de TAF - com verificação de segurança
+    if (currentData.taf && typeof currentData.taf === 'object' && currentData.taf.taxa_aprovacao !== undefined) {
+      if (currentData.taf.taxa_aprovacao >= 85) {
+        insights.push({
+          tipo: 'sucesso',
+          titulo: 'Excelente Performance TAF',
+          descricao: 'Taxa de aprovação acima da meta de 85%. Parabéns à equipe!',
+          valor: `${currentData.taf.taxa_aprovacao.toFixed(1)}%`,
+          prioridade: 'baixa'
+        });
+      } else if (currentData.taf.taxa_aprovacao < 70) {
         insights.push({
           tipo: 'alerta',
-          titulo: 'Agentes Extintores Vencendo',
-          descricao: `${dados.agentes_extintores.vencimento_proximo} agentes extintores com vencimento próximo (30 dias)`,
-          valor: `${percentualVencimento.toFixed(0)}%`,
-          prioridade: percentualVencimento > 50 ? 'alta' : 'media'
+          titulo: 'Taxa TAF Baixa',
+          descricao: 'Taxa de aprovação abaixo de 70%. Considere intensificar os treinamentos.',
+          valor: `${currentData.taf.taxa_aprovacao.toFixed(1)}%`,
+          prioridade: 'alta'
         });
       }
     }
 
-    // Insights de PTR
-    if (dados.ptr.total_horas_treinamento > 0) {
-      if (dados.ptr.total_horas_treinamento >= 40) {
+    // Insights de Viaturas - com verificação de segurança
+    if (currentData.viaturas) {
+      const { total_viaturas, viaturas_operacionais } = currentData.viaturas;
+      if (total_viaturas && viaturas_operacionais !== undefined) {
+        const percentualOperacional = (viaturas_operacionais / total_viaturas) * 100;
+        if (percentualOperacional < 80) {
+          insights.push({
+            tipo: 'alerta',
+            titulo: 'Viaturas com Baixa Operacionalidade',
+            descricao: `Apenas ${percentualOperacional.toFixed(1)}% das viaturas estão operacionais.`,
+            valor: `${viaturas_operacionais}/${total_viaturas}`,
+            prioridade: 'alta'
+          });
+        }
+      }
+    }
+
+    // Insights de Agentes Extintores - com verificação de segurança
+    if (currentData.agentes_extintores && currentData.agentes_extintores.vencimento_proximo > 0) {
+      const totalAgentes = (currentData.agentes_extintores.total_lge || 0) + (currentData.agentes_extintores.total_pqs || 0);
+      if (totalAgentes > 0) {
+        const percentualVencimento = (currentData.agentes_extintores.vencimento_proximo / totalAgentes) * 100;
+        
+        if (percentualVencimento > 20) {
+          insights.push({
+            tipo: 'alerta',
+            titulo: 'Agentes Extintores Vencendo',
+            descricao: `${currentData.agentes_extintores.vencimento_proximo} agentes extintores com vencimento próximo (30 dias)`,
+            valor: `${percentualVencimento.toFixed(0)}%`,
+            prioridade: percentualVencimento > 50 ? 'alta' : 'media'
+          });
+        }
+      }
+    }
+
+    // Insights de PTR - com verificação de segurança
+    if (currentData.ptr && currentData.ptr.total_horas_treinamento !== undefined) {
+      if (currentData.ptr.total_horas_treinamento > 0 && currentData.ptr.total_horas_treinamento >= 40) {
         insights.push({
           tipo: 'sucesso',
           titulo: 'Meta PTR Atingida',
           descricao: 'Horas de treinamento PTR superaram a meta mensal. Excelente dedicação!',
-          valor: `${dados.ptr.total_horas_treinamento}h`,
+          valor: `${currentData.ptr.total_horas_treinamento}h`,
           prioridade: 'baixa'
         });
       }
     }
 
-    // Recomendações
-    if (dados.ptr.participacao_media < 8) {
+    // Recomendações - com verificação de segurança
+    if (currentData.ptr && currentData.ptr.participacao_media !== undefined && currentData.ptr.participacao_media < 8) {
       insights.push({
         tipo: 'recomendacao',
         titulo: 'Melhorar Participação PTR',
         descricao: 'Participação média nas instruções PTR está baixa. Considere revisar horários e metodologia.',
-        valor: `${dados.ptr.participacao_media.toFixed(1)} bombeiros`,
+        valor: `${currentData.ptr.participacao_media.toFixed(1)} bombeiros`,
         prioridade: 'media'
       });
     }
 
+    if (shouldReturnWithLoading) {
+      return { insights: insights.slice(0, 6), loading: false };
+    }
     return insights.slice(0, 6); // Limita a 6 insights mais relevantes
-  }, [dados, mesAnterior]);
+  }, [currentData, mesAnterior, shouldReturnWithLoading]);
 };

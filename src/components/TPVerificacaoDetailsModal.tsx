@@ -2,8 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, XCircle, Clock, FileText, Calendar, User, Shield, Eye } from 'lucide-react';
-import { format } from 'date-fns';
+import { CheckCircle, XCircle, Clock, FileText, Calendar, User, Shield, Eye, AlertTriangle } from 'lucide-react';
+import { format, isValid, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { type TPVerificacao } from '@/hooks/useTPVerificacoes';
 
@@ -16,16 +16,41 @@ interface TPVerificacaoDetailsModalProps {
 const TPVerificacaoDetailsModal = ({ verificacao, open, onOpenChange }: TPVerificacaoDetailsModalProps) => {
   if (!verificacao) return null;
 
-  const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case 'assinado':
-        return <Badge variant="default" className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Assinado</Badge>;
-      case 'enviado':
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Enviado</Badge>;
-      case 'rascunho':
-      default:
-        return <Badge variant="outline"><FileText className="w-3 h-3 mr-1" />Rascunho</Badge>;
+  // Função para formatar data com validação
+  const formatDate = (dateValue: string | Date | null | undefined, formatString: string = 'dd/MM/yyyy'): string => {
+    if (!dateValue) return 'Data não informada';
+    
+    let date: Date;
+    if (typeof dateValue === 'string') {
+      // Tenta fazer parse da string como ISO ou criar nova data
+      date = dateValue.includes('T') ? parseISO(dateValue) : new Date(dateValue);
+    } else {
+      date = dateValue;
     }
+    
+    if (!isValid(date)) {
+      return 'Data inválida';
+    }
+    
+    return format(date, formatString, { locale: ptBR });
+  };
+
+  // Função para formatar mês/ano derivado da data de verificação
+  const formatMonthYearFromDate = (dateValue: string | Date | null | undefined): string => {
+    if (!dateValue) return 'Mês inválido';
+    
+    let date: Date;
+    if (typeof dateValue === 'string') {
+      date = dateValue.includes('T') ? parseISO(dateValue) : new Date(dateValue);
+    } else {
+      date = dateValue;
+    }
+    
+    if (!isValid(date)) {
+      return 'Data inválida';
+    }
+    
+    return format(date, 'MMMM/yyyy', { locale: ptBR });
   };
 
   const getConformidadeBadge = (conformes: number, naoConformes: number) => {
@@ -41,51 +66,67 @@ const TPVerificacaoDetailsModal = ({ verificacao, open, onOpenChange }: TPVerifi
     }
   };
 
-  const renderAssinaturaInfo = () => {
-    if (!verificacao.assinatura_digital) {
-      return (
-        <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <XCircle className="w-4 h-4" />
-          Documento não assinado
-        </div>
-      );
-    }
 
-    const assinatura = verificacao.assinatura_digital as any;
+
+  const getStatusIcon = (status: string | undefined) => {
+    switch (status) {
+      case 'conforme':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'nao_conforme':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getStatusText = (status: string | undefined) => {
+    switch (status) {
+      case 'conforme':
+        return 'Conforme';
+      case 'nao_conforme':
+        return 'Não Conforme';
+      default:
+        return 'Não Verificado';
+    }
+  };
+
+  const renderChecklistCategory = (title: string, items: Array<{name: string, status?: string, membros?: string[], observacoes?: string}>) => {
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Shield className="w-4 h-4 text-green-600" />
-          <span className="text-sm font-medium">Documento Assinado Digitalmente</span>
-        </div>
-        {assinatura.signerName && (
-          <div className="text-sm text-muted-foreground">
-            <strong>Assinante:</strong> {assinatura.signerName}
+      <div className="space-y-3">
+        <h4 className="font-semibold text-sm text-gray-700">{title}</h4>
+        {items.map((item, index) => (
+          <div key={index} className="border rounded-lg p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{item.name}</span>
+              <div className="flex items-center gap-2">
+                {getStatusIcon(item.status)}
+                <span className="text-sm">{getStatusText(item.status)}</span>
+              </div>
+            </div>
+            {item.membros && item.membros.length > 0 && (
+              <div className="text-xs text-gray-600">
+                <strong>Membros afetados:</strong> {item.membros.join(', ')}
+              </div>
+            )}
+            {item.observacoes && (
+              <div className="text-xs text-gray-600">
+                <strong>Observações:</strong> {item.observacoes}
+              </div>
+            )}
           </div>
-        )}
-        {assinatura.signedAt && (
-          <div className="text-sm text-muted-foreground">
-            <strong>Data da Assinatura:</strong> {format(new Date(assinatura.signedAt), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-          </div>
-        )}
-        {assinatura.documentId && (
-          <div className="text-sm text-muted-foreground">
-            <strong>ID do Documento:</strong> {assinatura.documentId}
-          </div>
-        )}
+        ))}
       </div>
     );
   };
 
   const renderChecklistItems = () => {
-    // Como os dados do checklist não são armazenados individualmente na tabela tp_verificacoes,
-    // vamos mostrar apenas um resumo baseado nos campos tp_conformes e tp_nao_conformes
-    const totalItens = 8; // Total de itens verificados (conforme definido no formulário)
-    const conformes = verificacao.tp_conformes;
-    const naoConformes = verificacao.tp_nao_conformes;
+    const conformes = verificacao.total_conformes;
+    const naoConformes = verificacao.total_nao_conformes;
+    const naoVerificados = verificacao.total_nao_verificados;
     
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
+        {/* Resumo */}
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="p-3 bg-green-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">{conformes}</div>
@@ -95,25 +136,143 @@ const TPVerificacaoDetailsModal = ({ verificacao, open, onOpenChange }: TPVerifi
             <div className="text-2xl font-bold text-red-600">{naoConformes}</div>
             <div className="text-sm text-red-700">Não Conformes</div>
           </div>
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">{totalItens}</div>
-            <div className="text-sm text-blue-700">Total Verificados</div>
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="text-2xl font-bold text-gray-600">{naoVerificados}</div>
+            <div className="text-sm text-gray-700">Não Verificados</div>
           </div>
         </div>
         
-        <div className="text-sm text-muted-foreground">
-          <p><strong>Itens verificados:</strong></p>
-          <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Vestimentas - verificação de danos</li>
-            <li>Vestimentas - conformidade com pontos de verificação</li>
-            <li>Capacetes - verificação de avarias</li>
-            <li>Botas - verificação de alterações</li>
-            <li>Luvas - verificação de alterações</li>
-            <li>Cintos - verificação de alterações</li>
-            <li>Equipamentos auxiliares - verificação de funcionamento</li>
-            <li>Estado geral dos equipamentos</li>
-          </ul>
-        </div>
+        <Separator />
+        
+        {/* Categoria 1 - Etiquetas e CA */}
+        {renderChecklistCategory('Categoria 1 - Etiquetas e CA', [
+          {
+            name: 'Etiquetas Visíveis',
+            status: verificacao.cat1_etiquetas_visiveis,
+            membros: verificacao.cat1_etiquetas_membros,
+            observacoes: verificacao.cat1_etiquetas_observacoes
+          },
+          {
+            name: 'CA Válido',
+            status: verificacao.cat1_ca_valido,
+            membros: verificacao.cat1_ca_membros,
+            observacoes: verificacao.cat1_ca_observacoes
+          }
+        ])}
+        
+        <Separator />
+        
+        {/* Categoria 2 - Capacetes */}
+        {renderChecklistCategory('Categoria 2 - Capacetes', [
+          {
+            name: 'Capacetes Íntegros',
+            status: verificacao.cat2_capacetes_integros,
+            membros: verificacao.cat2_capacetes_membros,
+            observacoes: verificacao.cat2_capacetes_observacoes
+          }
+        ])}
+        
+        <Separator />
+        
+        {/* Categoria 3 - Vestimentas */}
+        {renderChecklistCategory('Categoria 3 - Vestimentas', [
+          {
+            name: 'Vestimentas Íntegras',
+            status: verificacao.cat3_vestimentas_integras,
+            membros: verificacao.cat3_vestimentas_membros,
+            observacoes: verificacao.cat3_vestimentas_observacoes
+          },
+          {
+            name: 'Bom Estado',
+            status: verificacao.cat3_bom_estado,
+            membros: verificacao.cat3_bom_estado_membros,
+            observacoes: verificacao.cat3_bom_estado_observacoes
+          },
+          {
+            name: 'Faixas Reflexivas',
+            status: verificacao.cat3_faixas_reflexivas,
+            membros: verificacao.cat3_faixas_membros,
+            observacoes: verificacao.cat3_faixas_observacoes
+          },
+          {
+            name: 'Bolsos e Dispositivos',
+            status: verificacao.cat3_bolsos_dispositivos,
+            membros: verificacao.cat3_bolsos_membros,
+            observacoes: verificacao.cat3_bolsos_observacoes
+          },
+          {
+            name: 'Costuras Íntegras',
+            status: verificacao.cat3_costuras_integras,
+            membros: verificacao.cat3_costuras_membros,
+            observacoes: verificacao.cat3_costuras_observacoes
+          },
+          {
+            name: 'Barreira de Umidade',
+            status: verificacao.cat3_barreira_umidade,
+            membros: verificacao.cat3_barreira_membros,
+            observacoes: verificacao.cat3_barreira_observacoes
+          },
+          {
+            name: 'Punhos com Elasticidade',
+            status: verificacao.cat3_punhos_elasticidade,
+            membros: verificacao.cat3_punhos_membros,
+            observacoes: verificacao.cat3_punhos_observacoes
+          },
+          {
+            name: 'Costuras Seladas',
+            status: verificacao.cat3_costuras_seladas,
+            membros: verificacao.cat3_seladas_membros,
+            observacoes: verificacao.cat3_seladas_observacoes
+          }
+        ])}
+        
+        <Separator />
+        
+        {/* Categoria 4 - Botas */}
+        {renderChecklistCategory('Categoria 4 - Botas', [
+          {
+            name: 'Botas em Bom Estado',
+            status: verificacao.cat4_botas_bom_estado,
+            membros: verificacao.cat4_botas_membros,
+            observacoes: verificacao.cat4_botas_observacoes
+          },
+          {
+            name: 'Solas Íntegras',
+            status: verificacao.cat4_solas_integras,
+            membros: verificacao.cat4_solas_membros,
+            observacoes: verificacao.cat4_solas_observacoes
+          }
+        ])}
+        
+        <Separator />
+        
+        {/* Categoria 5 - Luvas */}
+        {renderChecklistCategory('Categoria 5 - Luvas', [
+          {
+            name: 'Luvas em Bom Estado',
+            status: verificacao.cat5_luvas_bom_estado,
+            membros: verificacao.cat5_luvas_membros,
+            observacoes: verificacao.cat5_luvas_observacoes
+          },
+          {
+            name: 'Costuras das Luvas',
+            status: verificacao.cat5_costuras_luvas,
+            membros: verificacao.cat5_costuras_membros,
+            observacoes: verificacao.cat5_costuras_observacoes
+          }
+        ])}
+        
+        <Separator />
+        
+        {/* Categoria 6 - Capuzes */}
+        {renderChecklistCategory('Categoria 6 - Capuzes', [
+          {
+            name: 'Capuzes em Bom Estado',
+            status: verificacao.cat6_capuzes_bom_estado,
+            membros: verificacao.cat6_capuzes_membros,
+            observacoes: verificacao.cat6_capuzes_observacoes
+          }
+        ])}
       </div>
     );
   };
@@ -124,7 +283,7 @@ const TPVerificacaoDetailsModal = ({ verificacao, open, onOpenChange }: TPVerifi
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Eye className="w-5 h-5" />
-            Detalhes da Verificação TP - {verificacao.base}
+            Detalhes da Verificação TP - {verificacao.local}
           </DialogTitle>
         </DialogHeader>
 
@@ -138,61 +297,47 @@ const TPVerificacaoDetailsModal = ({ verificacao, open, onOpenChange }: TPVerifi
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Base</div>
-                  <div className="text-lg font-semibold">{verificacao.base}</div>
+                  <div className="text-lg font-semibold">{verificacao.local}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Período de Referência</div>
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {format(new Date(2024, verificacao.mes_referencia - 1, 1), 'MMMM/yyyy', { locale: ptBR })}
+                    {formatMonthYearFromDate(verificacao.data_verificacao)}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Data da Verificação</div>
-                  <div>{format(new Date(verificacao.data_verificacao), 'dd/MM/yyyy', { locale: ptBR })}</div>
+                  <div>{formatDate(verificacao.data_verificacao)}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Responsável</div>
                   <div className="flex items-center gap-1">
                     <User className="w-4 h-4" />
-                    {verificacao.responsavel_nome}
+                    {verificacao.responsavel}
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Status e Conformidade */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Status da Assinatura</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {getStatusBadge(verificacao.status_assinatura)}
-                  <Separator />
-                  {renderAssinaturaInfo()}
+          {/* Conformidade */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Conformidade</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {getConformidadeBadge(verificacao.total_conformes, verificacao.total_nao_conformes)}
+                <div className="text-sm text-muted-foreground">
+                  <div><strong>Conformes:</strong> {verificacao.total_conformes}</div>
+                  <div><strong>Não Conformes:</strong> {verificacao.total_nao_conformes}</div>
+                  <div><strong>Não Verificados:</strong> {verificacao.total_nao_verificados}</div>
+                  <div><strong>Total:</strong> {verificacao.total_conformes + verificacao.total_nao_conformes + verificacao.total_nao_verificados}</div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Conformidade</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {getConformidadeBadge(verificacao.tp_conformes, verificacao.tp_nao_conformes)}
-                  <div className="text-sm text-muted-foreground">
-                    <div><strong>Conformes:</strong> {verificacao.tp_conformes}</div>
-                    <div><strong>Não Conformes:</strong> {verificacao.tp_nao_conformes}</div>
-                    <div><strong>Total:</strong> {verificacao.tp_conformes + verificacao.tp_nao_conformes}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Checklist Detalhado */}
           <Card>
