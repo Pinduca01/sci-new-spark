@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface AgenteExtintor {
   id: string;
-  tipo: 'LGE' | 'PO_QUIMICO' | 'NITROGENIO';
+  tipo: string;
   fabricante: string;
   lote?: string;
   quantidade: number;
   unidade: string;
-  situacao: 'ESTOQUE' | 'EM_USO' | 'MANUTENCAO' | 'DESCARTADO';
+  situacao: string;
   data_validade?: string;
   data_fabricacao: string;
   data_teste_hidrostatico?: string;
@@ -18,19 +19,42 @@ export interface AgenteExtintor {
   data_modificacao?: string;
   created_at: string;
   updated_at: string;
+  // Propriedades esperadas pelos componentes  
+  tipo_agente?: string;
+  status_uso?: string;
+  numero_serie?: string;
+  viatura_id?: string;
+  observacoes?: string;
+  numero_recargas?: number;
+  pressao_trabalho?: number;
 }
 
 export interface Movimentacao {
   id: string;
   agente_id: string;
   usuario_id: string;
-  tipo_movimentacao: 'ENTRADA' | 'SAIDA';
+  tipo_movimentacao: string;
   quantidade: number;
-  equipe: 'Alfa' | 'Bravo' | 'Charlie' | 'Delta';
+  equipe?: string;
   observacoes?: string;
   data_movimentacao: string;
   created_at: string;
   agente_extintor?: AgenteExtintor;
+  // Propriedades esperadas pelos componentes
+  agente_extintor_id?: string;
+  equipe_responsavel?: string;
+  responsavel?: string;
+  destino?: string;
+  origem?: string;
+}
+
+export interface AlertaVencimento {
+  tipo_agente: string;
+  lote: string;
+  data_vencimento: string;
+  dias_para_vencimento: number;
+  quantidade: number;
+  nivel_alerta: 'baixo' | 'medio' | 'alto' | 'critico';
 }
 
 
@@ -46,9 +70,11 @@ export interface LoteRecomendado {
 export const useAgentesExtintores = () => {
   const [agentes, setAgentes] = useState<AgenteExtintor[]>([]);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
-
+  const [alertas, setAlertas] = useState<AlertaVencimento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const queryClient = useQueryClient();
 
   // Carregar agentes extintores
   const fetchAgentes = async () => {
@@ -59,11 +85,58 @@ export const useAgentesExtintores = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAgentes(data || []);
+      
+      // Mapear dados para incluir propriedades esperadas
+      const agentesCompatibilizados = (data || []).map(agente => ({
+        ...agente,
+        tipo_agente: agente.tipo,
+        status_uso: agente.situacao === 'ESTOQUE' ? 'disponivel' : agente.situacao.toLowerCase(),
+        numero_serie: agente.lote || `${agente.tipo}-${agente.id.slice(0, 8)}`
+      }));
+      
+      setAgentes(agentesCompatibilizados);
+      
+      // Calcular alertas de vencimento
+      await calcularAlertas(agentesCompatibilizados);
     } catch (err) {
       console.error('Erro ao carregar agentes:', err);
       setError('Erro ao carregar agentes extintores');
       toast.error('Erro ao carregar agentes extintores');
+    }
+  };
+
+  // Calcular alertas de vencimento
+  const calcularAlertas = async (agentesData: AgenteExtintor[]) => {
+    try {
+      const hoje = new Date();
+      const alertasCalculados: AlertaVencimento[] = [];
+
+      agentesData.forEach(agente => {
+        if (agente.data_validade) {
+          const dataVencimento = new Date(agente.data_validade);
+          const diasParaVencimento = Math.ceil((dataVencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+          
+          let nivel_alerta: AlertaVencimento['nivel_alerta'] = 'baixo';
+          if (diasParaVencimento <= 0) nivel_alerta = 'critico';
+          else if (diasParaVencimento <= 30) nivel_alerta = 'alto';
+          else if (diasParaVencimento <= 60) nivel_alerta = 'medio';
+          
+          if (diasParaVencimento <= 90) {
+            alertasCalculados.push({
+              tipo_agente: agente.tipo,
+              lote: agente.lote || '',
+              data_vencimento: agente.data_validade,
+              dias_para_vencimento: diasParaVencimento,
+              quantidade: agente.quantidade,
+              nivel_alerta
+            });
+          }
+        }
+      });
+
+      setAlertas(alertasCalculados);
+    } catch (err) {
+      console.error('Erro ao calcular alertas:', err);
     }
   };
 
@@ -87,11 +160,9 @@ export const useAgentesExtintores = () => {
     }
   };
 
-
-
-  // Criar novo agente extintor
-  const createAgente = async (agente: Omit<AgenteExtintor, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
+  // Mutations do React Query
+  const createAgente = useMutation({
+    mutationFn: async (agente: Omit<AgenteExtintor, 'id' | 'created_at' | 'updated_at'>) => {
       // Verificar se já existe um registro com mesmo tipo, lote e data de fabricação
       if (agente.lote && agente.data_fabricacao) {
         const { data: existingAgente, error: searchError } = await supabase
@@ -121,13 +192,6 @@ export const useAgentesExtintores = () => {
             .single();
 
           if (updateError) throw updateError;
-          
-          // Atualizar o estado local
-          setAgentes(prev => prev.map(a => 
-            a.id === existingAgente.id ? updatedAgente : a
-          ));
-          
-          toast.success(`Quantidade somada ao registro existente! Nova quantidade: ${novaQuantidade}`);
           return updatedAgente;
         }
       }
@@ -140,20 +204,21 @@ export const useAgentesExtintores = () => {
         .single();
 
       if (error) throw error;
-      
-      setAgentes(prev => [data, ...prev]);
-      toast.success('Agente extintor criado com sucesso!');
       return data;
-    } catch (err) {
+    },
+    onSuccess: (data) => {
+      setAgentes(prev => [data, ...prev.filter(a => a.id !== data.id)]);
+      toast.success('Agente extintor criado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['agentes'] });
+    },
+    onError: (err) => {
       console.error('Erro ao criar agente:', err);
       toast.error('Erro ao criar agente extintor');
-      throw err;
     }
-  };
+  });
 
-  // Atualizar agente extintor
-  const updateAgente = async (id: string, updates: Partial<AgenteExtintor>) => {
-    try {
+  const updateAgente = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<AgenteExtintor> }) => {
       const { data, error } = await supabase
         .from('agentes_extintores')
         .update({ ...updates, updated_at: new Date().toISOString() })
@@ -162,37 +227,41 @@ export const useAgentesExtintores = () => {
         .single();
 
       if (error) throw error;
-      
+      return data;
+    },
+    onSuccess: (data) => {
       setAgentes(prev => prev.map(agente => 
-        agente.id === id ? data : agente
+        agente.id === data.id ? { ...data, tipo_agente: data.tipo, status_uso: data.situacao } : agente
       ));
       toast.success('Agente extintor atualizado com sucesso!');
-      return data;
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['agentes'] });
+    },
+    onError: (err) => {
       console.error('Erro ao atualizar agente:', err);
       toast.error('Erro ao atualizar agente extintor');
-      throw err;
     }
-  };
+  });
 
-  // Excluir agente extintor
-  const deleteAgente = async (id: string) => {
-    try {
+  const deleteAgente = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('agentes_extintores')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
-      
+      return id;
+    },
+    onSuccess: (id) => {
       setAgentes(prev => prev.filter(agente => agente.id !== id));
       toast.success('Agente extintor excluído com sucesso!');
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['agentes'] });
+    },
+    onError: (err) => {
       console.error('Erro ao excluir agente:', err);
       toast.error('Erro ao excluir agente extintor');
-      throw err;
     }
-  };
+  });
 
   // Registrar movimentação
   const registrarMovimentacao = async (movimentacao: Omit<Movimentacao, 'id' | 'created_at' | 'agente_extintor'>) => {
@@ -215,7 +284,7 @@ export const useAgentesExtintores = () => {
           ? agente.quantidade + movimentacao.quantidade
           : agente.quantidade - movimentacao.quantidade;
         
-        await updateAgente(agente.id, { quantidade: novaQuantidade });
+        await updateAgente.mutateAsync({ id: agente.id, updates: { quantidade: novaQuantidade } });
       }
       
       setMovimentacoes(prev => [data, ...prev]);
@@ -252,7 +321,7 @@ export const useAgentesExtintores = () => {
           ? agente.quantidade - movimentacao.quantidade  // Se foi entrada, subtrair
           : agente.quantidade + movimentacao.quantidade; // Se foi saída, somar de volta
         
-        await updateAgente(agente.id, { quantidade: quantidadeRevertida });
+        await updateAgente.mutateAsync({ id: agente.id, updates: { quantidade: quantidadeRevertida } });
       }
       
       // Remover da lista local
@@ -375,6 +444,7 @@ export const useAgentesExtintores = () => {
     // Estados
     agentes,
     movimentacoes,
+    alertas,
     loading,
     error,
     
@@ -389,6 +459,9 @@ export const useAgentesExtintores = () => {
     deleteMovimentacao,
     getEstatisticas,
     getRecomendacaoLote,
+    
+    // Compatibilidade com componentes existentes
+    checklists: [],
     
     // Utilitários
     refetch: () => {

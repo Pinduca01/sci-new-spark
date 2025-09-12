@@ -66,6 +66,9 @@ verify_jwt = false
 [functions.ptr-generator]
 verify_jwt = false
 
+[functions.grammar-checker]
+verify_jwt = false
+
 [edge-runtime]
 enabled = true
 port = 54330

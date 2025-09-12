@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { PDFDocument, rgb, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1'
+import { createDoc } from 'https://esm.sh/docx-templates@4.12.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,6 +27,14 @@ interface PTRData {
   }>;
 }
 
+interface ParticipanteTemplate {
+  numeroLinha: number;
+  funcao: string;
+  nome: string;
+  situacao: string;
+  presente: boolean;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -33,37 +42,31 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 Iniciando geração de relatório PTR-BA');
+    console.log('🔄 Iniciando geração de relatório PTR-BA estruturado');
 
     if (req.method !== 'POST') {
       throw new Error('Método não permitido');
     }
 
-    // Extrair parâmetros da URL
     const url = new URL(req.url);
-    const format = url.searchParams.get('format') || 'docx'; // docx por padrão
+    const format = url.searchParams.get('format') || 'docx';
     
     const { dadosPtr }: { dadosPtr: PTRData } = await req.json();
     console.log('📋 Dados PTR recebidos:', JSON.stringify(dadosPtr, null, 2));
     console.log('📄 Formato solicitado:', format);
 
-    // Validar dados básicos
     if (!dadosPtr || !dadosPtr.data || !dadosPtr.equipe) {
-      throw new Error('Dados obrigatórios não fornecidos');
+      throw new Error('Dados obrigatórios não fornecidos (data, equipe)');
     }
 
-    // Inicializar Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     if (format === 'docx') {
-      return await gerarDOCX(dadosPtr, supabase);
+      return await gerarDOCXEstruturado(dadosPtr, supabase);
     } else if (format === 'pdf') {
-      // Primeiro gerar DOCX, depois converter para PDF
-      const docxResponse = await gerarDOCX(dadosPtr, supabase);
-      const docxBuffer = await docxResponse.arrayBuffer();
-      return await converterParaPDF(docxBuffer, dadosPtr);
+      return await criarPDFEstruturado(dadosPtr);
     } else {
       throw new Error('Formato não suportado. Use "docx" ou "pdf"');
     }
@@ -87,206 +90,153 @@ serve(async (req) => {
   }
 });
 
-// Função para gerar DOCX usando templates
-async function gerarDOCX(dadosPtr: PTRData, supabase: any): Promise<Response> {
-  console.log('📂 Buscando template DOCX no storage...');
-  
-  // Tentar baixar template do storage
-  const { data: files, error: listError } = await supabase.storage
-    .from('Template - PTR-BA')
-    .list()
-
-  if (listError) {
-    console.error('❌ Erro ao listar arquivos do bucket:', listError);
-    // Criar DOCX do zero se não conseguir acessar templates
-    return await criarDOCXDoZero(dadosPtr);
-  }
-
-  console.log('📋 Arquivos encontrados no bucket:', files);
-
-  // Procurar por arquivo DOCX
-  const docxFile = files?.find(file => file.name.toLowerCase().endsWith('.docx'));
-  
-  if (!docxFile) {
-    console.log('⚠️ Nenhum template DOCX encontrado, criando DOCX do zero...');
-    return await criarDOCXDoZero(dadosPtr);
-  }
-
-  console.log('📄 Template DOCX encontrado:', docxFile.name);
-
-  try {
-    // Baixar o template DOCX
-    const { data: templateBuffer, error: downloadError } = await supabase.storage
-      .from('Template - PTR-BA')
-      .download(docxFile.name);
-
-    if (downloadError) {
-      console.error('❌ Erro ao baixar template:', downloadError);
-      return await criarDOCXDoZero(dadosPtr);
-    }
-
-    console.log('✅ Template DOCX baixado, processando...');
-
-    // Converter para ArrayBuffer
-    const arrayBuffer = await templateBuffer.arrayBuffer();
-    
-    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-      console.log('⚠️ Template vazio, criando DOCX do zero...');
-      return await criarDOCXDoZero(dadosPtr);
-    }
-
-    console.log(`📄 Template carregado: ${arrayBuffer.byteLength} bytes`);
-
-    // Aqui usaríamos uma biblioteca como docx-templates
-    // Por enquanto, vamos criar do zero até implementarmos a biblioteca
-    console.log('⚠️ Processamento de template DOCX ainda não implementado, criando do zero...');
-    return await criarDOCXDoZero(dadosPtr);
-
-  } catch (error) {
-    console.error('❌ Erro ao processar template DOCX:', error);
-    return await criarDOCXDoZero(dadosPtr);
-  }
-}
-
-// Função para criar DOCX do zero
-async function criarDOCXDoZero(dadosPtr: PTRData): Promise<Response> {
-  console.log('📄 Criando DOCX do zero...');
-  
-  // Por enquanto, vamos criar um HTML simples que simula um DOCX
-  // Em uma implementação real, usaríamos a biblioteca docx
-  const htmlContent = gerarHTMLRelatorio(dadosPtr);
-  
-  // Converter HTML para um formato que pode ser baixado como DOCX
-  const docxContent = gerarDOCXSimples(htmlContent, dadosPtr);
-  
-  console.log(`✅ DOCX criado com sucesso! Tamanho: ${docxContent.length} bytes`);
-
-  const filename = `PTR-BA-${dadosPtr.data.replace(/\//g, '-')}.docx`;
-  
-  return new Response(docxContent, {
-    headers: {
-      ...corsHeaders,
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Content-Length': docxContent.length.toString(),
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    }
-  });
-}
-
-// Função para gerar HTML do relatório
-function gerarHTMLRelatorio(dadosPtr: PTRData): string {
+function prepararDadosParaTemplate(dadosPtr: PTRData) {
   const equipeNome = typeof dadosPtr.equipe === 'string' ? dadosPtr.equipe : dadosPtr.equipe.nome_equipe;
   
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>PTR-BA - ${dadosPtr.data}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .title { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-        .info { margin-bottom: 20px; }
-        .section { margin-bottom: 30px; }
-        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 5px; }
-        .ptr-item { margin-bottom: 20px; padding-left: 20px; }
-        .ptr-title { font-weight: bold; margin-bottom: 8px; }
-        .ptr-details { margin-left: 20px; font-size: 14px; }
-        .participants-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .participants-table th, .participants-table td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .participants-table th { background-color: #f5f5f5; font-weight: bold; }
-        .status-presente { color: green; font-weight: bold; }
-        .status-ausente { color: red; font-weight: bold; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="title">RELATÓRIO PTR-BA</div>
-        <div class="info">
-            <strong>Data:</strong> ${dadosPtr.data}<br>
-            <strong>Equipe:</strong> ${equipeNome}
-        </div>
-    </div>
-
-    <div class="section">
-        <div class="section-title">INSTRUÇÕES PTR</div>
-        ${dadosPtr.ptrs.map((ptr, index) => `
-            <div class="ptr-item">
-                <div class="ptr-title">${index + 1}. ${ptr.tipo}</div>
-                <div class="ptr-details">
-                    <div><strong>Horário:</strong> ${ptr.hora_inicio} às ${ptr.hora_fim}${ptr.duracao ? ` (${ptr.duracao})` : ''}</div>
-                    ${ptr.instrutor_nome ? `<div><strong>Instrutor:</strong> ${ptr.instrutor_nome}</div>` : ''}
-                    ${ptr.observacoes ? `<div><strong>Observações:</strong> ${ptr.observacoes}</div>` : ''}
-                </div>
-            </div>
-        `).join('')}
-    </div>
-
-    <div class="section">
-        <div class="section-title">PARTICIPANTES</div>
-        <table class="participants-table">
-            <thead>
-                <tr>
-                    <th>Nº</th>
-                    <th>Nome</th>
-                    <th>Função</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${dadosPtr.participantes.map((p, index) => `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${p.nome}</td>
-                        <td>${p.funcao || 'N/A'}</td>
-                        <td class="${p.presente ? 'status-presente' : 'status-ausente'}">
-                            ${p.presente ? 'PRESENTE' : 'AUSENTE'}${p.situacao ? ` (${p.situacao})` : ''}
-                        </td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    </div>
-</body>
-</html>`;
-}
-
-// Função simplificada para gerar um DOCX básico
-function gerarDOCXSimples(htmlContent: string, dadosPtr: PTRData): Uint8Array {
-  // Esta é uma implementação muito básica que cria um "pseudo-DOCX"
-  // Em uma implementação real, usaríamos a biblioteca docx para criar um arquivo DOCX válido
+  // Preparar participantes exatamente como o template espera
+  const participantes = [];
   
-  // Por enquanto, vamos retornar o HTML em formato de bytes
-  // O navegador vai fazer o download, mas idealmente seria um DOCX real
-  const encoder = new TextEncoder();
-  return encoder.encode(htmlContent);
+  // Adicionar participantes reais
+  dadosPtr.participantes.forEach((participante) => {
+    participantes.push({
+      funcao: participante.funcao || '',
+      nome: participante.nome || '',
+      situacao: participante.presente ? 'PRESENTE' : 'AUSENTE'
+    });
+  });
+  
+  // Completar com linhas vazias até 11 participantes
+  while (participantes.length < 11) {
+    participantes.push({
+      funcao: '',
+      nome: '',
+      situacao: ''
+    });
+  }
+  
+  // Preparar PTRs com campos separados
+  const ptrs = dadosPtr.ptrs.map((ptr) => ({
+    tipo: ptr.tipo || '',
+    hora_inicio: ptr.hora_inicio || '',
+    hora_fim: ptr.hora_fim || '',
+    duracao: ptr.duracao || '',
+    instrutor_nome: ptr.instrutor_nome || '',
+    observacoes: ptr.observacoes || ''
+  }));
+  
+  return {
+    data: dadosPtr.data,
+    equipe: equipeNome,
+    participantes: participantes,
+    ptrs: ptrs,
+    fotos: [] // Placeholder para fotos futuras
+  };
 }
 
-// Função para converter DOCX para PDF
-async function converterParaPDF(docxBuffer: ArrayBuffer, dadosPtr: PTRData): Promise<Response> {
-  console.log('🔄 Convertendo DOCX para PDF...');
+function prepararDadosParaPDF(dadosPtr: PTRData) {
+  const equipeNome = typeof dadosPtr.equipe === 'string' ? dadosPtr.equipe : dadosPtr.equipe.nome_equipe;
+  
+  // Preparar participantes com estatísticas para PDF
+  const participantesCompletos = [];
+  let participantesPresentes = 0;
+  let participantesAusentes = 0;
+  
+  dadosPtr.participantes.forEach((participante, index) => {
+    const presente = participante.presente;
+    if (presente) {
+      participantesPresentes++;
+    } else {
+      participantesAusentes++;
+    }
+    
+    participantesCompletos.push({
+      numeroLinha: index + 1,
+      funcao: participante.funcao || '',
+      nome: participante.nome || '',
+      situacao: presente ? 'PRESENTE' : 'AUSENTE',
+      presente: presente
+    });
+  });
+  
+  const totalParticipantes = dadosPtr.participantes.length;
+  
+  // Preparar PTRs formatados para PDF
+  const ptrs = dadosPtr.ptrs.map((ptr, index) => ({
+    numero: index + 1,
+    tipo: ptr.tipo || '',
+    horario: ptr.hora_inicio && ptr.hora_fim ? `${ptr.hora_inicio} às ${ptr.hora_fim}` : '',
+    duracao: ptr.duracao || '',
+    instrutor_nome: ptr.instrutor_nome || '',
+    observacoes: ptr.observacoes || ''
+  }));
+  
+  return {
+    data: dadosPtr.data,
+    equipe: equipeNome,
+    totalParticipantes,
+    participantesPresentes,
+    participantesAusentes,
+    participantesCompletos,
+    ptrs
+  };
+}
+
+async function gerarDOCXEstruturado(dadosPtr: PTRData, supabase: any): Promise<Response> {
+  console.log('📄 Gerando DOCX a partir do template real...');
   
   try {
-    // Por enquanto, vamos criar um PDF simples do zero
-    // Em uma implementação real, usaríamos uma biblioteca de conversão como Puppeteer
-    console.log('⚠️ Conversão DOCX->PDF ainda não implementada, gerando PDF básico...');
+    // Baixar o template DOCX do bucket Supabase
+    const { data: templateData, error: downloadError } = await supabase.storage
+      .from('Template - PTR-BA')
+      .download('arquivo ptr place.docx');
     
-    return await criarPDFDoZero(dadosPtr);
+    if (downloadError) {
+      throw new Error(`Erro ao baixar template: ${downloadError.message}`);
+    }
+    
+    console.log('📋 Template baixado com sucesso');
+    
+    // Converter arquivo para buffer
+    const templateBuffer = await templateData.arrayBuffer();
+    
+    // Preparar dados no formato correto para o template
+    const dadosTemplate = prepararDadosParaTemplate(dadosPtr);
+    console.log('📊 Dados preparados para template:', JSON.stringify(dadosTemplate, null, 2));
+    
+    // Processar template com os dados
+    const docxBuffer = await createDoc({
+      template: new Uint8Array(templateBuffer),
+      data: dadosTemplate,
+      cmdDelimiter: ['{', '}'],
+    });
+    
+    console.log(`✅ DOCX real criado! Tamanho: ${docxBuffer.length} bytes`);
+
+    const filename = `PTR-BA-${dadosPtr.data.replace(/\//g, '-')}.docx`;
+    
+    return new Response(docxBuffer, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Length': docxBuffer.length.toString(),
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     
   } catch (error) {
-    console.error('❌ Erro na conversão para PDF:', error);
-    throw new Error(`Falha na conversão para PDF: ${error.message}`);
+    console.error('❌ Erro ao processar template DOCX:', error);
+    throw new Error(`Falha ao gerar DOCX: ${error.message}`);
   }
 }
 
-// Função para criar PDF do zero (mantida do código original)
-async function criarPDFDoZero(dadosPtr: PTRData): Promise<Response> {
-  console.log('📄 Criando PDF do zero...');
+
+async function criarPDFEstruturado(dadosPtr: PTRData): Promise<Response> {
+  console.log('📄 Criando PDF estruturado...');
   
+  const dadosTemplate = prepararDadosParaPDF(dadosPtr);
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595, 842]); // A4
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -295,18 +245,27 @@ async function criarPDFDoZero(dadosPtr: PTRData): Promise<Response> {
   const { width, height } = page.getSize();
   let yPos = height - 50;
 
-  // Título
+  // Cabeçalho
   page.drawText('RELATÓRIO PTR-BA', {
-    x: 50,
+    x: (width - 200) / 2,
     y: yPos,
     size: 18,
     font: fontBold,
     color: rgb(0, 0, 0),
   });
-  yPos -= 40;
+  yPos -= 30;
 
-  // Data
-  page.drawText(`Data: ${dadosPtr.data}`, {
+  // Linha horizontal
+  page.drawLine({
+    start: { x: 50, y: yPos },
+    end: { x: width - 50, y: yPos },
+    thickness: 2,
+    color: rgb(0, 0, 0),
+  });
+  yPos -= 25;
+
+  // Informações básicas
+  page.drawText(`Data: ${dadosTemplate.data}`, {
     x: 50,
     y: yPos,
     size: 12,
@@ -314,19 +273,51 @@ async function criarPDFDoZero(dadosPtr: PTRData): Promise<Response> {
   });
   yPos -= 20;
 
-  // Equipe
-  const equipeNome = typeof dadosPtr.equipe === 'string' ? dadosPtr.equipe : dadosPtr.equipe.nome_equipe;
-  page.drawText(`Equipe: ${equipeNome}`, {
+  page.drawText(`Equipe: ${dadosTemplate.equipe}`, {
     x: 50,
     y: yPos,
     size: 12,
     font: font,
   });
-  yPos -= 30;
+  yPos -= 35;
 
-  // PTRs
-  if (dadosPtr.ptrs && Array.isArray(dadosPtr.ptrs)) {
-    page.drawText('INSTRUÇÕES PTR:', {
+  // Resumo dos participantes
+  page.drawText('PARTICIPANTES:', {
+    x: 50,
+    y: yPos,
+    size: 14,
+    font: fontBold,
+  });
+  yPos -= 18;
+
+  page.drawText(`Total: ${dadosTemplate.totalParticipantes} | Presentes: ${dadosTemplate.participantesPresentes} | Ausentes: ${dadosTemplate.participantesAusentes}`, {
+    x: 70,
+    y: yPos,
+    size: 10,
+    font: font,
+  });
+  yPos -= 20;
+
+  // Lista de participantes (somente os que têm nome)
+  dadosTemplate.participantesCompletos.forEach((participante: ParticipanteTemplate) => {
+    if (participante.nome) {
+      const funcao = participante.funcao ? ` (${participante.funcao})` : '';
+      page.drawText(`${participante.numeroLinha}. ${participante.nome}${funcao} - ${participante.situacao}`, {
+        x: 70,
+        y: yPos,
+        size: 10,
+        font: font,
+        color: participante.presente ? rgb(0, 0.4, 0) : rgb(0.6, 0, 0),
+      });
+      yPos -= 15;
+    }
+  });
+
+  yPos -= 20;
+
+  // Treinamentos realizados
+  if (dadosTemplate.ptrs && Array.isArray(dadosTemplate.ptrs)) {
+    page.drawText('TREINAMENTOS REALIZADOS:', {
       x: 50,
       y: yPos,
       size: 14,
@@ -334,8 +325,8 @@ async function criarPDFDoZero(dadosPtr: PTRData): Promise<Response> {
     });
     yPos -= 25;
 
-    dadosPtr.ptrs.forEach((ptr, index) => {
-      page.drawText(`${index + 1}. ${ptr.tipo}`, {
+    dadosTemplate.ptrs.forEach((ptr: any) => {
+      page.drawText(`${ptr.numero}. ${ptr.tipo}`, {
         x: 70,
         y: yPos,
         size: 11,
@@ -343,13 +334,23 @@ async function criarPDFDoZero(dadosPtr: PTRData): Promise<Response> {
       });
       yPos -= 15;
 
-      page.drawText(`   Horário: ${ptr.hora_inicio} às ${ptr.hora_fim} (${ptr.duracao || 'N/A'})`, {
+      page.drawText(`   Horário: ${ptr.horario}`, {
         x: 70,
         y: yPos,
         size: 10,
         font: font,
       });
       yPos -= 12;
+
+      if (ptr.duracao) {
+        page.drawText(`   Duração: ${ptr.duracao}`, {
+          x: 70,
+          y: yPos,
+          size: 10,
+          font: font,
+        });
+        yPos -= 12;
+      }
 
       if (ptr.instrutor_nome) {
         page.drawText(`   Instrutor: ${ptr.instrutor_nome}`, {
@@ -362,7 +363,7 @@ async function criarPDFDoZero(dadosPtr: PTRData): Promise<Response> {
       }
 
       if (ptr.observacoes) {
-        page.drawText(`   Observações: ${ptr.observacoes}`, {
+        page.drawText(`   Observações: ${ptr.observacoes.substring(0, 80)}${ptr.observacoes.length > 80 ? '...' : ''}`, {
           x: 70,
           y: yPos,
           size: 10,
@@ -375,45 +376,55 @@ async function criarPDFDoZero(dadosPtr: PTRData): Promise<Response> {
     });
   }
 
-  // Participantes
-  if (dadosPtr.participantes && Array.isArray(dadosPtr.participantes)) {
-    yPos -= 10;
-    page.drawText('PARTICIPANTES:', {
-      x: 50,
+  // Área de assinaturas
+  if (yPos > 100) {
+    yPos = 120;
+    
+    page.drawText('Responsável pelo Treinamento', {
+      x: 70,
       y: yPos,
-      size: 14,
+      size: 10,
       font: fontBold,
     });
-    yPos -= 20;
+    
+    page.drawLine({
+      start: { x: 70, y: yPos - 15 },
+      end: { x: 250, y: yPos - 15 },
+      thickness: 1,
+      color: rgb(0, 0, 0),
+    });
 
-    dadosPtr.participantes.forEach((participante, index) => {
-      const status = participante.presente ? 'PRESENTE' : 'AUSENTE';
-      const funcao = participante.funcao ? ` (${participante.funcao})` : '';
-      page.drawText(`${index + 1}. ${participante.nome}${funcao} - ${status}`, {
-        x: 70,
-        y: yPos,
-        size: 10,
-        font: font,
-      });
-      yPos -= 15;
+    page.drawText('Supervisor de Equipe', {
+      x: 320,
+      y: yPos,
+      size: 10,
+      font: fontBold,
+    });
+    
+    page.drawLine({
+      start: { x: 320, y: yPos - 15 },
+      end: { x: 500, y: yPos - 15 },
+      thickness: 1,
+      color: rgb(0, 0, 0),
     });
   }
 
   const pdfBytes = await pdfDoc.save();
 
-  // Validar PDF gerado
   if (!pdfBytes || pdfBytes.length === 0) {
-    throw new Error('Falha na criação do PDF do zero - arquivo vazio');
+    throw new Error('Falha na criação do PDF');
   }
 
-  console.log(`✅ PDF criado do zero com sucesso! Tamanho: ${pdfBytes.length} bytes`);
+  console.log(`✅ PDF estruturado criado! Tamanho: ${pdfBytes.length} bytes`);
+
+  const filename = `PTR-BA-${dadosPtr.data.replace(/\//g, '-')}.pdf`;
 
   return new Response(pdfBytes, {
     headers: {
       ...corsHeaders,
       'Content-Type': 'application/pdf',
       'Content-Length': pdfBytes.length.toString(),
-      'Content-Disposition': `attachment; filename="PTR-BA-${dadosPtr.data.replace(/\//g, '-')}.pdf"`,
+      'Content-Disposition': `attachment; filename="${filename}"`,
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0'

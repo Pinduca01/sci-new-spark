@@ -61,8 +61,10 @@ export const AgenteExtintorEditModal = ({ agente, open, onClose }: AgenteExtinto
     try {
       await updateAgente.mutateAsync({
         id: agente.id,
-        ...formData,
-        viatura_id: formData.viatura_id || null
+        updates: {
+          ...formData,
+          viatura_id: formData.viatura_id || null
+        }
       });
       onClose();
     } catch (error) {

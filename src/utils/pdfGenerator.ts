@@ -39,12 +39,12 @@ export const gerarRelatorioPDF = ({ mes, ano, agentes }: RelatorioData): void =>
   const pageHeight = doc.internal.pageSize.height;
   
   // Configurações de cores
-  const primaryColor = [41, 128, 185]; // Azul
-  const secondaryColor = [52, 73, 94]; // Cinza escuro
-  const lightGray = [236, 240, 241]; // Cinza claro
+  const primaryColor: [number, number, number] = [41, 128, 185]; // Azul
+  const secondaryColor: [number, number, number] = [52, 73, 94]; // Cinza escuro
+  const lightGray: [number, number, number] = [236, 240, 241]; // Cinza claro
   
   // Cabeçalho
-  doc.setFillColor(...primaryColor);
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.rect(0, 0, pageWidth, 35, 'F');
   
   // Título principal
@@ -59,7 +59,7 @@ export const gerarRelatorioPDF = ({ mes, ano, agentes }: RelatorioData): void =>
   doc.text(`${mesesNomes[mes - 1]} de ${ano}`, pageWidth / 2, 25, { align: 'center' });
   
   // Informações do relatório
-  doc.setTextColor(...secondaryColor);
+  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
   doc.setFontSize(10);
   const dataGeracao = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -72,7 +72,7 @@ export const gerarRelatorioPDF = ({ mes, ano, agentes }: RelatorioData): void =>
   doc.text(`Total de registros: ${agentes.length}`, pageWidth - 15, 45, { align: 'right' });
   
   // Linha separadora
-  doc.setDrawColor(...lightGray);
+  doc.setDrawColor(lightGray[0], lightGray[1], lightGray[2]);
   doc.setLineWidth(0.5);
   doc.line(15, 50, pageWidth - 15, 50);
   
@@ -98,7 +98,7 @@ export const gerarRelatorioPDF = ({ mes, ano, agentes }: RelatorioData): void =>
     // Título da seção de resumo
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...primaryColor);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.text('RESUMO EXECUTIVO', 15, yPosition);
     yPosition += 15;
     
@@ -152,7 +152,7 @@ export const gerarRelatorioPDF = ({ mes, ano, agentes }: RelatorioData): void =>
     // Título da tabela principal
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...primaryColor);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.text('DETALHAMENTO DOS AGENTES EXTINTORES', 15, yPosition);
     yPosition += 10;
     
@@ -210,13 +210,13 @@ export const gerarRelatorioPDF = ({ mes, ano, agentes }: RelatorioData): void =>
       margin: { left: 15, right: 15 },
       didDrawPage: (data) => {
         // Rodapé em cada página
-        const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
-        const totalPages = doc.internal.getNumberOfPages();
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        const pageNum = (doc as any).internal.getCurrentPageInfo().pageNumber || 1;
         
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
         doc.text(
-          `Página ${pageNumber} de ${totalPages}`,
+          `Página ${pageNum} de ${totalPages}`,
           pageWidth / 2,
           pageHeight - 10,
           { align: 'center' }
@@ -240,7 +240,7 @@ export const gerarRelatorioPDF = ({ mes, ano, agentes }: RelatorioData): void =>
     // Mensagem quando não há dados
     doc.setFontSize(14);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...secondaryColor);
+    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
     doc.text(
       'Nenhum agente extintor foi cadastrado no período selecionado.',
       pageWidth / 2,
