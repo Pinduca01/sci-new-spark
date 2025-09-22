@@ -118,6 +118,7 @@ export default function VerificacaoUniformesSupabase() {
     mes_referencia: new Date().getMonth() + 1,
     ano_referencia: new Date().getFullYear(),
     responsavel_nome: '',
+    equipe_selecionada: '',
     gandolas_bombeiro: 'CONFORME',
     calcas_bombeiro: 'CONFORME',
     cinto_bombeiro: 'CONFORME',

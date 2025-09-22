@@ -84,7 +84,7 @@ function TestBombeiroSelector() {
         console.log(`Bombeiro ${index + 1}:`, {
           id: bombeiro.id,
           nome: bombeiro.nome,
-          equipe: bombeiro.equipe?.nome_equipe,
+          equipe: bombeiro.equipe,
           funcao: bombeiro.funcao,
           status: bombeiro.status
         });

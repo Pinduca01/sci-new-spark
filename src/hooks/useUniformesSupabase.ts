@@ -66,6 +66,7 @@ export interface NovaVerificacaoUniforme {
   mes_referencia: number
   ano_referencia: number
   responsavel_nome: string
+  equipe_selecionada?: string
   
   // Status dos 8 itens obrigatórios
   gandolas_bombeiro: 'CONFORME' | 'NAO_CONFORME'
