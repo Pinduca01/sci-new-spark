@@ -18,11 +18,13 @@ export type Database = {
         Row: {
           created_at: string | null
           data_fabricacao: string
+          data_modificacao: string | null
           data_teste_hidrostatico: string | null
           data_validade: string | null
           fabricante: string
           id: string
           lote: string | null
+          proximo_teste_hidrostatico: string | null
           quantidade: number
           situacao: string
           tipo: string
@@ -33,11 +35,13 @@ export type Database = {
         Insert: {
           created_at?: string | null
           data_fabricacao: string
+          data_modificacao?: string | null
           data_teste_hidrostatico?: string | null
           data_validade?: string | null
           fabricante: string
           id?: string
           lote?: string | null
+          proximo_teste_hidrostatico?: string | null
           quantidade?: number
           situacao: string
           tipo: string
@@ -48,11 +52,13 @@ export type Database = {
         Update: {
           created_at?: string | null
           data_fabricacao?: string
+          data_modificacao?: string | null
           data_teste_hidrostatico?: string | null
           data_validade?: string | null
           fabricante?: string
           id?: string
           lote?: string | null
+          proximo_teste_hidrostatico?: string | null
           quantidade?: number
           situacao?: string
           tipo?: string
@@ -751,6 +757,114 @@ export type Database = {
           },
         ]
       }
+      exercicios_epi: {
+        Row: {
+          bombeiro_funcao: string
+          bombeiro_id: string | null
+          bombeiro_nome: string
+          chefe_equipe: string | null
+          created_at: string | null
+          data: string
+          equipe: string
+          exercicio_grupo_id: string | null
+          hora: string | null
+          id: string
+          identificacao_local: string | null
+          observacoes: string | null
+          status: string
+          tempo_calca_bota: number | null
+          tempo_epr_sem_tp: number | null
+          tempo_epr_tp_completo: number | null
+          tempo_tp_completo: number | null
+          tipo_epi: string
+          updated_at: string | null
+        }
+        Insert: {
+          bombeiro_funcao: string
+          bombeiro_id?: string | null
+          bombeiro_nome: string
+          chefe_equipe?: string | null
+          created_at?: string | null
+          data: string
+          equipe: string
+          exercicio_grupo_id?: string | null
+          hora?: string | null
+          id?: string
+          identificacao_local?: string | null
+          observacoes?: string | null
+          status?: string
+          tempo_calca_bota?: number | null
+          tempo_epr_sem_tp?: number | null
+          tempo_epr_tp_completo?: number | null
+          tempo_tp_completo?: number | null
+          tipo_epi: string
+          updated_at?: string | null
+        }
+        Update: {
+          bombeiro_funcao?: string
+          bombeiro_id?: string | null
+          bombeiro_nome?: string
+          chefe_equipe?: string | null
+          created_at?: string | null
+          data?: string
+          equipe?: string
+          exercicio_grupo_id?: string | null
+          hora?: string | null
+          id?: string
+          identificacao_local?: string | null
+          observacoes?: string | null
+          status?: string
+          tempo_calca_bota?: number | null
+          tempo_epr_sem_tp?: number | null
+          tempo_epr_tp_completo?: number | null
+          tempo_tp_completo?: number | null
+          tipo_epi?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      exercicios_epi_backup: {
+        Row: {
+          bombeiros: string[] | null
+          chefe_equipe: string | null
+          created_at: string | null
+          data: string | null
+          equipe: string | null
+          id: string | null
+          observacoes: string | null
+          status: string | null
+          tempo_vestimento: number | null
+          tipo_epi: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bombeiros?: string[] | null
+          chefe_equipe?: string | null
+          created_at?: string | null
+          data?: string | null
+          equipe?: string | null
+          id?: string | null
+          observacoes?: string | null
+          status?: string | null
+          tempo_vestimento?: number | null
+          tipo_epi?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bombeiros?: string[] | null
+          chefe_equipe?: string | null
+          created_at?: string | null
+          data?: string | null
+          equipe?: string | null
+          id?: string | null
+          observacoes?: string | null
+          status?: string | null
+          tempo_vestimento?: number | null
+          tipo_epi?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       extintores_aeroporto: {
         Row: {
           capacidade: number
@@ -1401,6 +1515,7 @@ export type Database = {
       ocorrencias: {
         Row: {
           bombeiros_envolvidos: string[] | null
+          contador_ocorrencia: number | null
           created_at: string
           data_ocorrencia: string
           descricao_detalhada: string | null
@@ -1409,11 +1524,15 @@ export type Database = {
           equipe: string
           hora_acionamento: string
           hora_chegada_local: string | null
+          hora_ocorrencia: string | null
+          hora_retorno_sci: string | null
           hora_termino: string | null
           id: string
+          identificacao_aeroporto: string | null
           latitude: number | null
           local_mapa_grade: string | null
           longitude: number | null
+          numero_bombeiros_envolvidos: number | null
           quantidade_bombeiros: number | null
           quantidade_obitos: number | null
           quantidade_vitimas: number | null
@@ -1426,6 +1545,7 @@ export type Database = {
         }
         Insert: {
           bombeiros_envolvidos?: string[] | null
+          contador_ocorrencia?: number | null
           created_at?: string
           data_ocorrencia: string
           descricao_detalhada?: string | null
@@ -1434,11 +1554,15 @@ export type Database = {
           equipe: string
           hora_acionamento: string
           hora_chegada_local?: string | null
+          hora_ocorrencia?: string | null
+          hora_retorno_sci?: string | null
           hora_termino?: string | null
           id?: string
+          identificacao_aeroporto?: string | null
           latitude?: number | null
           local_mapa_grade?: string | null
           longitude?: number | null
+          numero_bombeiros_envolvidos?: number | null
           quantidade_bombeiros?: number | null
           quantidade_obitos?: number | null
           quantidade_vitimas?: number | null
@@ -1451,6 +1575,7 @@ export type Database = {
         }
         Update: {
           bombeiros_envolvidos?: string[] | null
+          contador_ocorrencia?: number | null
           created_at?: string
           data_ocorrencia?: string
           descricao_detalhada?: string | null
@@ -1459,11 +1584,15 @@ export type Database = {
           equipe?: string
           hora_acionamento?: string
           hora_chegada_local?: string | null
+          hora_ocorrencia?: string | null
+          hora_retorno_sci?: string | null
           hora_termino?: string | null
           id?: string
+          identificacao_aeroporto?: string | null
           latitude?: number | null
           local_mapa_grade?: string | null
           longitude?: number | null
+          numero_bombeiros_envolvidos?: number | null
           quantidade_bombeiros?: number | null
           quantidade_obitos?: number | null
           quantidade_vitimas?: number | null
@@ -1907,6 +2036,7 @@ export type Database = {
           bombeiro_id: string
           created_at: string
           data_teste: string
+          equipe: string | null
           faixa_etaria: string
           flexoes_realizadas: number
           id: string
@@ -1915,6 +2045,7 @@ export type Database = {
           polichinelos_realizados: number
           tempo_limite_minutos: number
           tempo_total_segundos: number
+          tipo_avaliacao: string
           updated_at: string
         }
         Insert: {
@@ -1924,6 +2055,7 @@ export type Database = {
           bombeiro_id: string
           created_at?: string
           data_teste?: string
+          equipe?: string | null
           faixa_etaria?: string
           flexoes_realizadas: number
           id?: string
@@ -1932,6 +2064,7 @@ export type Database = {
           polichinelos_realizados: number
           tempo_limite_minutos?: number
           tempo_total_segundos?: number
+          tipo_avaliacao?: string
           updated_at?: string
         }
         Update: {
@@ -1941,6 +2074,7 @@ export type Database = {
           bombeiro_id?: string
           created_at?: string
           data_teste?: string
+          equipe?: string | null
           faixa_etaria?: string
           flexoes_realizadas?: number
           id?: string
@@ -1949,6 +2083,7 @@ export type Database = {
           polichinelos_realizados?: number
           tempo_limite_minutos?: number
           tempo_total_segundos?: number
+          tipo_avaliacao?: string
           updated_at?: string
         }
         Relationships: [
@@ -2154,75 +2289,351 @@ export type Database = {
       }
       tp_verificacoes: {
         Row: {
-          ano_referencia: number
-          assinatura_digital: Json | null
-          base: string
+          cat1_ca_membros: string[] | null
+          cat1_ca_observacoes: string | null
+          cat1_ca_valido: string | null
+          cat1_etiquetas_membros: string[] | null
+          cat1_etiquetas_observacoes: string | null
+          cat1_etiquetas_visiveis: string | null
+          cat2_capacetes_integros: string | null
+          cat2_capacetes_membros: string[] | null
+          cat2_capacetes_observacoes: string | null
+          cat3_barreira_membros: string[] | null
+          cat3_barreira_observacoes: string | null
+          cat3_barreira_umidade: string | null
+          cat3_bolsos_dispositivos: string | null
+          cat3_bolsos_membros: string[] | null
+          cat3_bolsos_observacoes: string | null
+          cat3_bom_estado: string | null
+          cat3_bom_estado_membros: string[] | null
+          cat3_bom_estado_observacoes: string | null
+          cat3_costuras_integras: string | null
+          cat3_costuras_membros: string[] | null
+          cat3_costuras_observacoes: string | null
+          cat3_costuras_seladas: string | null
+          cat3_faixas_membros: string[] | null
+          cat3_faixas_observacoes: string | null
+          cat3_faixas_reflexivas: string | null
+          cat3_fechos_membros: string[] | null
+          cat3_fechos_observacoes: string | null
+          cat3_limpeza_membros: string[] | null
+          cat3_limpeza_observacoes: string | null
+          cat3_modificacoes_membros: string[] | null
+          cat3_modificacoes_observacoes: string | null
+          cat3_punhos_elasticidade: string | null
+          cat3_punhos_membros: string[] | null
+          cat3_punhos_observacoes: string | null
+          cat3_refletivos_membros: string[] | null
+          cat3_refletivos_observacoes: string | null
+          cat3_seladas_membros: string[] | null
+          cat3_seladas_observacoes: string | null
+          cat3_tamanho_membros: string[] | null
+          cat3_tamanho_observacoes: string | null
+          cat3_vestimentas_integras: string | null
+          cat3_vestimentas_membros: string[] | null
+          cat3_vestimentas_observacoes: string | null
+          cat4_botas_bom_estado: string | null
+          cat4_botas_membros: string[] | null
+          cat4_botas_observacoes: string | null
+          cat4_solas_integras: string | null
+          cat4_solas_membros: string[] | null
+          cat4_solas_observacoes: string | null
+          cat5_costuras_luvas: string | null
+          cat5_costuras_membros: string[] | null
+          cat5_costuras_observacoes: string | null
+          cat5_luvas_bom_estado: string | null
+          cat5_luvas_membros: string[] | null
+          cat5_luvas_observacoes: string | null
+          cat6_capuzes_bom_estado: string | null
+          cat6_capuzes_membros: string[] | null
+          cat6_capuzes_observacoes: string | null
           created_at: string | null
-          data_verificacao: string
-          documento_enviado: boolean | null
-          equipe_id: string | null
+          data_verificacao: string | null
+          equipe: string
+          etapa_atual: number | null
           id: string
-          mes_referencia: number
-          observacoes: string | null
-          responsavel_id: string | null
-          responsavel_nome: string
-          total_verificados: number
-          tp_conformes: number
-          tp_nao_conformes: number
+          local: string
+          membros_equipe: string[] | null
+          percentual_conformidade: number | null
+          responsavel: string
+          status: string | null
+          total_conformes: number | null
+          total_nao_conformes: number | null
+          total_nao_verificados: number | null
           updated_at: string | null
         }
         Insert: {
-          ano_referencia: number
-          assinatura_digital?: Json | null
-          base: string
+          cat1_ca_membros?: string[] | null
+          cat1_ca_observacoes?: string | null
+          cat1_ca_valido?: string | null
+          cat1_etiquetas_membros?: string[] | null
+          cat1_etiquetas_observacoes?: string | null
+          cat1_etiquetas_visiveis?: string | null
+          cat2_capacetes_integros?: string | null
+          cat2_capacetes_membros?: string[] | null
+          cat2_capacetes_observacoes?: string | null
+          cat3_barreira_membros?: string[] | null
+          cat3_barreira_observacoes?: string | null
+          cat3_barreira_umidade?: string | null
+          cat3_bolsos_dispositivos?: string | null
+          cat3_bolsos_membros?: string[] | null
+          cat3_bolsos_observacoes?: string | null
+          cat3_bom_estado?: string | null
+          cat3_bom_estado_membros?: string[] | null
+          cat3_bom_estado_observacoes?: string | null
+          cat3_costuras_integras?: string | null
+          cat3_costuras_membros?: string[] | null
+          cat3_costuras_observacoes?: string | null
+          cat3_costuras_seladas?: string | null
+          cat3_faixas_membros?: string[] | null
+          cat3_faixas_observacoes?: string | null
+          cat3_faixas_reflexivas?: string | null
+          cat3_fechos_membros?: string[] | null
+          cat3_fechos_observacoes?: string | null
+          cat3_limpeza_membros?: string[] | null
+          cat3_limpeza_observacoes?: string | null
+          cat3_modificacoes_membros?: string[] | null
+          cat3_modificacoes_observacoes?: string | null
+          cat3_punhos_elasticidade?: string | null
+          cat3_punhos_membros?: string[] | null
+          cat3_punhos_observacoes?: string | null
+          cat3_refletivos_membros?: string[] | null
+          cat3_refletivos_observacoes?: string | null
+          cat3_seladas_membros?: string[] | null
+          cat3_seladas_observacoes?: string | null
+          cat3_tamanho_membros?: string[] | null
+          cat3_tamanho_observacoes?: string | null
+          cat3_vestimentas_integras?: string | null
+          cat3_vestimentas_membros?: string[] | null
+          cat3_vestimentas_observacoes?: string | null
+          cat4_botas_bom_estado?: string | null
+          cat4_botas_membros?: string[] | null
+          cat4_botas_observacoes?: string | null
+          cat4_solas_integras?: string | null
+          cat4_solas_membros?: string[] | null
+          cat4_solas_observacoes?: string | null
+          cat5_costuras_luvas?: string | null
+          cat5_costuras_membros?: string[] | null
+          cat5_costuras_observacoes?: string | null
+          cat5_luvas_bom_estado?: string | null
+          cat5_luvas_membros?: string[] | null
+          cat5_luvas_observacoes?: string | null
+          cat6_capuzes_bom_estado?: string | null
+          cat6_capuzes_membros?: string[] | null
+          cat6_capuzes_observacoes?: string | null
           created_at?: string | null
-          data_verificacao?: string
-          documento_enviado?: boolean | null
-          equipe_id?: string | null
+          data_verificacao?: string | null
+          equipe: string
+          etapa_atual?: number | null
           id?: string
-          mes_referencia: number
-          observacoes?: string | null
-          responsavel_id?: string | null
-          responsavel_nome: string
-          total_verificados?: number
-          tp_conformes?: number
-          tp_nao_conformes?: number
+          local: string
+          membros_equipe?: string[] | null
+          percentual_conformidade?: number | null
+          responsavel: string
+          status?: string | null
+          total_conformes?: number | null
+          total_nao_conformes?: number | null
+          total_nao_verificados?: number | null
           updated_at?: string | null
         }
         Update: {
-          ano_referencia?: number
-          assinatura_digital?: Json | null
-          base?: string
+          cat1_ca_membros?: string[] | null
+          cat1_ca_observacoes?: string | null
+          cat1_ca_valido?: string | null
+          cat1_etiquetas_membros?: string[] | null
+          cat1_etiquetas_observacoes?: string | null
+          cat1_etiquetas_visiveis?: string | null
+          cat2_capacetes_integros?: string | null
+          cat2_capacetes_membros?: string[] | null
+          cat2_capacetes_observacoes?: string | null
+          cat3_barreira_membros?: string[] | null
+          cat3_barreira_observacoes?: string | null
+          cat3_barreira_umidade?: string | null
+          cat3_bolsos_dispositivos?: string | null
+          cat3_bolsos_membros?: string[] | null
+          cat3_bolsos_observacoes?: string | null
+          cat3_bom_estado?: string | null
+          cat3_bom_estado_membros?: string[] | null
+          cat3_bom_estado_observacoes?: string | null
+          cat3_costuras_integras?: string | null
+          cat3_costuras_membros?: string[] | null
+          cat3_costuras_observacoes?: string | null
+          cat3_costuras_seladas?: string | null
+          cat3_faixas_membros?: string[] | null
+          cat3_faixas_observacoes?: string | null
+          cat3_faixas_reflexivas?: string | null
+          cat3_fechos_membros?: string[] | null
+          cat3_fechos_observacoes?: string | null
+          cat3_limpeza_membros?: string[] | null
+          cat3_limpeza_observacoes?: string | null
+          cat3_modificacoes_membros?: string[] | null
+          cat3_modificacoes_observacoes?: string | null
+          cat3_punhos_elasticidade?: string | null
+          cat3_punhos_membros?: string[] | null
+          cat3_punhos_observacoes?: string | null
+          cat3_refletivos_membros?: string[] | null
+          cat3_refletivos_observacoes?: string | null
+          cat3_seladas_membros?: string[] | null
+          cat3_seladas_observacoes?: string | null
+          cat3_tamanho_membros?: string[] | null
+          cat3_tamanho_observacoes?: string | null
+          cat3_vestimentas_integras?: string | null
+          cat3_vestimentas_membros?: string[] | null
+          cat3_vestimentas_observacoes?: string | null
+          cat4_botas_bom_estado?: string | null
+          cat4_botas_membros?: string[] | null
+          cat4_botas_observacoes?: string | null
+          cat4_solas_integras?: string | null
+          cat4_solas_membros?: string[] | null
+          cat4_solas_observacoes?: string | null
+          cat5_costuras_luvas?: string | null
+          cat5_costuras_membros?: string[] | null
+          cat5_costuras_observacoes?: string | null
+          cat5_luvas_bom_estado?: string | null
+          cat5_luvas_membros?: string[] | null
+          cat5_luvas_observacoes?: string | null
+          cat6_capuzes_bom_estado?: string | null
+          cat6_capuzes_membros?: string[] | null
+          cat6_capuzes_observacoes?: string | null
           created_at?: string | null
-          data_verificacao?: string
-          documento_enviado?: boolean | null
-          equipe_id?: string | null
+          data_verificacao?: string | null
+          equipe?: string
+          etapa_atual?: number | null
           id?: string
-          mes_referencia?: number
-          observacoes?: string | null
-          responsavel_id?: string | null
-          responsavel_nome?: string
-          total_verificados?: number
-          tp_conformes?: number
-          tp_nao_conformes?: number
+          local?: string
+          membros_equipe?: string[] | null
+          percentual_conformidade?: number | null
+          responsavel?: string
+          status?: string | null
+          total_conformes?: number | null
+          total_nao_conformes?: number | null
+          total_nao_verificados?: number | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tp_verificacoes_equipe_id_fkey"
-            columns: ["equipe_id"]
-            isOneToOne: false
-            referencedRelation: "equipes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tp_verificacoes_responsavel_id_fkey"
-            columns: ["responsavel_id"]
-            isOneToOne: false
-            referencedRelation: "bombeiros"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      tp_verificacoes_uniformes: {
+        Row: {
+          cat1_bermudas: string | null
+          cat1_bermudas_membros: string[] | null
+          cat1_bermudas_observacoes: string | null
+          cat1_bota: string | null
+          cat1_bota_membros: string[] | null
+          cat1_bota_observacoes: string | null
+          cat1_calcas: string | null
+          cat1_calcas_membros: string[] | null
+          cat1_calcas_observacoes: string | null
+          cat1_camisas: string | null
+          cat1_camisas_membros: string[] | null
+          cat1_camisas_observacoes: string | null
+          cat1_cinto: string | null
+          cat1_cinto_membros: string[] | null
+          cat1_cinto_observacoes: string | null
+          cat1_gandolas: string | null
+          cat1_gandolas_membros: string[] | null
+          cat1_gandolas_observacoes: string | null
+          cat1_oculos: string | null
+          cat1_oculos_membros: string[] | null
+          cat1_oculos_observacoes: string | null
+          cat1_tarjeta: string | null
+          cat1_tarjeta_membros: string[] | null
+          cat1_tarjeta_observacoes: string | null
+          created_at: string | null
+          data_verificacao: string
+          equipe: string | null
+          etapa_atual: number | null
+          id: string
+          local: string | null
+          membros_equipe: string[] | null
+          percentual_conformidade: number | null
+          responsavel: string | null
+          status: string | null
+          total_conformes: number | null
+          total_nao_conformes: number | null
+          total_nao_verificados: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          cat1_bermudas?: string | null
+          cat1_bermudas_membros?: string[] | null
+          cat1_bermudas_observacoes?: string | null
+          cat1_bota?: string | null
+          cat1_bota_membros?: string[] | null
+          cat1_bota_observacoes?: string | null
+          cat1_calcas?: string | null
+          cat1_calcas_membros?: string[] | null
+          cat1_calcas_observacoes?: string | null
+          cat1_camisas?: string | null
+          cat1_camisas_membros?: string[] | null
+          cat1_camisas_observacoes?: string | null
+          cat1_cinto?: string | null
+          cat1_cinto_membros?: string[] | null
+          cat1_cinto_observacoes?: string | null
+          cat1_gandolas?: string | null
+          cat1_gandolas_membros?: string[] | null
+          cat1_gandolas_observacoes?: string | null
+          cat1_oculos?: string | null
+          cat1_oculos_membros?: string[] | null
+          cat1_oculos_observacoes?: string | null
+          cat1_tarjeta?: string | null
+          cat1_tarjeta_membros?: string[] | null
+          cat1_tarjeta_observacoes?: string | null
+          created_at?: string | null
+          data_verificacao?: string
+          equipe?: string | null
+          etapa_atual?: number | null
+          id?: string
+          local?: string | null
+          membros_equipe?: string[] | null
+          percentual_conformidade?: number | null
+          responsavel?: string | null
+          status?: string | null
+          total_conformes?: number | null
+          total_nao_conformes?: number | null
+          total_nao_verificados?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          cat1_bermudas?: string | null
+          cat1_bermudas_membros?: string[] | null
+          cat1_bermudas_observacoes?: string | null
+          cat1_bota?: string | null
+          cat1_bota_membros?: string[] | null
+          cat1_bota_observacoes?: string | null
+          cat1_calcas?: string | null
+          cat1_calcas_membros?: string[] | null
+          cat1_calcas_observacoes?: string | null
+          cat1_camisas?: string | null
+          cat1_camisas_membros?: string[] | null
+          cat1_camisas_observacoes?: string | null
+          cat1_cinto?: string | null
+          cat1_cinto_membros?: string[] | null
+          cat1_cinto_observacoes?: string | null
+          cat1_gandolas?: string | null
+          cat1_gandolas_membros?: string[] | null
+          cat1_gandolas_observacoes?: string | null
+          cat1_oculos?: string | null
+          cat1_oculos_membros?: string[] | null
+          cat1_oculos_observacoes?: string | null
+          cat1_tarjeta?: string | null
+          cat1_tarjeta_membros?: string[] | null
+          cat1_tarjeta_observacoes?: string | null
+          created_at?: string | null
+          data_verificacao?: string
+          equipe?: string | null
+          etapa_atual?: number | null
+          id?: string
+          local?: string | null
+          membros_equipe?: string[] | null
+          percentual_conformidade?: number | null
+          responsavel?: string | null
+          status?: string | null
+          total_conformes?: number | null
+          total_nao_conformes?: number | null
+          total_nao_verificados?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       trocas_plantao: {
         Row: {
@@ -2656,6 +3067,18 @@ export type Database = {
           total_avaliacoes: number
         }[]
       }
+      get_taf_estatisticas_por_equipe: {
+        Args: { p_equipe?: string }
+        Returns: {
+          bombeiros_pendentes: number
+          equipe_filtro: string
+          media_abdominais: number
+          media_flexoes: number
+          media_polichinelos: number
+          taxa_aprovacao: number
+          total_avaliacoes: number
+        }[]
+      }
       get_taf_historico: {
         Args:
           | { p_bombeiro_id: string }
@@ -2663,12 +3086,16 @@ export type Database = {
         Returns: {
           abdominais_realizadas: number
           aprovado: boolean
+          avaliador_nome: string
           created_at: string
           data_teste: string
+          faixa_etaria: string
           flexoes_realizadas: number
           id: string
+          idade_na_data: number
           observacoes: string
           polichinelos_realizados: number
+          tempo_limite_minutos: number
           tempo_total_segundos: number
         }[]
       }
