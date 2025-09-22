@@ -537,6 +537,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "epis_uniformes_distribuicao_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "epis_uniformes_distribuicao_equipe_id_fkey"
             columns: ["equipe_id"]
             isOneToOne: false
@@ -548,6 +555,13 @@ export type Database = {
             columns: ["responsavel_entrega_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epis_uniformes_distribuicao_responsavel_entrega_id_fkey"
+            columns: ["responsavel_entrega_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -985,10 +999,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "feristas_escalas_bombeiro_ferista_id_fkey"
+            columns: ["bombeiro_ferista_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "feristas_escalas_bombeiro_substituido_id_fkey"
             columns: ["bombeiro_substituido_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feristas_escalas_bombeiro_substituido_id_fkey"
+            columns: ["bombeiro_substituido_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
           {
@@ -1131,6 +1159,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "historico_recargas_agentes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "historico_recargas_agentes_viatura_id_fkey"
             columns: ["viatura_id"]
             isOneToOne: false
@@ -1194,6 +1229,13 @@ export type Database = {
             columns: ["bombeiro_inspetor_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspecoes_extintores_bombeiro_inspetor_id_fkey"
+            columns: ["bombeiro_inspetor_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
           {
@@ -1303,6 +1345,13 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiais_guardados_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -1455,6 +1504,13 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimentacoes_estoque_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -1709,6 +1765,13 @@ export type Database = {
             referencedRelation: "bombeiros"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "periodos_ferias_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -1824,6 +1887,13 @@ export type Database = {
             referencedRelation: "bombeiros"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ptr_instrucoes_instrutor_id_fkey"
+            columns: ["instrutor_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ptr_participantes: {
@@ -1863,6 +1933,13 @@ export type Database = {
             columns: ["bombeiro_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ptr_participantes_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
           {
@@ -2094,6 +2171,13 @@ export type Database = {
             referencedRelation: "bombeiros"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "taf_avaliacoes_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
         ]
       }
       taf_avaliacoes_historico: {
@@ -2283,6 +2367,13 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tp_higienizacoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -2693,10 +2784,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "trocas_plantao_bombeiro_substituido_id_fkey"
+            columns: ["bombeiro_substituido_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "trocas_plantao_bombeiro_substituto_id_fkey"
             columns: ["bombeiro_substituto_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trocas_plantao_bombeiro_substituto_id_fkey"
+            columns: ["bombeiro_substituto_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
           {
@@ -2711,6 +2816,13 @@ export type Database = {
             columns: ["solicitante_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trocas_plantao_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -2857,6 +2969,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "uniformes_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "uniformes_equipe_id_fkey"
             columns: ["equipe_id"]
             isOneToOne: false
@@ -2868,6 +2987,13 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "uniformes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
         ]
@@ -2913,6 +3039,48 @@ export type Database = {
       }
     }
     Views: {
+      bombeiros_publico: {
+        Row: {
+          avatar: string | null
+          created_at: string | null
+          data_admissao: string | null
+          equipe: string | null
+          funcao: string | null
+          funcao_completa: string | null
+          id: string | null
+          nome: string | null
+          status: string | null
+          turno: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string | null
+          data_admissao?: string | null
+          equipe?: string | null
+          funcao?: string | null
+          funcao_completa?: string | null
+          id?: string | null
+          nome?: string | null
+          status?: string | null
+          turno?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string | null
+          data_admissao?: string | null
+          equipe?: string | null
+          funcao?: string | null
+          funcao_completa?: string | null
+          id?: string | null
+          nome?: string | null
+          status?: string | null
+          turno?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       vw_uniformes_estatisticas_mensais: {
         Row: {
           ano_referencia: number | null
@@ -2953,6 +3121,13 @@ export type Database = {
             columns: ["bombeiro_id"]
             isOneToOne: false
             referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "uniformes_bombeiro_id_fkey"
+            columns: ["bombeiro_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
             referencedColumns: ["id"]
           },
         ]
