@@ -16,6 +16,7 @@ export interface TPVerificacao {
   total_nao_conformes: number
   total_nao_verificados: number
   percentual_conformidade: number
+  observacoes?: string // Adicionado campo observações
   created_at: string
   updated_at: string
   

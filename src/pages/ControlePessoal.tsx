@@ -790,7 +790,7 @@ const ControlePessoal: React.FC = () => {
                           <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem
                               onClick={() => {
-                                setSelectedBombeiro(person);
+                                setSelectedBombeiro(person as any);
                                 setIsDetailsModalOpen(true);
                               }}
                             >
@@ -799,7 +799,7 @@ const ControlePessoal: React.FC = () => {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
-                                setSelectedBombeiro(person);
+                                setSelectedBombeiro(person as any);
                                 setIsEditModalOpen(true);
                               }}
                             >
@@ -808,7 +808,7 @@ const ControlePessoal: React.FC = () => {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
-                                setSelectedBombeiro(person);
+                                setSelectedBombeiro(person as any);
                                 setIsDocumentsModalOpen(true);
                               }}
                             >

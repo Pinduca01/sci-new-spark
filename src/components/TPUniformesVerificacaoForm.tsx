@@ -50,6 +50,7 @@ interface HistoricoVerificacao {
 interface TPUniformesVerificacaoFormProps {
   verificacaoExistente?: TPVerificacaoUniformes
   onSalvar?: (verificacao: TPVerificacaoUniformes) => void
+  onSuccess?: () => void // Adicionado para compatibilidade
 }
 
 const EQUIPES = {
@@ -66,7 +67,7 @@ const RESPONSAVEIS = [
   { nome: 'Ana Costa', cargo: 'Inspetora de Qualidade' }
 ]
 
-function TPUniformesVerificacaoForm({ verificacaoExistente, onSalvar }: TPUniformesVerificacaoFormProps) {
+function TPUniformesVerificacaoForm({ verificacaoExistente, onSalvar, onSuccess }: TPUniformesVerificacaoFormProps) {
   const [etapaAtual, setEtapaAtual] = useState(1)
   const [isSaving, setIsSaving] = useState(false)
   const [membrosEquipeSelecionada, setMembrosEquipeSelecionada] = useState<string[]>([])
@@ -157,8 +158,9 @@ function TPUniformesVerificacaoForm({ verificacaoExistente, onSalvar }: TPUnifor
   
   // Atualizar membros da equipe quando equipe for selecionada
   useEffect(() => {
-    if (equipeSelecionada && equipeSelecionada !== '') {
-      setMembrosEquipeSelecionada(EQUIPES[equipeSelecionada] || [])
+    const equipeValue = equipeSelecionada as string;
+    if (equipeValue && equipeValue !== '' && equipeValue !== 'Todos') {
+      setMembrosEquipeSelecionada(EQUIPES[equipeValue as keyof typeof EQUIPES] || [])
     } else {
       setMembrosEquipeSelecionada([])
     }

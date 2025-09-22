@@ -175,7 +175,7 @@ const Ocorrencias = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOcorrencias(data || []);
+      setOcorrencias((data as unknown as Ocorrencia[]) || []);
     } catch (error) {
       console.error("Erro ao carregar ocorrencias:", error);
       toast({
@@ -211,7 +211,7 @@ const Ocorrencias = () => {
       
       if (error) throw error;
       
-      const ultimoContador = data?.[0]?.contador_ocorrencia || 0;
+      const ultimoContador = (data as any)?.[0]?.contador_ocorrencia || 0;
       return ultimoContador + 1;
     } catch (error) {
       console.error('Erro ao gerar contador:', error);

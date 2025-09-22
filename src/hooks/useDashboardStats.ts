@@ -32,6 +32,11 @@ export interface DashboardStats {
   ocorrencias: OcorrenciaStats;
   ptr: PTRStats;
   viaturas: ViaturasStats;
+  // Propriedades adicionais para compatibilidade
+  totalBombeiros?: number;
+  ocorrenciasResolvidas?: number;
+  equipamentosAtivos?: number;
+  alertasPendentes?: number;
   agentes_extintores: {
     total_lge: number;
     total_pqs: number;

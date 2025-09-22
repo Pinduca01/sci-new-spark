@@ -51,7 +51,7 @@ const ExercicioEPIModal = ({ open, onOpenChange, exercicioParaEdicao }: Exercici
   const [identificacaoLocal, setIdentificacaoLocal] = useState("AEROPORTO INTERNACIONAL SANTA GENOVEVA - GYN");
   const [data, setData] = useState(new Date().toISOString().split('T')[0]);
   const [hora, setHora] = useState(new Date().toTimeString().slice(0, 5));
-  const [equipe, setEquipe] = useState("Alfa");
+  const [equipe, setEquipe] = useState<'Alfa' | 'Bravo' | 'Charlie' | 'Delta'>("Alfa");
   const [tipoEpi, setTipoEpi] = useState<'EPI' | 'EPR'>('EPI');
   const [observacoes, setObservacoes] = useState("");
   const [chefeEquipe, setChefeEquipe] = useState("");
@@ -200,7 +200,7 @@ const ExercicioEPIModal = ({ open, onOpenChange, exercicioParaEdicao }: Exercici
 
   // Função para lidar com mudança de equipe
   const handleEquipeChange = (novaEquipe: string) => {
-    setEquipe(novaEquipe);
+    setEquipe(novaEquipe as 'Alfa' | 'Bravo' | 'Charlie' | 'Delta');
     // Preencher automaticamente os bombeiros da nova equipe
     preencherBombeirosDaEquipe(novaEquipe);
   };
@@ -312,8 +312,8 @@ const ExercicioEPIModal = ({ open, onOpenChange, exercicioParaEdicao }: Exercici
 
       if (exercicioParaEdicao) {
         await updateExercicioEPI.mutateAsync({
-          exercicio_grupo_id: exercicioParaEdicao.exercicio_grupo_id,
-          ...exercicioData as UpdateExercicioEPI,
+          grupoId: exercicioParaEdicao.exercicio_grupo_id,
+          updates: exercicioData as UpdateExercicioEPI,
         });
         toast({
           title: "Sucesso",
