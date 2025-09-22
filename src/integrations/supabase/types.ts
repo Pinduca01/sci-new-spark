@@ -3105,6 +3105,15 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_uniformes_problemas_frequentes: {
+        Row: {
+          item: string | null
+          nao_conformes: number | null
+          percentual_problemas: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
       vw_uniformes_ranking_bombeiros: {
         Row: {
           base: string | null
