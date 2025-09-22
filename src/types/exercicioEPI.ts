@@ -33,6 +33,7 @@ export interface ExercicioEPIAgrupado {
   tipo_epi: 'EPI' | 'EPR';
   status: 'Pendente' | 'Em Andamento' | 'Concluído' | 'Cancelado';
   observacoes?: string;
+  tempo_vestimento?: string; // Adicionado para compatibilidade
   bombeiros: {
     id: string;
     bombeiro_id?: string;

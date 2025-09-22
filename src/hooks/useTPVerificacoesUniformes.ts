@@ -5,8 +5,10 @@ import { useToast } from '@/hooks/use-toast'
 export interface TPVerificacaoUniformes {
   id: string
   data_verificacao: string
+  hora_verificacao?: string // Adicionado campo hora
   local: string
   responsavel: string
+  colaborador_nome?: string // Adicionado para compatibilidade
   equipe: 'Alfa' | 'Bravo' | 'Charlie' | 'Delta'
   membros_equipe: string[]
   status: 'em_andamento' | 'concluida' | 'cancelada'
@@ -15,6 +17,7 @@ export interface TPVerificacaoUniformes {
   total_nao_conformes: number
   total_nao_verificados: number
   percentual_conformidade: number
+  observacoes?: string // Adicionado campo observações
   created_at: string
   updated_at: string
   

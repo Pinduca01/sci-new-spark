@@ -24,6 +24,7 @@ import {
 import { useTPVerificacoesUniformes, useTPVerificacoesUniformesEstatisticas, useDeleteTPVerificacaoUniformes, TPVerificacaoUniformes } from '../hooks/useTPVerificacoesUniformes';
 import TPUniformesVerificacaoForm from './TPUniformesVerificacaoForm';
 import { toast } from 'sonner';
+import { formatarHora, formatarData } from '@/lib/utils';
 
 interface TPUniformesVerificacaoDashboardProps {
   onNovaVerificacao?: () => void;
@@ -37,8 +38,8 @@ const TPUniformesVerificacaoDashboard: React.FC<TPUniformesVerificacaoDashboardP
   const { data: estatisticas, isLoading: isLoadingEstatisticas } = useTPVerificacoesUniformesEstatisticas();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [verificacaoSelecionada, setVerificacaoSelecionada] = useState<TPVerificacaoUniforme | null>(null);
-  const [verificacaoParaEdicao, setVerificacaoParaEdicao] = useState<TPVerificacaoUniforme | null>(null);
+  const [verificacaoSelecionada, setVerificacaoSelecionada] = useState<TPVerificacaoUniformes | null>(null);
+  const [verificacaoParaEdicao, setVerificacaoParaEdicao] = useState<TPVerificacaoUniformes | null>(null);
   const [showDetalhesModal, setShowDetalhesModal] = useState(false);
   const [showEdicaoModal, setShowEdicaoModal] = useState(false);
 
@@ -57,18 +58,14 @@ const TPUniformesVerificacaoDashboard: React.FC<TPUniformesVerificacaoDashboardP
     }
   };
 
-  const handleEditarVerificacao = (verificacao: TPVerificacaoUniforme) => {
+  const handleEditarVerificacao = (verificacao: TPVerificacaoUniformes) => {
     setVerificacaoParaEdicao(verificacao);
     setShowEdicaoModal(true);
   };
 
-  const handleVerDetalhes = (verificacao: TPVerificacaoUniforme) => {
+  const handleVerDetalhes = (verificacao: TPVerificacaoUniformes) => {
     setVerificacaoSelecionada(verificacao);
     setShowDetalhesModal(true);
-  };
-
-  const formatarData = (data: string) => {
-    return new Date(data).toLocaleDateString('pt-BR');
   };
 
   const itensVerificacao = [
@@ -259,7 +256,7 @@ const TPUniformesVerificacaoDashboard: React.FC<TPUniformesVerificacaoDashboardP
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Tem certeza que deseja excluir a verificação de {verificacao.colaborador_nome}? 
+                                  Tem certeza que deseja excluir a verificação de {verificacao.responsavel}? 
                                   Esta ação não pode ser desfeita.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -313,7 +310,7 @@ const TPUniformesVerificacaoDashboard: React.FC<TPUniformesVerificacaoDashboardP
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Hora</Label>
-                  <p className="text-sm">{formatarHora(verificacaoSelecionada.hora_verificacao)}</p>
+                   <p className="text-sm">{formatarHora(verificacaoSelecionada.hora_verificacao)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600">Responsável</Label>
@@ -338,7 +335,7 @@ const TPUniformesVerificacaoDashboard: React.FC<TPUniformesVerificacaoDashboardP
                 <Label className="text-sm font-medium text-gray-600 mb-3 block">Checklist de Uniformes</Label>
                 <div className="space-y-2">
                   {itensVerificacao.map((item, index) => {
-                    const possui = verificacaoSelecionada[item.key as keyof TPVerificacaoUniforme] as boolean;
+                    const possui = Boolean(verificacaoSelecionada[item.key as keyof TPVerificacaoUniformes]);
                     return (
                       <div key={item.key} className="flex items-center justify-between p-2 border rounded">
                         <span className="text-sm">{index + 1}. {item.label}</span>
@@ -400,9 +397,9 @@ const TPUniformesVerificacaoDashboard: React.FC<TPUniformesVerificacaoDashboardP
                 <select 
                   className="w-full p-2 border rounded"
                   value={verificacaoParaEdicao.equipe || ''} 
-                  onChange={(e) => setVerificacaoParaEdicao(prev => 
-                    prev ? {...prev, equipe: e.target.value} : null
-                  )}
+                   onChange={(e) => setVerificacaoParaEdicao(prev => 
+                     prev ? {...prev, equipe: e.target.value as 'Alfa' | 'Bravo' | 'Charlie' | 'Delta'} : null
+                   )}
                 >
                   <option value="">Selecione uma equipe</option>
                   <option value="Alfa">Alfa</option>

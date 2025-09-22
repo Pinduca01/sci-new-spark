@@ -49,7 +49,7 @@ export const useBombeirosSearch = (options: BombeiroSearchOptions = {}) => {
       return data as Bombeiro[];
     },
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos
-    cacheTime: 10 * 60 * 1000, // Manter em cache por 10 minutos
+    gcTime: 10 * 60 * 1000, // Manter em cache por 10 minutos
   });
 
   // Processar dados dos bombeiros para busca

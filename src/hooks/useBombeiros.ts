@@ -21,6 +21,9 @@ export interface Bombeiro {
   status: string;
   matricula?: string;
   data_admissao: string;
+  ferista?: boolean;
+  created_at?: string; // Adicionado para compatibilidade com Supabase
+  updated_at?: string; // Adicionado para compatibilidade com Supabase
   equipes?: Equipe; // Relacionamento com a tabela equipes
 }
 
