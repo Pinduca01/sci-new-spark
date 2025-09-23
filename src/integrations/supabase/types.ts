@@ -3098,10 +3098,11 @@ export type Database = {
       }
       vw_uniformes_itens_problematicos: {
         Row: {
-          item: string | null
-          nao_conformes: number | null
-          percentual_problemas: number | null
-          total: number | null
+          bombeiro_id: string | null
+          bombeiro_nome: string | null
+          data_verificacao: string | null
+          item_tipo: string | null
+          status_item: string | null
         }
         Relationships: []
       }
@@ -3116,13 +3117,13 @@ export type Database = {
       }
       vw_uniformes_ranking_bombeiros: {
         Row: {
-          base: string | null
+          aprovacoes: number | null
           bombeiro_id: string | null
           bombeiro_nome: string | null
           media_conformidade: number | null
-          total_aprovados: number | null
+          reprovacoes: number | null
+          total_conformes: number | null
           total_verificacoes: number | null
-          ultima_verificacao: string | null
         }
         Relationships: [
           {
