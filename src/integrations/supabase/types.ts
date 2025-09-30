@@ -146,18 +146,45 @@ export type Database = {
             referencedRelation: "materiais"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "agentes_extintores_controle_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
-            referencedColumns: ["id"]
-          },
         ]
+      }
+      bases: {
+        Row: {
+          ativa: boolean | null
+          created_at: string | null
+          endereco: string
+          id: string
+          nome: string
+          telefone: string | null
+          turno_config: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativa?: boolean | null
+          created_at?: string | null
+          endereco: string
+          id?: string
+          nome: string
+          telefone?: string | null
+          turno_config?: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativa?: boolean | null
+          created_at?: string | null
+          endereco?: string
+          id?: string
+          nome?: string
+          telefone?: string | null
+          turno_config?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       bombeiros: {
         Row: {
           avatar: string
+          base_id: string
           created_at: string
           cve: string | null
           data_admissao: string
@@ -187,6 +214,7 @@ export type Database = {
         }
         Insert: {
           avatar: string
+          base_id: string
           created_at?: string
           cve?: string | null
           data_admissao: string
@@ -216,6 +244,7 @@ export type Database = {
         }
         Update: {
           avatar?: string
+          base_id?: string
           created_at?: string
           cve?: string | null
           data_admissao?: string
@@ -244,6 +273,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "bombeiros_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bombeiros_equipe_id_fkey"
             columns: ["equipe_id"]
@@ -291,6 +327,57 @@ export type Database = {
           },
         ]
       }
+      checklist_items: {
+        Row: {
+          checklist_id: string
+          created_at: string | null
+          foto_url: string | null
+          id: string
+          observacoes: string | null
+          status: string | null
+          template_item_id: string
+          updated_at: string | null
+          verificado_em: string | null
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string | null
+          foto_url?: string | null
+          id?: string
+          observacoes?: string | null
+          status?: string | null
+          template_item_id: string
+          updated_at?: string | null
+          verificado_em?: string | null
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string | null
+          foto_url?: string | null
+          id?: string
+          observacoes?: string | null
+          status?: string | null
+          template_item_id?: string
+          updated_at?: string | null
+          verificado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "template_checklist"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_templates: {
         Row: {
           ativo: boolean
@@ -323,6 +410,86 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      checklists: {
+        Row: {
+          base_id: string
+          created_at: string | null
+          data_conclusao: string | null
+          data_inicio: string | null
+          funcionario_id: string
+          id: string
+          km_final: number | null
+          km_inicial: number | null
+          observacoes: string | null
+          status: string | null
+          tipo_checklist_id: string
+          turno: string | null
+          updated_at: string | null
+          viatura_id: string | null
+        }
+        Insert: {
+          base_id: string
+          created_at?: string | null
+          data_conclusao?: string | null
+          data_inicio?: string | null
+          funcionario_id: string
+          id?: string
+          km_final?: number | null
+          km_inicial?: number | null
+          observacoes?: string | null
+          status?: string | null
+          tipo_checklist_id: string
+          turno?: string | null
+          updated_at?: string | null
+          viatura_id?: string | null
+        }
+        Update: {
+          base_id?: string
+          created_at?: string | null
+          data_conclusao?: string | null
+          data_inicio?: string | null
+          funcionario_id?: string
+          id?: string
+          km_final?: number | null
+          km_inicial?: number | null
+          observacoes?: string | null
+          status?: string | null
+          tipo_checklist_id?: string
+          turno?: string | null
+          updated_at?: string | null
+          viatura_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklists_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_tipo_checklist_id_fkey"
+            columns: ["tipo_checklist_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_checklist"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_viatura_id_fkey"
+            columns: ["viatura_id"]
+            isOneToOne: false
+            referencedRelation: "viaturas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checklists_almoxarifado: {
         Row: {
@@ -421,15 +588,7 @@ export type Database = {
           updated_at?: string
           viatura_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "checklists_viaturas_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       document_templates: {
         Row: {
@@ -639,13 +798,6 @@ export type Database = {
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "materiais"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "equipamentos_estoque_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
             referencedColumns: ["id"]
           },
         ]
@@ -1035,6 +1187,45 @@ export type Database = {
           },
         ]
       }
+      funcionarios: {
+        Row: {
+          ativo: boolean
+          base_id: string | null
+          cargo: string | null
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          push_token: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          base_id?: string | null
+          cargo?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          push_token?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          base_id?: string | null
+          cargo?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          push_token?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       historico_manutencoes_equipamentos: {
         Row: {
           certificado_url: string | null
@@ -1163,13 +1354,6 @@ export type Database = {
             columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "bombeiros_publico"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "historico_recargas_agentes_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
             referencedColumns: ["id"]
           },
         ]
@@ -1396,13 +1580,6 @@ export type Database = {
             columns: ["material_id"]
             isOneToOne: false
             referencedRelation: "materiais"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "materiais_viaturas_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
             referencedColumns: ["id"]
           },
         ]
@@ -1716,15 +1893,7 @@ export type Database = {
           updated_at?: string
           viatura_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ordens_servico_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       periodos_ferias: {
         Row: {
@@ -1777,35 +1946,55 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          base_id: string | null
+          cargo: string | null
           created_at: string
           email: string
+          equipe: string | null
           full_name: string | null
           id: string
           role: string | null
+          system_access: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          base_id?: string | null
+          cargo?: string | null
           created_at?: string
           email: string
+          equipe?: string | null
           full_name?: string | null
           id?: string
           role?: string | null
+          system_access?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avatar_url?: string | null
+          base_id?: string | null
+          cargo?: string | null
           created_at?: string
           email?: string
+          equipe?: string | null
           full_name?: string | null
           id?: string
           role?: string | null
+          system_access?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ptr_fotos: {
         Row: {
@@ -1987,6 +2176,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "ptr_relatorios_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_access_management"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       qr_checklists: {
@@ -2053,13 +2249,6 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "checklist_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "qr_checklists_viatura_id_fkey"
-            columns: ["viatura_id"]
-            isOneToOne: false
-            referencedRelation: "viaturas"
             referencedColumns: ["id"]
           },
         ]
@@ -2257,6 +2446,74 @@ export type Database = {
           meta_flexoes?: number
           meta_polichinelos?: number
           tempo_limite_minutos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      template_checklist: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          id: string
+          item: string
+          obrigatorio: boolean | null
+          ordem: number | null
+          permite_foto: boolean | null
+          tipo_checklist_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          id?: string
+          item: string
+          obrigatorio?: boolean | null
+          ordem?: number | null
+          permite_foto?: boolean | null
+          tipo_checklist_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          id?: string
+          item?: string
+          obrigatorio?: boolean | null
+          ordem?: number | null
+          permite_foto?: boolean | null
+          tipo_checklist_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_checklist_tipo_checklist_id_fkey"
+            columns: ["tipo_checklist_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_checklist"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tipos_checklist: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -2998,44 +3255,90 @@ export type Database = {
           },
         ]
       }
-      viaturas: {
+      usuarios_autorizados: {
         Row: {
-          created_at: string
+          ativo: boolean | null
+          base_id: string
+          cargo: string
+          created_at: string | null
+          email: string
+          equipe: string | null
           id: string
-          modelo: string
-          nome_viatura: string
-          observacoes: string | null
-          prefixo: string
-          qr_code: string | null
-          status: string
-          tipo: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          ativo?: boolean | null
+          base_id: string
+          cargo: string
+          created_at?: string | null
+          email: string
+          equipe?: string | null
           id?: string
-          modelo: string
-          nome_viatura: string
-          observacoes?: string | null
-          prefixo: string
-          qr_code?: string | null
-          status?: string
-          tipo?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          ativo?: boolean | null
+          base_id?: string
+          cargo?: string
+          created_at?: string | null
+          email?: string
+          equipe?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuarios_autorizados_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      viaturas: {
+        Row: {
+          ano: number | null
+          ativa: boolean
+          base_id: string | null
+          created_at: string | null
+          id: string
+          modelo: string
+          placa: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ano?: number | null
+          ativa?: boolean
+          base_id?: string | null
+          created_at?: string | null
+          id?: string
+          modelo: string
+          placa: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ano?: number | null
+          ativa?: boolean
+          base_id?: string | null
+          created_at?: string | null
           id?: string
           modelo?: string
-          nome_viatura?: string
-          observacoes?: string | null
-          prefixo?: string
-          qr_code?: string | null
-          status?: string
-          tipo?: string
-          updated_at?: string
+          placa?: string
+          status?: string | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "viaturas_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -3078,6 +3381,22 @@ export type Database = {
           status?: string | null
           turno?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_access_management: {
+        Row: {
+          bombeiro_funcao: string | null
+          bombeiro_nome: string | null
+          cargo: string | null
+          created_at: string | null
+          email: string | null
+          equipe: string | null
+          full_name: string | null
+          role: string | null
+          system_access: string | null
+          updated_at: string | null
+          user_id: string | null
         }
         Relationships: []
       }
@@ -3144,6 +3463,18 @@ export type Database = {
       }
     }
     Functions: {
+      bombeiro_can_access_checklist: {
+        Args: { checklist_bombeiro_id: string }
+        Returns: boolean
+      }
+      can_access_checklist: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      can_access_main_system: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       fn_create_taf_avaliacao: {
         Args: {
           p_abdominais_realizadas: number
@@ -3215,9 +3546,42 @@ export type Database = {
           tipo_agente: string
         }[]
       }
+      get_bombeiros_por_base: {
+        Args: { base_uuid: string }
+        Returns: {
+          base_nome: string
+          email: string
+          equipe: string
+          funcao: string
+          id: string
+          nome: string
+          status: string
+        }[]
+      }
+      get_current_bombeiro_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_cargo: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_equipe: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_estatisticas_base: {
+        Args: { base_uuid: string }
+        Returns: {
+          por_equipe: Json
+          por_funcao: Json
+          por_status: Json
+          total_bombeiros: number
+        }[]
       }
       get_proximo_lote_recomendado: {
         Args: { p_tipo_agente: string }
@@ -3283,6 +3647,23 @@ export type Database = {
           tempo_limite_minutos: number
           tempo_total_segundos: number
         }[]
+      }
+      get_user_base_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      is_authorized_user: {
+        Args: { user_email: string }
+        Returns: {
+          authorized: boolean
+          base_id: string
+          cargo: string
+          equipe: string
+        }[]
+      }
+      is_user_gerente: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       nextval: {
         Args: { sequence_name: string }
