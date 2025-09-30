@@ -1945,6 +1945,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_level: string | null
           avatar_url: string | null
           base_id: string | null
           cargo: string | null
@@ -1959,6 +1960,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          access_level?: string | null
           avatar_url?: string | null
           base_id?: string | null
           cargo?: string | null
@@ -1973,6 +1975,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          access_level?: string | null
           avatar_url?: string | null
           base_id?: string | null
           cargo?: string | null
@@ -3475,6 +3478,18 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      can_access_sci_core: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      can_view_base_data: {
+        Args: { target_base_id: string }
+        Returns: boolean
+      }
+      can_view_equipe_data: {
+        Args: { target_equipe: string }
+        Returns: boolean
+      }
       fn_create_taf_avaliacao: {
         Args: {
           p_abdominais_realizadas: number
@@ -3647,6 +3662,10 @@ export type Database = {
           tempo_limite_minutos: number
           tempo_total_segundos: number
         }[]
+      }
+      get_user_access_level: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_user_base_id: {
         Args: Record<PropertyKey, never>
