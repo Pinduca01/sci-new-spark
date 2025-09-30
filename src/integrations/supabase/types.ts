@@ -3307,8 +3307,12 @@ export type Database = {
           created_at: string | null
           id: string
           modelo: string
+          nome_viatura: string | null
+          observacoes: string | null
           placa: string
+          prefixo: string | null
           status: string | null
+          tipo: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3318,8 +3322,12 @@ export type Database = {
           created_at?: string | null
           id?: string
           modelo: string
+          nome_viatura?: string | null
+          observacoes?: string | null
           placa: string
+          prefixo?: string | null
           status?: string | null
+          tipo?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3329,8 +3337,12 @@ export type Database = {
           created_at?: string | null
           id?: string
           modelo?: string
+          nome_viatura?: string | null
+          observacoes?: string | null
           placa?: string
+          prefixo?: string | null
           status?: string | null
+          tipo?: string | null
           updated_at?: string | null
         }
         Relationships: [
