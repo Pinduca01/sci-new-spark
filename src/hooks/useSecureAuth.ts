@@ -87,26 +87,38 @@ export const useSecureAuth = () => {
 
   const fetchUserRole = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar role e status ativo do perfil
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, ativo')
         .single();
 
-      if (error) {
+      if (profileError) {
         // Se houver erro relacionado à autenticação, limpar tokens
-        if (error.message.includes('JWT') || error.message.includes('token') || error.message.includes('refresh')) {
+        if (profileError.message.includes('JWT') || profileError.message.includes('token') || profileError.message.includes('refresh')) {
           clearExpiredTokens();
           setIsAuthenticated(false);
           setUserRole(null);
           setLoading(false);
           return;
         }
-        throw error;
+        throw profileError;
+      }
+
+      // Verificar se o usuário está ativo
+      if (profileData?.ativo === false) {
+        console.warn('Usuário inativo tentou acessar o sistema');
+        await signOut();
+        throw new Error('Sua conta está inativa. Entre em contato com o administrador.');
       }
       
-      setUserRole(data?.role || 'user');
+      setUserRole(profileData?.role || 'user');
     } catch (error) {
       console.error('Error fetching user role:', error);
+      if (error instanceof Error && error.message.includes('inativa')) {
+        // Propagar erro de conta inativa
+        throw error;
+      }
       setUserRole('user');
     } finally {
       setLoading(false);

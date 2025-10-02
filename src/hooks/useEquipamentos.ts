@@ -56,10 +56,6 @@ export const useEquipamentos = () => {
             nome,
             categoria,
             unidade_medida
-          ),
-          viaturas:viatura_id (
-            prefixo,
-            nome_viatura
           )
         `)
         .order('created_at', { ascending: false });

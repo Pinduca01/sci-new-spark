@@ -171,6 +171,7 @@ const ControlePessoal: React.FC = () => {
         data_vencimento_cve: formData.data_vencimento_cve || null,
         documentos_certificados: formData.documentos_certificados.length > 0 ? formData.documentos_certificados : null,
         user_id: crypto.randomUUID(),
+        base_id: '00000000-0000-0000-0000-000000000000', // TODO: Obter base_id do contexto do usuário
         avatar,
       };
 

@@ -92,24 +92,49 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) {
+      if (authError) {
         toast({
           title: "Erro ao fazer login",
-          description: error.message,
+          description: authError.message,
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Login realizado com sucesso",
-          description: "Redirecionando...",
-        });
-        navigate('/dashboard');
+        return;
       }
+
+      // Verificar se o usuário está ativo
+      if (authData.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('ativo')
+          .eq('user_id', authData.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Erro ao verificar status do usuário:', profileError);
+        }
+
+        // Se usuário está inativo, fazer logout e mostrar mensagem
+        if (profileData && profileData.ativo === false) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Acesso negado",
+            description: "Sua conta está inativa. Entre em contato com o administrador do sistema.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      toast({
+        title: "Login realizado com sucesso",
+        description: "Redirecionando...",
+      });
+      navigate('/dashboard');
     } catch (error: any) {
       toast({
         title: "Erro inesperado",

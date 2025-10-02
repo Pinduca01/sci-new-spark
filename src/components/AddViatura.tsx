@@ -20,6 +20,7 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
     nome_viatura: "",
     prefixo: "",
     modelo: "",
+    placa: "",
     tipo: "CCI",
     status: "ativo",
     observacoes: "",
@@ -41,6 +42,7 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
         nome_viatura: formData.nome_viatura,
         prefixo: formData.prefixo,
         modelo: formData.modelo,
+        placa: formData.placa || '', // Adicionar placa obrigatória
         tipo: formData.tipo,
         status: formData.status,
         observacoes: formData.observacoes || null,

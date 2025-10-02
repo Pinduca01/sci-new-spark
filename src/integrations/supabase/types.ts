@@ -183,6 +183,7 @@ export type Database = {
       }
       bombeiros: {
         Row: {
+          ativo: boolean | null
           avatar: string
           base_id: string
           created_at: string
@@ -205,6 +206,7 @@ export type Database = {
           matricula: string | null
           nome: string
           proxima_atualizacao: string | null
+          push_token: string | null
           status: string
           telefone: string
           telefone_sos: string | null
@@ -213,6 +215,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ativo?: boolean | null
           avatar: string
           base_id: string
           created_at?: string
@@ -235,6 +238,7 @@ export type Database = {
           matricula?: string | null
           nome: string
           proxima_atualizacao?: string | null
+          push_token?: string | null
           status?: string
           telefone: string
           telefone_sos?: string | null
@@ -243,6 +247,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ativo?: boolean | null
           avatar?: string
           base_id?: string
           created_at?: string
@@ -265,6 +270,7 @@ export type Database = {
           matricula?: string | null
           nome?: string
           proxima_atualizacao?: string | null
+          push_token?: string | null
           status?: string
           telefone?: string
           telefone_sos?: string | null
@@ -1946,6 +1952,7 @@ export type Database = {
       profiles: {
         Row: {
           access_level: string | null
+          ativo: boolean | null
           avatar_url: string | null
           base_id: string | null
           cargo: string | null
@@ -1961,6 +1968,7 @@ export type Database = {
         }
         Insert: {
           access_level?: string | null
+          ativo?: boolean | null
           avatar_url?: string | null
           base_id?: string | null
           cargo?: string | null
@@ -1976,6 +1984,7 @@ export type Database = {
         }
         Update: {
           access_level?: string | null
+          ativo?: boolean | null
           avatar_url?: string | null
           base_id?: string | null
           cargo?: string | null
@@ -3691,6 +3700,10 @@ export type Database = {
           cargo: string
           equipe: string
         }[]
+      }
+      is_user_active: {
+        Args: { user_uuid: string }
+        Returns: boolean
       }
       is_user_gerente: {
         Args: Record<PropertyKey, never>

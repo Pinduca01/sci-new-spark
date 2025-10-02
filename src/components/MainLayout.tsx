@@ -43,31 +43,81 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   }, []);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (!session?.user) {
-          navigate('/login');
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Check for existing session and validate active status
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
         navigate('/login');
+        setIsLoading(false);
+        return;
       }
+
+      // Verificar se o usuário está ativo
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('ativo')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao verificar status:', profileError);
+      }
+
+      if (profileData && profileData.ativo === false) {
+        toast({
+          title: "Acesso negado",
+          description: "Sua conta está inativa. Entre em contato com o administrador.",
+          variant: "destructive",
+        });
+        await supabase.auth.signOut();
+        navigate('/login');
+        setIsLoading(false);
+        return;
+      }
+
+      setSession(session);
+      setUser(session.user);
       setIsLoading(false);
-    });
+    };
+
+    checkSession();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!session?.user) {
+          setSession(null);
+          setUser(null);
+          navigate('/login');
+          return;
+        }
+
+        // Verificar status ativo em mudanças de autenticação
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('ativo')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (profileData && profileData.ativo === false) {
+          toast({
+            title: "Acesso negado",
+            description: "Sua conta foi desativada.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          navigate('/login');
+          return;
+        }
+
+        setSession(session);
+        setUser(session.user);
+      }
+    );
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   // Show profile error as toast if needed
   useEffect(() => {
