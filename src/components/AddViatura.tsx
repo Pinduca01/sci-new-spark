@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface AddViaturaProps {
   onClose: () => void;
@@ -16,6 +17,7 @@ interface AddViaturaProps {
 
 export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
   const [loading, setLoading] = useState(false);
+  const { baseId, loading: roleLoading } = useUserRole();
   const [formData, setFormData] = useState({
     nome_viatura: "",
     prefixo: "",
@@ -35,6 +37,17 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar se o usuário tem base_id
+    if (!baseId) {
+      toast({
+        title: "Erro de Configuração",
+        description: "Seu usuário não está associado a uma base. Contate o administrador.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -42,10 +55,11 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
         nome_viatura: formData.nome_viatura,
         prefixo: formData.prefixo,
         modelo: formData.modelo,
-        placa: formData.placa || '', // Adicionar placa obrigatória
+        placa: formData.placa || '',
         tipo: formData.tipo,
         status: formData.status,
         observacoes: formData.observacoes || null,
+        base_id: baseId, // Adicionar base_id do usuário logado
       };
 
       const { error } = await supabase
@@ -62,11 +76,21 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
       onSave();
     } catch (error: any) {
       console.error('Erro ao adicionar viatura:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível adicionar a viatura.",
-        variant: "destructive",
-      });
+      
+      // Mensagem específica para erro de RLS
+      if (error.message?.includes('row-level security')) {
+        toast({
+          title: "Erro de Permissão",
+          description: "Você não tem permissão para adicionar viaturas nesta base.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro",
+          description: error.message || "Não foi possível adicionar a viatura.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -160,12 +184,12 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={loading}
+              disabled={loading || roleLoading}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={loading || roleLoading || !baseId}>
+              {(loading || roleLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Viatura
             </Button>
           </div>
