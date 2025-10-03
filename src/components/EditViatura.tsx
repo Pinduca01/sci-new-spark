@@ -176,8 +176,9 @@ export const EditViatura = ({ viatura, isOpen, onClose, onViaturaUpdated }: Edit
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="baixada">Baixada</SelectItem>
+                  <SelectItem value="ativa">Ativa</SelectItem>
+                  <SelectItem value="manutencao">Manutenção</SelectItem>
+                  <SelectItem value="inativa">Inativa</SelectItem>
                 </SelectContent>
               </Select>
             </div>

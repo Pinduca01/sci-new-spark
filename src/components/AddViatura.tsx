@@ -24,7 +24,7 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
     modelo: "",
     placa: "",
     tipo: "CCI",
-    status: "ativo",
+    status: "ativa",
     observacoes: "",
     base_id: "",
   });
@@ -192,8 +192,9 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="baixada">Baixada</SelectItem>
+                <SelectItem value="ativa">Ativa</SelectItem>
+                <SelectItem value="manutencao">Manutenção</SelectItem>
+                <SelectItem value="inativa">Inativa</SelectItem>
               </SelectContent>
             </Select>
           </div>
