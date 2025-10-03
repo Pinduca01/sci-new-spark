@@ -19,6 +19,7 @@ import AgentesExtintores from "./pages/AgentesExtintores";
 import TPUniformes from "./pages/TPUniformes";
 import AtividadesAcessorias from "./pages/AtividadesAcessorias";
 import OrdemServico from "./pages/OrdemServico";
+import Checklists from "./pages/Checklists";
 import ExemploAssinaturaAutentique from "./components/ExemploAssinaturaAutentique";
 import NotFound from "./pages/NotFound";
 import TestBombeiroSelector from "./components/TestBombeiroSelector";
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/pessoal/taf" element={<MainLayout><TAF /></MainLayout>} />
           <Route path="/ocorrencias" element={<MainLayout><Ocorrencias /></MainLayout>} />
           <Route path="/viaturas" element={<MainLayout><Viaturas /></MainLayout>} />
+          <Route path="/checklists" element={<MainLayout><Checklists /></MainLayout>} />
           <Route path="/veiculos" element={<MainLayout><Viaturas /></MainLayout>} />
           <Route path="/escalas" element={<MainLayout><Escalas /></MainLayout>} />
           <Route path="/exercicios" element={<MainLayout><Exercicios /></MainLayout>} />

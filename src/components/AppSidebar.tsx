@@ -85,6 +85,12 @@ const navigationItems = [
     description: "Gestão da frota"
   },
   { 
+    title: "Checklists", 
+    url: "/checklists", 
+    icon: ClipboardList,
+    description: "Gestão de checklists"
+  },
+  { 
     title: "Exercícios", 
     url: "/exercicios", 
     icon: Target,
