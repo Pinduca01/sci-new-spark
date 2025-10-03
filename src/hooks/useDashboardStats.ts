@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTAFEstatisticas } from './useTAFEstatisticas';
 import { useTrocasEstatisticas } from './useTrocasEstatisticas';
+import { toast } from '@/hooks/use-toast';
 
 export interface OcorrenciaStats {
   total_ocorrencias: number;
@@ -74,8 +75,9 @@ export function useDashboardStats(mes?: number, ano?: number): any {
   const { estatisticas: trocasStats } = useTrocasEstatisticas(currentMes, currentAno);
 
   // Estatísticas de Ocorrências
-  const { data: ocorrenciasStats, isLoading: ocorrenciasLoading } = useQuery({
+  const { data: ocorrenciasStats, isLoading: ocorrenciasLoading, error: ocorrenciasError } = useQuery({
     queryKey: ['dashboard-ocorrencias', currentMes, currentAno],
+    retry: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ocorrencias')
@@ -111,8 +113,9 @@ export function useDashboardStats(mes?: number, ano?: number): any {
   });
 
   // Estatísticas PTR
-  const { data: ptrStats, isLoading: ptrLoading } = useQuery({
+  const { data: ptrStats, isLoading: ptrLoading, error: ptrError } = useQuery({
     queryKey: ['dashboard-ptr', currentMes, currentAno],
+    retry: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ptr_instrucoes')
@@ -139,8 +142,9 @@ export function useDashboardStats(mes?: number, ano?: number): any {
   });
 
   // Estatísticas de Viaturas
-  const { data: viaturasStats, isLoading: viaturasLoading } = useQuery({
+  const { data: viaturasStats, isLoading: viaturasLoading, error: viaturasError } = useQuery({
     queryKey: ['dashboard-viaturas', currentMes, currentAno],
+    retry: false,
     queryFn: async () => {
       const [checklists, ordens] = await Promise.all([
         supabase
@@ -169,8 +173,9 @@ export function useDashboardStats(mes?: number, ano?: number): any {
   });
 
   // Estatísticas de Agentes Extintores
-  const { data: agentesStats, isLoading: agentesLoading } = useQuery({
+  const { data: agentesStats, isLoading: agentesLoading, error: agentesError } = useQuery({
     queryKey: ['dashboard-agentes'],
+    retry: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('agentes_extintores_controle')
@@ -197,6 +202,39 @@ export function useDashboardStats(mes?: number, ano?: number): any {
       };
     }
   });
+
+  // Tratamento de erros de permissão
+  if ((ocorrenciasError as any)?.code === 'PGRST301' || ocorrenciasError?.message?.includes('permission')) {
+    toast({
+      title: "Sem permissão",
+      description: "Você não tem acesso aos dados de ocorrências.",
+      variant: "destructive"
+    });
+  }
+
+  if ((ptrError as any)?.code === 'PGRST301' || ptrError?.message?.includes('permission')) {
+    toast({
+      title: "Sem permissão",
+      description: "Você não tem acesso aos dados de treinamento.",
+      variant: "destructive"
+    });
+  }
+
+  if ((viaturasError as any)?.code === 'PGRST301' || viaturasError?.message?.includes('permission')) {
+    toast({
+      title: "Sem permissão",
+      description: "Você não tem acesso aos dados de viaturas.",
+      variant: "destructive"
+    });
+  }
+
+  if ((agentesError as any)?.code === 'PGRST301' || agentesError?.message?.includes('permission')) {
+    toast({
+      title: "Sem permissão",
+      description: "Você não tem acesso aos dados de agentes extintores.",
+      variant: "destructive"
+    });
+  }
 
   // Estatísticas de TP e Uniformes (temporariamente desabilitado devido a problemas de tipos)
   const { data: tpStats, isLoading: tpLoading } = useQuery({
