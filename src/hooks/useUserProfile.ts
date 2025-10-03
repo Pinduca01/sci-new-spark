@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 
+// DEPRECATED: Este hook está sendo substituído por useUserRole
 interface UserProfile {
   id?: string;
   user_id: string;
   email: string;
   full_name: string | null;
-  role: string;
+  base_id?: string;
   avatar_url?: string | null;
   created_at?: string;
   updated_at?: string;
+  ativo?: boolean;
 }
 
 interface UseUserProfileReturn {
@@ -66,7 +68,7 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
         user_id: userId,
         email: user?.email || 'usuario@exemplo.com',
         full_name: user?.user_metadata?.full_name || 'Usuário',
-        role: 'user'
+        ativo: true
       });
       
       setError(`Erro ao carregar perfil: ${err.message}`);
@@ -77,25 +79,16 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
 
   const createProfile = async (userId: string): Promise<void> => {
     try {
-      const profileData = {
+      // DEPRECATED: perfis agora são criados pelo admin via edge function
+      console.warn('Tentativa de criar perfil automaticamente - não suportado no novo sistema');
+      
+      // Set fallback profile para não quebrar componentes antigos
+      setProfile({
         user_id: userId,
         email: user?.email || 'usuario@exemplo.com',
         full_name: user?.user_metadata?.full_name || 'Usuário',
-        role: 'user'
-      };
-
-      const { data, error: createError } = await supabase
-        .from('profiles')
-        .insert(profileData)
-        .select()
-        .single();
-
-      if (createError) {
-        throw createError;
-      }
-
-      setProfile(data);
-      console.log('Perfil criado com sucesso:', data);
+        ativo: true
+      });
     } catch (err: any) {
       console.error('Erro ao criar perfil:', err);
       
@@ -104,7 +97,7 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
         user_id: userId,
         email: user?.email || 'usuario@exemplo.com',
         full_name: user?.user_metadata?.full_name || 'Usuário',
-        role: 'user'
+        ativo: true
       });
     }
   };

@@ -1990,50 +1990,35 @@ export type Database = {
       }
       profiles: {
         Row: {
-          access_level: string | null
           ativo: boolean | null
           avatar_url: string | null
-          base_id: string | null
-          cargo: string | null
+          base_id: string
           created_at: string
           email: string
-          equipe: string | null
           full_name: string | null
           id: string
-          role: string | null
-          system_access: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          access_level?: string | null
           ativo?: boolean | null
           avatar_url?: string | null
-          base_id?: string | null
-          cargo?: string | null
+          base_id: string
           created_at?: string
           email: string
-          equipe?: string | null
           full_name?: string | null
           id?: string
-          role?: string | null
-          system_access?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          access_level?: string | null
           ativo?: boolean | null
           avatar_url?: string | null
-          base_id?: string | null
-          cargo?: string | null
+          base_id?: string
           created_at?: string
           email?: string
-          equipe?: string | null
           full_name?: string | null
           id?: string
-          role?: string | null
-          system_access?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2225,13 +2210,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "ptr_relatorios_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_access_management"
             referencedColumns: ["user_id"]
           },
         ]
@@ -3306,6 +3284,30 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       usuarios_autorizados: {
         Row: {
           ativo: boolean | null
@@ -3444,22 +3446,6 @@ export type Database = {
           status?: string | null
           turno?: string | null
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      user_access_management: {
-        Row: {
-          bombeiro_funcao: string | null
-          bombeiro_nome: string | null
-          cargo: string | null
-          created_at: string | null
-          email: string | null
-          equipe: string | null
-          full_name: string | null
-          role: string | null
-          system_access: string | null
-          updated_at: string | null
-          user_id: string | null
         }
         Relationships: []
       }
@@ -3637,6 +3623,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_base_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_cargo: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -3647,7 +3637,7 @@ export type Database = {
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
-        Returns: string
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       get_estatisticas_base: {
         Args: { base_uuid: string }
@@ -3731,6 +3721,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_primary_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       is_authorized_user: {
         Args: { user_email: string }
         Returns: {
@@ -3762,13 +3756,24 @@ export type Database = {
         }
         Returns: string
       }
+      user_can_access_base: {
+        Args: { _base_id: string }
+        Returns: boolean
+      }
+      user_has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       validate_checklist_itens: {
         Args: { itens_json: Json }
         Returns: boolean
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "gs_base" | "ba_ce" | "ba_lr" | "ba_mc" | "ba_2"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3895,6 +3900,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "gs_base", "ba_ce", "ba_lr", "ba_mc", "ba_2"],
+    },
   },
 } as const

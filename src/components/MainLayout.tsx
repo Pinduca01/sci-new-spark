@@ -150,7 +150,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full abstract-bg">
-        <AppSidebar userRole={profile?.role} />
+        <AppSidebar userRole="user" />
         
         <div className="flex-1 flex flex-col relative z-50">
           {/* Enhanced Compact Header */}

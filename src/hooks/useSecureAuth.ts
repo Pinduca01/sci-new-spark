@@ -87,22 +87,40 @@ export const useSecureAuth = () => {
 
   const fetchUserRole = async () => {
     try {
-      // Buscar role e status ativo do perfil
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, ativo')
+      // DEPRECATED: Este hook está sendo substituído por useUserRole
+      // Buscar role da tabela user_roles e status ativo do perfil
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setIsAuthenticated(false);
+        setUserRole(null);
+        setLoading(false);
+        return;
+      }
+
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
         .single();
 
-      if (profileError) {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('ativo')
+        .eq('user_id', user.id)
+        .single();
+
+      if (roleError || profileError) {
         // Se houver erro relacionado à autenticação, limpar tokens
-        if (profileError.message.includes('JWT') || profileError.message.includes('token') || profileError.message.includes('refresh')) {
+        if ((roleError?.message || profileError?.message || '').includes('JWT') || 
+            (roleError?.message || profileError?.message || '').includes('token') || 
+            (roleError?.message || profileError?.message || '').includes('refresh')) {
           clearExpiredTokens();
           setIsAuthenticated(false);
           setUserRole(null);
           setLoading(false);
           return;
         }
-        throw profileError;
       }
 
       // Verificar se o usuário está ativo
@@ -112,7 +130,7 @@ export const useSecureAuth = () => {
         throw new Error('Sua conta está inativa. Entre em contato com o administrador.');
       }
       
-      setUserRole(profileData?.role || 'user');
+      setUserRole(roleData?.role || 'user');
     } catch (error) {
       console.error('Error fetching user role:', error);
       if (error instanceof Error && error.message.includes('inativa')) {

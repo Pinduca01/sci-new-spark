@@ -106,35 +106,72 @@ const Login = () => {
         return;
       }
 
-      // Verificar se o usuário está ativo
-      if (authData.user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('ativo')
-          .eq('user_id', authData.user.id)
-          .single();
+      // Verificar role do usuário
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .single();
 
-        if (profileError) {
-          console.error('Erro ao verificar status do usuário:', profileError);
-        }
-
-        // Se usuário está inativo, fazer logout e mostrar mensagem
-        if (profileData && profileData.ativo === false) {
-          await supabase.auth.signOut();
-          toast({
-            title: "Acesso negado",
-            description: "Sua conta está inativa. Entre em contato com o administrador do sistema.",
-            variant: "destructive",
-          });
-          return;
-        }
+      if (roleError) {
+        console.error('Erro ao buscar role:', roleError);
+        toast({
+          title: "Erro ao verificar permissões",
+          description: "Entre em contato com o administrador.",
+          variant: "destructive",
+        });
+        await supabase.auth.signOut();
+        return;
       }
 
-      toast({
-        title: "Login realizado com sucesso",
-        description: "Redirecionando...",
-      });
-      navigate('/dashboard');
+      // Verificar se o usuário está ativo
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('ativo')
+        .eq('user_id', authData.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao verificar status do usuário:', profileError);
+      }
+
+      // Se usuário está inativo, fazer logout e mostrar mensagem
+      if (profileData && profileData.ativo === false) {
+        await supabase.auth.signOut();
+        toast({
+          title: "Acesso negado",
+          description: "Sua conta está inativa. Entre em contato com o administrador do sistema.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Redirecionar baseado na role
+      const role = roleData.role;
+      
+      if (role === 'ba_mc' || role === 'ba_2') {
+        // BA-MC e BA-2 vão para o checklist mobile
+        toast({
+          title: "Login realizado com sucesso",
+          description: "Redirecionando...",
+        });
+        navigate('/checklist-mobile');
+      } else if (role === 'admin' || role === 'gs_base' || role === 'ba_ce' || role === 'ba_lr') {
+        // Admin, GS, BA-CE e BA-LR vão para o dashboard
+        toast({
+          title: "Login realizado com sucesso",
+          description: "Redirecionando...",
+        });
+        navigate('/dashboard');
+      } else {
+        await supabase.auth.signOut();
+        toast({
+          title: "Role não reconhecida",
+          description: "Entre em contato com o administrador.",
+          variant: "destructive",
+        });
+        return;
+      }
     } catch (error: any) {
       toast({
         title: "Erro inesperado",

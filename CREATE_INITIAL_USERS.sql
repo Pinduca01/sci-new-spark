@@ -1,0 +1,98 @@
+-- ==========================================
+-- SCRIPT PARA CRIAR USUÁRIOS INICIAIS
+-- ==========================================
+-- 
+-- INSTRUÇÕES:
+-- 1. Ir ao Painel do Supabase > Authentication > Users
+-- 2. Criar 4 usuários manualmente com os dados abaixo:
+--    - Usar "Create new user" > "Auto Confirm User" = YES
+-- 3. Após criar cada usuário no painel, copiar o user_id gerado
+-- 4. Executar os INSERTs correspondentes abaixo substituindo os UUIDs
+--
+-- ==========================================
+
+-- GOIÂNIA BASE ID
+-- 0e2529f4-a452-4dd5-8c0a-183baf2fec08
+
+-- CONFINS BASE ID
+-- cc3474e2-56bb-4f79-a4d3-38d030e1c7c1
+
+-- ==========================================
+-- ADMIN 1 - Goiânia
+-- ==========================================
+-- Email: admin1@scicore.com
+-- Password: 123456
+-- 
+-- Após criar no painel, execute:
+-- 
+-- INSERT INTO public.profiles (user_id, email, full_name, base_id, ativo)
+-- VALUES (
+--   '<UUID_DO_ADMIN1_AQUI>',
+--   'admin1@scicore.com',
+--   'Admin 1',
+--   '0e2529f4-a452-4dd5-8c0a-183baf2fec08',
+--   true
+-- );
+-- 
+-- INSERT INTO public.user_roles (user_id, role)
+-- VALUES ('<UUID_DO_ADMIN1_AQUI>', 'admin');
+
+-- ==========================================
+-- ADMIN 2 - Goiânia
+-- ==========================================
+-- Email: admin2@scicore.com
+-- Password: 123456
+-- 
+-- Após criar no painel, execute:
+-- 
+-- INSERT INTO public.profiles (user_id, email, full_name, base_id, ativo)
+-- VALUES (
+--   '<UUID_DO_ADMIN2_AQUI>',
+--   'admin2@scicore.com',
+--   'Admin 2',
+--   '0e2529f4-a452-4dd5-8c0a-183baf2fec08',
+--   true
+-- );
+-- 
+-- INSERT INTO public.user_roles (user_id, role)
+-- VALUES ('<UUID_DO_ADMIN2_AQUI>', 'admin');
+
+-- ==========================================
+-- GS GOIÂNIA
+-- ==========================================
+-- Email: gs.goiania@scicore.com
+-- Password: 123456
+-- 
+-- Após criar no painel, execute:
+-- 
+-- INSERT INTO public.profiles (user_id, email, full_name, base_id, ativo)
+-- VALUES (
+--   '<UUID_DO_GS_GOIANIA_AQUI>',
+--   'gs.goiania@scicore.com',
+--   'GS Goiânia',
+--   '0e2529f4-a452-4dd5-8c0a-183baf2fec08',
+--   true
+-- );
+-- 
+-- INSERT INTO public.user_roles (user_id, role)
+-- VALUES ('<UUID_DO_GS_GOIANIA_AQUI>', 'gs_base');
+
+-- ==========================================
+-- GS CONFINS
+-- ==========================================
+-- Email: gs.confins@scicore.com
+-- Password: 123456
+-- 
+-- Após criar no painel, execute:
+-- 
+-- INSERT INTO public.profiles (user_id, email, full_name, base_id, ativo)
+-- VALUES (
+--   '<UUID_DO_GS_CONFINS_AQUI>',
+--   'gs.confins@scicore.com',
+--   'GS Confins',
+--   'cc3474e2-56bb-4f79-a4d3-38d030e1c7c1',
+--   true
+-- );
+-- 
+-- INSERT INTO public.user_roles (user_id, role)
+-- VALUES ('<UUID_DO_GS_CONFINS_AQUI>', 'gs_base');
