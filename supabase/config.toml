@@ -69,6 +69,9 @@ verify_jwt = false
 [functions.grammar-checker]
 verify_jwt = false
 
+[functions.create-bombeiros-users]
+verify_jwt = true
+
 [edge-runtime]
 enabled = true
 port = 54330

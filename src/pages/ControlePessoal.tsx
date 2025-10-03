@@ -41,6 +41,7 @@ interface Bombeiro {
   data_aso?: string;
   data_vencimento_cve?: string;
   documentos_certificados?: string[];
+  user_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -61,7 +62,26 @@ const ControlePessoal: React.FC = () => {
   const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
   const [selectedBombeiro, setSelectedBombeiro] = useState<Bombeiro | null>(null);
   const [loading, setLoading] = useState(false);
+  const [generatingUsers, setGeneratingUsers] = useState(false);
   const { toast } = useToast();
+  
+  // Buscar base_id do usuário logado
+  const [userBaseId, setUserBaseId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fetchUserBase = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('base_id')
+          .eq('user_id', user.id)
+          .single();
+        setUserBaseId(data?.base_id || null);
+      }
+    };
+    fetchUserBase();
+  }, []);
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -170,9 +190,10 @@ const ControlePessoal: React.FC = () => {
         data_aso: formData.data_aso || null,
         data_vencimento_cve: formData.data_vencimento_cve || null,
         documentos_certificados: formData.documentos_certificados.length > 0 ? formData.documentos_certificados : null,
-        user_id: crypto.randomUUID(),
-        base_id: '00000000-0000-0000-0000-000000000000', // TODO: Obter base_id do contexto do usuário
+        user_id: null, // Será criado posteriormente via Edge Function
+        base_id: userBaseId || null,
         avatar,
+        ativo: true,
       };
 
       console.log('Dados a serem inseridos:', bombeiroData);
@@ -274,6 +295,36 @@ const ControlePessoal: React.FC = () => {
   const pessoalAtivo = bombeiros.filter(p => p.status === 'ativo').length;
   const pessoalFerias = bombeiros.filter(p => p.status === 'ferias').length;
   const feristas = bombeiros.filter(p => p.ferista).length;
+  const bombeirosSemUser = bombeiros.filter(b => !b.user_id && b.status === 'ativo').length;
+
+  const handleGenerateUsers = async () => {
+    setGeneratingUsers(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-bombeiros-users');
+      
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: `${data.created} usuários criados com sucesso.`,
+      });
+
+      if (data.list && data.list.length > 0) {
+        console.log('Lista de usuários criados:', data.list);
+      }
+
+      refetch();
+    } catch (error) {
+      console.error('Erro ao gerar usuários:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao gerar usuários.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingUsers(false);
+    }
+  };
 
   return (
     <div className="space-y-6 p-6 relative z-30">
@@ -285,13 +336,24 @@ const ControlePessoal: React.FC = () => {
             Gerencie o pessoal do Corpo de Bombeiros
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => console.log('Novo Bombeiro button clicked')}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Bombeiro
+        <div className="flex gap-2">
+          {bombeirosSemUser > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={handleGenerateUsers}
+              disabled={generatingUsers}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Gerar Acessos Pendentes ({bombeirosSemUser})
             </Button>
-          </DialogTrigger>
+          )}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => console.log('Novo Bombeiro button clicked')}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Bombeiro
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Adicionar Novo Bombeiro</DialogTitle>
@@ -520,6 +582,7 @@ const ControlePessoal: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
