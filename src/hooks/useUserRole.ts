@@ -35,6 +35,12 @@ export const useUserRole = (): UserRoleData => {
           return;
         }
 
+        // Timeout de segurança
+        const timeout = setTimeout(() => {
+          console.warn('useUserRole: Timeout ao buscar dados do usuário');
+          setLoading(false); // ✅ Finalizar loading após timeout
+        }, 8000);
+
         // Buscar role do usuário
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
@@ -62,13 +68,17 @@ export const useUserRole = (): UserRoleData => {
           console.error('Erro ao buscar profile:', profileError);
         }
 
+        clearTimeout(timeout); // ✅ Limpar timeout se sucesso
+
         setRole(roleData?.role || null);
         setBaseId(profileData?.base_id || null);
         setBaseName((profileData?.bases as any)?.nome || null);
+        
+        console.log('useUserRole: Dados carregados com sucesso', { role: roleData?.role, baseId: profileData?.base_id });
       } catch (error) {
         console.error('Erro ao buscar dados do usuário:', error);
       } finally {
-        setLoading(false);
+        setLoading(false); // ✅ SEMPRE finalizar loading
       }
     };
 

@@ -41,9 +41,15 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
-          // Perfil não encontrado - tentar criar
-          console.log('Perfil não encontrado, criando novo perfil...');
-          await createProfile(userId);
+          console.log('Perfil não encontrado, usando fallback...');
+          setProfile({
+            user_id: userId,
+            email: user?.email || 'usuario@exemplo.com',
+            full_name: user?.user_metadata?.full_name || 'Usuário',
+            ativo: true
+          });
+          setLoading(false); // ✅ Finalizar loading
+          return;
         } else {
           throw fetchError;
         }
@@ -60,10 +66,10 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
         setTimeout(() => {
           fetchProfile(userId, attempt + 1);
         }, attempt * 1000);
-        return;
+        return; // Não finalizar loading ainda durante retry
       }
       
-      // Set fallback profile on persistent errors
+      // ✅ Após 3 tentativas, finalizar loading com fallback
       setProfile({
         user_id: userId,
         email: user?.email || 'usuario@exemplo.com',
@@ -73,7 +79,7 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
       
       setError(`Erro ao carregar perfil: ${err.message}`);
     } finally {
-      setLoading(false);
+      setLoading(false); // ✅ SEMPRE finalizar loading
     }
   };
 

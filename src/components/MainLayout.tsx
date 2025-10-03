@@ -130,6 +130,29 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     }
   }, [profileError, toast]);
 
+  // Timeout de segurança para evitar loading infinito
+  useEffect(() => {
+    console.log('MainLayout Loading Status:', { 
+      isLoading, 
+      profileLoading, 
+      user: !!user 
+    });
+
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading || profileLoading) {
+        console.error('Loading timeout - forçando navegação para login');
+        toast({
+          title: "Erro de Carregamento",
+          description: "Tempo esgotado ao carregar perfil. Redirecionando...",
+          variant: "destructive",
+        });
+        navigate('/login');
+      }
+    }, 10000); // 10 segundos
+
+    return () => clearTimeout(loadingTimeout);
+  }, [isLoading, profileLoading, navigate, toast, user]);
+
 
 
   if (isLoading || (user && profileLoading)) {
