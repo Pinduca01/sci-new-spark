@@ -28,6 +28,7 @@ import TestEquipeData from "./components/TestEquipeData";
 import ChecklistMobileLogin from "./pages/ChecklistMobileLogin";
 import ChecklistMobile from "./pages/ChecklistMobile";
 import ChecklistMobileViatura from "./pages/ChecklistMobileViatura";
+import ChecklistMobileSyncStatus from "./pages/ChecklistMobileSyncStatus";
 
 
 const queryClient = new QueryClient({
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/checklist-mobile/login" element={<ChecklistMobileLogin />} />
           <Route path="/checklist-mobile" element={<ChecklistMobile />} />
           <Route path="/checklist-mobile/viatura/:id" element={<ChecklistMobileViatura />} />
+          <Route path="/checklist-mobile/sync" element={<ChecklistMobileSyncStatus />} />
           <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/pessoal" element={<MainLayout><ControlePessoal /></MainLayout>} />
           <Route path="/pessoal/taf" element={<MainLayout><TAF /></MainLayout>} />

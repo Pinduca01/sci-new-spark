@@ -267,6 +267,8 @@ export default function ChecklistMobileViatura() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      <OnlineStatusBadge />
+      
       {/* Header Fixo */}
       <div className="sticky top-0 z-10 bg-background border-b">
         <div className="flex items-center justify-between p-4">

@@ -4,8 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Truck, LogOut } from 'lucide-react';
+import { Loader2, Truck, LogOut, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { OnlineStatusBadge } from '@/components/checklist-mobile/OnlineStatusBadge';
+import { saveToCache, getFromCache, getPendingCount } from '@/lib/offlineDb';
 
 interface Viatura {
   id: string;
@@ -20,6 +22,7 @@ const ChecklistMobile = () => {
   const { role, baseId, baseName, loading: roleLoading, canDoChecklist } = useUserRole();
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     // Verificar autenticação
@@ -41,13 +44,36 @@ const ChecklistMobile = () => {
       if (baseId) {
         await loadViaturas();
       }
+      
+      // Atualizar contador de pendentes
+      updatePendingCount();
     };
 
     checkAuth();
   }, [roleLoading, canDoChecklist, baseId, navigate]);
 
+  const updatePendingCount = async () => {
+    const count = await getPendingCount();
+    setPendingCount(count);
+  };
+
   const loadViaturas = async () => {
     try {
+      setLoading(true);
+      const isOnline = navigator.onLine;
+
+      // Tentar carregar do cache primeiro se offline
+      if (!isOnline) {
+        const cachedViaturas = await getFromCache(`viaturas_base_${baseId}`);
+        if (cachedViaturas) {
+          setViaturas(cachedViaturas);
+          toast.info('Viaturas carregadas do cache (Modo Offline)');
+          return;
+        } else {
+          throw new Error('Sem dados offline. Conecte à internet primeiro.');
+        }
+      }
+
       const { data, error } = await supabase
         .from('viaturas')
         .select('id, prefixo, placa, tipo, status')
@@ -57,6 +83,9 @@ const ChecklistMobile = () => {
 
       if (error) throw error;
       setViaturas(data || []);
+      
+      // Salvar no cache para uso offline
+      await saveToCache(`viaturas_base_${baseId}`, data || []);
     } catch (error) {
       console.error('Erro ao carregar viaturas:', error);
       toast.error('Erro ao carregar viaturas');
@@ -84,6 +113,8 @@ const ChecklistMobile = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
+      <OnlineStatusBadge />
+      
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -93,10 +124,22 @@ const ChecklistMobile = () => {
               {baseName} - {role === 'ba_mc' ? 'Motorista Condutor' : 'Bombeiro Aeródromo 2'}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex gap-2">
+            {pendingCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/checklist-mobile/sync')}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                {pendingCount}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
 
         {/* Lista de Viaturas */}
