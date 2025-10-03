@@ -7,10 +7,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ChecklistItemCard } from '@/components/checklist-mobile/ChecklistItemCard';
 import { ChecklistProgress } from '@/components/checklist-mobile/ChecklistProgress';
 import { AssinaturaDigital } from '@/components/AssinaturaDigital';
+import { OnlineStatusBadge } from '@/components/checklist-mobile/OnlineStatusBadge';
 import { useChecklistMobileExecution } from '@/hooks/useChecklistMobileExecution';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { saveChecklistOffline } from '@/lib/offlineDb';
 
 export default function ChecklistMobileViatura() {
   const { id } = useParams<{ id: string }>();
@@ -58,8 +60,55 @@ export default function ChecklistMobileViatura() {
 
   const handleAssinaturaConcluida = async (dados: { documentoId: string; linkAssinatura: string; status: string; assinaturaBase64?: string }) => {
     setSaving(true);
+    const isOnline = navigator.onLine;
+    
     try {
       const assinaturaUrl = dados.assinaturaBase64 || dados.linkAssinatura;
+
+      // Se offline, salvar localmente
+      if (!isOnline) {
+        const naoConformidades = items.filter(item => item.status === 'nao_conforme').map(item => ({
+          item_id: item.id,
+          item_nome: item.nome,
+          secao: item.categoria || 'Geral',
+          descricao: item.observacao || 'Não conforme',
+          imagens: []
+        }));
+
+        await saveChecklistOffline({
+          id: crypto.randomUUID(),
+          viatura_id: id!,
+          template_id: template?.id!,
+          bombeiro_id: bombeiro?.id!,
+          bombeiro_nome: bombeiro?.nome!,
+          data_checklist: new Date().toISOString().split('T')[0],
+          hora_checklist: new Date().toTimeString().split(' ')[0],
+          status: 'pending_sync',
+          itens_checklist: items.map(item => ({
+            id: item.id,
+            nome: item.nome,
+            categoria: item.categoria,
+            status: item.status,
+            observacao: item.observacao
+          })),
+          assinatura_base64: assinaturaUrl,
+          photos: items
+            .filter(item => item.fotos && item.fotos.length > 0)
+            .flatMap(item => 
+              item.fotos!.map(foto => ({
+                item_id: item.id,
+                blob: foto,
+                name: foto.name
+              }))
+            ),
+          nao_conformidades: naoConformidades
+        });
+
+        clearAutoSavedProgress();
+        toast.success('Checklist salvo offline! Será sincronizado quando houver conexão.');
+        navigate('/checklist-mobile');
+        return;
+      }
       // 1. Fazer upload de todas as fotos de NC
       const naoConformidades = items.filter(item => item.status === 'nao_conforme');
       const uploadedNCs = await Promise.all(

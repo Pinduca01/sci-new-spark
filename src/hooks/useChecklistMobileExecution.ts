@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { saveToCache, getFromCache } from '@/lib/offlineDb';
 
 export interface ChecklistItem {
   id: string;
@@ -38,6 +39,23 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
   const loadChecklistData = async () => {
     try {
       setLoading(true);
+      const isOnline = navigator.onLine;
+
+      // Tentar carregar do cache primeiro se offline
+      if (!isOnline) {
+        const cachedData = await getFromCache(`checklist_data_${viaturaId}`);
+        if (cachedData) {
+          setViatura(cachedData.viatura);
+          setBombeiro(cachedData.bombeiro);
+          setTemplate(cachedData.template);
+          initializeItems(cachedData.template.itens || []);
+          loadAutoSavedProgress();
+          toast.info('Dados carregados do cache (Modo Offline)');
+          return;
+        } else {
+          throw new Error('Sem dados offline. Conecte à internet primeiro.');
+        }
+      }
 
       // 1. Buscar dados da viatura
       const { data: viaturaData, error: viaturaError } = await supabase
@@ -82,9 +100,23 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
         if (generalError) throw new Error('Nenhum template ativo encontrado');
         setTemplate(generalTemplate as any);
         initializeItems((generalTemplate.itens as any) || []);
+        
+        // Salvar no cache
+        await saveToCache(`checklist_data_${viaturaId}`, {
+          viatura: viaturaData,
+          bombeiro: bombeiroData,
+          template: generalTemplate
+        });
       } else {
         setTemplate(templateData as any);
         initializeItems((templateData.itens as any) || []);
+        
+        // Salvar no cache
+        await saveToCache(`checklist_data_${viaturaId}`, {
+          viatura: viaturaData,
+          bombeiro: bombeiroData,
+          template: templateData
+        });
       }
 
       // 4. Tentar carregar progresso salvo do localStorage
