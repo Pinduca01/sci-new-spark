@@ -2,10 +2,11 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { isAuthError, isNetworkError } from '@/utils/connectivityUtils';
 
 /**
- * Componente para interceptar e tratar erros de autenticação
- * Especialmente útil para lidar com tokens expirados
+ * Componente para interceptar e tratar erros REAIS de autenticação
+ * NÃO trata erros de conectividade como problemas de sessão
  */
 export const AuthErrorHandler = () => {
   const { toast } = useToast();
@@ -16,26 +17,15 @@ export const AuthErrorHandler = () => {
     const originalConsoleError = console.error;
     
     console.error = (...args) => {
-      const errorMessage = args.join(' ');
+      const errorObj = args[0];
       
-      // Detectar erros relacionados a refresh token
-      if (
-        errorMessage.includes('Invalid Refresh Token') ||
-        errorMessage.includes('Refresh Token Not Found') ||
-        errorMessage.includes('AuthApiError') ||
-        errorMessage.includes('refresh_token_not_found')
-      ) {
+      // Verificar se é erro de autenticação REAL (não de rede)
+      if (isAuthError(errorObj)) {
+        console.warn('[AuthErrorHandler] Erro de autenticação detectado:', errorObj);
         handleAuthError();
-      }
-      
-      // Detectar erros de rede que podem indicar problemas de conectividade
-      if (
-        errorMessage.includes('Failed to fetch') ||
-        errorMessage.includes('net::ERR_ABORTED') ||
-        errorMessage.includes('TypeError: Failed to fetch')
-      ) {
-        console.warn('Erro de conectividade detectado:', errorMessage);
-        // Não forçar logout para erros de rede, apenas logar
+      } else if (isNetworkError(errorObj)) {
+        console.warn('[AuthErrorHandler] Erro de rede detectado (não causa logout):', errorObj);
+        // NÃO fazer logout em erros de rede
       }
       
       // Chamar o console.error original
@@ -44,23 +34,16 @@ export const AuthErrorHandler = () => {
 
     // Interceptar erros não capturados
     const handleUnhandledError = (event: ErrorEvent) => {
-      if (
-        event.error?.message?.includes('Invalid Refresh Token') ||
-        event.error?.message?.includes('Refresh Token Not Found') ||
-        event.error?.message?.includes('AuthApiError')
-      ) {
+      if (isAuthError(event.error)) {
+        console.warn('[AuthErrorHandler] Erro de autenticação não capturado:', event.error);
         handleAuthError();
       }
     };
 
     // Interceptar promises rejeitadas
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const reason = event.reason;
-      if (
-        reason?.message?.includes('Invalid Refresh Token') ||
-        reason?.message?.includes('Refresh Token Not Found') ||
-        reason?.message?.includes('AuthApiError')
-      ) {
+      if (isAuthError(event.reason)) {
+        console.warn('[AuthErrorHandler] Promise rejeitada por erro de autenticação:', event.reason);
         handleAuthError();
       }
     };
@@ -78,19 +61,43 @@ export const AuthErrorHandler = () => {
 
   const handleAuthError = async () => {
     try {
-      // Limpar tokens do localStorage
+      console.log('[AuthErrorHandler] Iniciando limpeza de sessão expirada...');
+      
+      // Verificar role do usuário para saber pra onde redirecionar
+      const { data: { session } } = await supabase.auth.getSession();
+      let redirectPath = '/login';
+      
+      if (session?.user) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+        
+        // Se for BA-MC ou BA-2, redirecionar para login mobile
+        if (roleData?.role === 'ba_mc' || roleData?.role === 'ba_2') {
+          redirectPath = '/checklist-mobile/login';
+        }
+      }
+      
+      // Limpar APENAS tokens do Supabase (preservar sci_offline_auth)
       const keysToRemove: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.includes('supabase') || key.includes('auth'))) {
+        if (key && key.includes('supabase') && !key.includes('sci_offline_auth')) {
           keysToRemove.push(key);
         }
       }
       
-      keysToRemove.forEach(key => localStorage.removeItem(key));
+      keysToRemove.forEach(key => {
+        console.log('[AuthErrorHandler] Removendo chave:', key);
+        localStorage.removeItem(key);
+      });
       
       // Forçar logout no Supabase
       await supabase.auth.signOut();
+      
+      console.log('[AuthErrorHandler] Redirecionando para:', redirectPath);
       
       // Mostrar notificação ao usuário
       toast({
@@ -101,11 +108,11 @@ export const AuthErrorHandler = () => {
       
       // Redirecionar para login após um pequeno delay
       setTimeout(() => {
-        navigate('/login', { replace: true });
+        navigate(redirectPath, { replace: true });
       }, 2000);
       
     } catch (error) {
-      console.error('Erro ao limpar sessão expirada:', error);
+      console.error('[AuthErrorHandler] Erro ao limpar sessão:', error);
       // Mesmo com erro, redirecionar para login
       navigate('/login', { replace: true });
     }

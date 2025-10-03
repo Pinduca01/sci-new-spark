@@ -160,7 +160,19 @@ const ChecklistMobileLogin = () => {
       navigate('/checklist-mobile');
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
-      toast.error(error.message || 'Erro ao fazer login');
+      
+      // Mensagens específicas baseadas no tipo de erro
+      const errorMessage = error.message || '';
+      
+      if (errorMessage.includes('Invalid login credentials')) {
+        toast.error('Email ou senha incorretos');
+      } else if (errorMessage.includes('Email not confirmed')) {
+        toast.error('Email não confirmado. Verifique sua caixa de entrada.');
+      } else if (!navigator.onLine) {
+        toast.error('Sem conexão com internet. Tente login offline se disponível.');
+      } else {
+        toast.error(errorMessage || 'Erro ao fazer login');
+      }
     } finally {
       setLoading(false);
     }
