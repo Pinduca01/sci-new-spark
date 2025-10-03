@@ -17,9 +17,11 @@ import {
   AlertTriangle,
   Calendar,
   User,
-  Download
+  Download,
+  Settings
 } from "lucide-react";
 import { useChecklistsStats } from "@/hooks/useChecklistsStats";
+import { TemplatesList } from "@/components/checklist-templates/TemplatesList";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -217,7 +219,7 @@ export default function Checklists() {
 
       {/* Tabs de Conteúdo */}
       <Tabs defaultValue="viaturas" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="viaturas" className="flex items-center gap-2">
             <Truck className="w-4 h-4" />
             Viaturas
@@ -225,6 +227,10 @@ export default function Checklists() {
           <TabsTrigger value="almoxarifado" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
             Almoxarifado
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Templates
           </TabsTrigger>
           <TabsTrigger value="relatorios" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
@@ -391,6 +397,11 @@ export default function Checklists() {
               </Card>
             )}
           </div>
+        </TabsContent>
+
+        {/* Tab Templates */}
+        <TabsContent value="templates" className="space-y-6">
+          <TemplatesList />
         </TabsContent>
 
         {/* Tab Relatórios */}
