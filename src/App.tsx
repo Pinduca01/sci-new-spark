@@ -29,6 +29,7 @@ import ChecklistMobileLogin from "./pages/ChecklistMobileLogin";
 import ChecklistMobile from "./pages/ChecklistMobile";
 import ChecklistMobileViatura from "./pages/ChecklistMobileViatura";
 import ChecklistMobileSyncStatus from "./pages/ChecklistMobileSyncStatus";
+import AdminCreateUsers from "./pages/AdminCreateUsers";
 
 
 const queryClient = new QueryClient({
@@ -80,6 +81,7 @@ const App = () => (
           <Route path="/test-bombeiro-selector" element={<MainLayout><TestBombeiroSelector /></MainLayout>} />
           <Route path="/test-supabase" element={<MainLayout><TestSupabaseConnection /></MainLayout>} />
           <Route path="/test-equipe-data" element={<MainLayout><TestEquipeData /></MainLayout>} />
+          <Route path="/admin/create-users" element={<MainLayout><AdminCreateUsers /></MainLayout>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
