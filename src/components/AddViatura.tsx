@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useBases } from "@/hooks/useBases";
 
 interface AddViaturaProps {
   onClose: () => void;
@@ -17,7 +17,7 @@ interface AddViaturaProps {
 
 export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
   const [loading, setLoading] = useState(false);
-  const { baseId, loading: roleLoading } = useUserRole();
+  const { data: bases, isLoading: basesLoading } = useBases();
   const [formData, setFormData] = useState({
     nome_viatura: "",
     prefixo: "",
@@ -26,6 +26,7 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
     tipo: "CCI",
     status: "ativo",
     observacoes: "",
+    base_id: "",
   });
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -38,11 +39,11 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validar se o usuário tem base_id
-    if (!baseId) {
+    // Validar se uma base foi selecionada
+    if (!formData.base_id) {
       toast({
-        title: "Erro de Configuração",
-        description: "Seu usuário não está associado a uma base. Contate o administrador.",
+        title: "Campo Obrigatório",
+        description: "Selecione a base da viatura antes de salvar.",
         variant: "destructive",
       });
       return;
@@ -59,7 +60,7 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
         tipo: formData.tipo,
         status: formData.status,
         observacoes: formData.observacoes || null,
-        base_id: baseId, // Adicionar base_id do usuário logado
+        base_id: formData.base_id,
       };
 
       const { error } = await supabase
@@ -81,7 +82,7 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
       if (error.message?.includes('row-level security')) {
         toast({
           title: "Erro de Permissão",
-          description: "Você não tem permissão para adicionar viaturas nesta base.",
+          description: "Você não tem permissão para adicionar viaturas.",
           variant: "destructive",
         });
       } else {
@@ -106,6 +107,26 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="base_id">Base da Viatura *</Label>
+            <Select 
+              value={formData.base_id} 
+              onValueChange={(value) => handleInputChange('base_id', value)}
+              disabled={basesLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a base" />
+              </SelectTrigger>
+              <SelectContent>
+                {bases?.map((base) => (
+                  <SelectItem key={base.id} value={base.id}>
+                    {base.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="nome_viatura">Nome da Viatura *</Label>
             <Input
@@ -136,6 +157,16 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
               onChange={(e) => handleInputChange('modelo', e.target.value)}
               placeholder="Ex: IVECO MAGIRUS X6"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="placa">Placa</Label>
+            <Input
+              id="placa"
+              value={formData.placa}
+              onChange={(e) => handleInputChange('placa', e.target.value)}
+              placeholder="Ex: ABC-1234"
             />
           </div>
 
@@ -184,12 +215,12 @@ export const AddViatura = ({ onClose, onSave }: AddViaturaProps) => {
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={loading || roleLoading}
+              disabled={loading || basesLoading}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || roleLoading || !baseId}>
-              {(loading || roleLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={loading || basesLoading || !formData.base_id}>
+              {(loading || basesLoading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Viatura
             </Button>
           </div>

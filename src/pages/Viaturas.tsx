@@ -8,6 +8,7 @@ import { ViaturasGrid } from "@/components/ViaturasGrid";
 import { ViaturasDetails } from "@/components/ViaturasDetails";
 import { AddViatura } from "@/components/AddViatura";
 import { EditViatura } from "@/components/EditViatura";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Viatura {
   id: string;
@@ -20,6 +21,7 @@ interface Viatura {
 }
 
 const Viaturas = () => {
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddViatura, setShowAddViatura] = useState(false);
@@ -94,16 +96,18 @@ const Viaturas = () => {
           <Truck className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Controle de Viaturas</h1>
         </div>
-        <Button 
-          onClick={() => {
-            console.log('Button clicked: Add Nova Viatura');
-            setShowAddViatura(true);
-          }}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Adicionar Nova Viatura
-        </Button>
+        {isAdmin && !roleLoading && (
+          <Button 
+            onClick={() => {
+              console.log('Button clicked: Add Nova Viatura');
+              setShowAddViatura(true);
+            }}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar Nova Viatura
+          </Button>
+        )}
       </div>
 
       {loading ? (

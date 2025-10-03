@@ -2,11 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { MoreVertical, Calendar, Gauge, AlertTriangle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { MoreVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Viatura {
   id: string;
@@ -26,6 +27,7 @@ interface ViaturasGridProps {
 }
 
 export const ViaturasGrid = ({ viaturas, onSelectViatura, onViaturasUpdate, onEditViatura }: ViaturasGridProps) => {
+  const { isAdmin } = useUserRole();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viatureToDelete, setViatureToDelete] = useState<string | null>(null);
@@ -79,11 +81,6 @@ export const ViaturasGrid = ({ viaturas, onSelectViatura, onViaturasUpdate, onEd
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {viaturas.map((viatura) => (
@@ -98,24 +95,26 @@ export const ViaturasGrid = ({ viaturas, onSelectViatura, onViaturasUpdate, onEd
               >
                 {viatura.status}
               </Badge>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEditViatura(viatura)}>
-                    Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleDeleteClick(viatura.id)}
-                    className="text-red-600"
-                  >
-                    Excluir
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {isAdmin && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEditViatura(viatura)}>
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleDeleteClick(viatura.id)}
+                      className="text-red-600"
+                    >
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </CardHeader>
           <CardContent onClick={() => onSelectViatura(viatura)}>
