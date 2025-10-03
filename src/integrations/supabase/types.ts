@@ -589,7 +589,9 @@ export type Database = {
       }
       checklists_viaturas: {
         Row: {
+          assinatura_digital: string | null
           bombeiro_responsavel: string
+          bombeiro_responsavel_id: string | null
           created_at: string
           data_checklist: string
           equipe: string | null
@@ -598,13 +600,16 @@ export type Database = {
           itens_checklist: Json
           observacoes_gerais: string | null
           status_geral: string
+          template_id: string | null
           timestamp_conclusao: string | null
           tipo_checklist: string
           updated_at: string
           viatura_id: string
         }
         Insert: {
+          assinatura_digital?: string | null
           bombeiro_responsavel: string
+          bombeiro_responsavel_id?: string | null
           created_at?: string
           data_checklist?: string
           equipe?: string | null
@@ -613,13 +618,16 @@ export type Database = {
           itens_checklist?: Json
           observacoes_gerais?: string | null
           status_geral?: string
+          template_id?: string | null
           timestamp_conclusao?: string | null
           tipo_checklist: string
           updated_at?: string
           viatura_id: string
         }
         Update: {
+          assinatura_digital?: string | null
           bombeiro_responsavel?: string
+          bombeiro_responsavel_id?: string | null
           created_at?: string
           data_checklist?: string
           equipe?: string | null
@@ -628,12 +636,35 @@ export type Database = {
           itens_checklist?: Json
           observacoes_gerais?: string | null
           status_geral?: string
+          template_id?: string | null
           timestamp_conclusao?: string | null
           tipo_checklist?: string
           updated_at?: string
           viatura_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checklists_viaturas_bombeiro_responsavel_id_fkey"
+            columns: ["bombeiro_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_viaturas_bombeiro_responsavel_id_fkey"
+            columns: ["bombeiro_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "bombeiros_publico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_viaturas_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_templates: {
         Row: {
@@ -1747,6 +1778,7 @@ export type Database = {
           id: string
           imagem_nome: string | null
           imagem_url: string | null
+          imagens: Json | null
           item_id: string
           item_nome: string
           secao: string
@@ -1761,6 +1793,7 @@ export type Database = {
           id?: string
           imagem_nome?: string | null
           imagem_url?: string | null
+          imagens?: Json | null
           item_id: string
           item_nome: string
           secao: string
@@ -1775,6 +1808,7 @@ export type Database = {
           id?: string
           imagem_nome?: string | null
           imagem_url?: string | null
+          imagens?: Json | null
           item_id?: string
           item_nome?: string
           secao?: string

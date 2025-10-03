@@ -27,6 +27,7 @@ import TestSupabaseConnection from "./components/TestSupabaseConnection";
 import TestEquipeData from "./components/TestEquipeData";
 import ChecklistMobileLogin from "./pages/ChecklistMobileLogin";
 import ChecklistMobile from "./pages/ChecklistMobile";
+import ChecklistMobileViatura from "./pages/ChecklistMobileViatura";
 
 
 const queryClient = new QueryClient({
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/checklist-mobile/login" element={<ChecklistMobileLogin />} />
           <Route path="/checklist-mobile" element={<ChecklistMobile />} />
+          <Route path="/checklist-mobile/viatura/:id" element={<ChecklistMobileViatura />} />
           <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/pessoal" element={<MainLayout><ControlePessoal /></MainLayout>} />
           <Route path="/pessoal/taf" element={<MainLayout><TAF /></MainLayout>} />
