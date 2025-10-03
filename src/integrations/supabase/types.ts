@@ -417,6 +417,45 @@ export type Database = {
         }
         Relationships: []
       }
+      checklist_timeline: {
+        Row: {
+          checklist_id: string
+          checklist_tipo: string
+          created_at: string
+          dados_alterados: Json | null
+          descricao: string | null
+          id: string
+          operacao: string
+          usuario_id: string | null
+          usuario_nome: string
+          usuario_role: string | null
+        }
+        Insert: {
+          checklist_id: string
+          checklist_tipo: string
+          created_at?: string
+          dados_alterados?: Json | null
+          descricao?: string | null
+          id?: string
+          operacao: string
+          usuario_id?: string | null
+          usuario_nome: string
+          usuario_role?: string | null
+        }
+        Update: {
+          checklist_id?: string
+          checklist_tipo?: string
+          created_at?: string
+          dados_alterados?: Json | null
+          descricao?: string | null
+          id?: string
+          operacao?: string
+          usuario_id?: string | null
+          usuario_nome?: string
+          usuario_role?: string | null
+        }
+        Relationships: []
+      }
       checklists: {
         Row: {
           base_id: string
@@ -3712,6 +3751,16 @@ export type Database = {
       nextval: {
         Args: { sequence_name: string }
         Returns: number
+      }
+      registrar_timeline_checklist: {
+        Args: {
+          p_checklist_id: string
+          p_checklist_tipo: string
+          p_dados_alterados?: Json
+          p_descricao?: string
+          p_operacao: string
+        }
+        Returns: string
       }
       validate_checklist_itens: {
         Args: { itens_json: Json }
