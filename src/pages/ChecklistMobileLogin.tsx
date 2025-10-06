@@ -5,10 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Truck, Download, WifiOff } from 'lucide-react';
+import { Loader2, Truck, Download, WifiOff, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useOfflineAuth } from '@/hooks/useOfflineAuth';
 import { OnlineStatusBadge } from '@/components/checklist-mobile/OnlineStatusBadge';
+import AnimatedBackground from '@/components/AnimatedBackground';
+import WaveHeader from '@/components/WaveHeader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const ChecklistMobileLogin = () => {
   const navigate = useNavigate();
@@ -178,6 +182,22 @@ const ChecklistMobileLogin = () => {
     }
   };
 
+  const handlePasswordReset = async () => {
+    if (!email) {
+      toast.error('Informe seu e-mail para recuperar a senha');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success('Enviamos um link de recuperação para seu e-mail');
+    } catch (err: any) {
+      toast.error(err?.message || 'Não foi possível enviar o link');
+    }
+  };
+
   if (checking) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -187,110 +207,132 @@ const ChecklistMobileLogin = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <OnlineStatusBadge />
-      
-      <div className="w-full max-w-md space-y-4">
-        {/* Botão Instalar App */}
-        {showInstallButton && (
-          <Card className="border-2 border-primary bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div className="absolute top-3 right-3 z-20">
+        <OnlineStatusBadge />
+      </div>
+
+      {/* Hero com onda */}
+      <div className="relative z-10">
+        <WaveHeader title="Welcome" subtitle="Faça login para continuar" />
+      </div>
+
+      {/* Conteúdo sobreposto ao hero */}
+      <div className="relative z-20 -mt-10 flex items-start justify-center px-4">
+        <div className="w-full max-w-sm space-y-4">
+          {showInstallButton && (
+            <Alert className="border-primary/20 bg-primary/5">
+              <div className="flex items-start gap-3">
                 <div className="bg-primary text-primary-foreground p-2 rounded-lg">
-                  <Download className="w-6 h-6" />
+                  <Download className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">Instalar App</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Instale para acesso rápido e funcionamento offline
-                  </p>
-                  <Button
-                    onClick={handleInstallClick}
-                    className="w-full"
-                    variant="default"
-                  >
+                  <p className="font-medium">Instalar App</p>
+                  <AlertDescription>
+                    Instale para acesso rápido e funcionamento offline.
+                  </AlertDescription>
+                  <Button onClick={handleInstallClick} className="mt-3 w-full h-10">
                     <Download className="w-4 h-4 mr-2" />
-                    Instalar Agora
+                    Instalar agora
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </Alert>
+          )}
 
-        {/* Alerta Offline */}
-        {!isOnline && (
-          <Card className="border-2 border-orange-500 bg-orange-50 dark:bg-orange-950">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <WifiOff className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+          {!isOnline && (
+            <Alert className="border-orange-500/30 bg-orange-50 dark:bg-orange-950">
+              <div className="flex items-start gap-3">
+                <WifiOff className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
                 <div>
-                  <p className="font-medium text-orange-900 dark:text-orange-100">Modo Offline</p>
-                  <p className="text-sm text-orange-700 dark:text-orange-300">
-                    {offlineAuthAvailable 
-                      ? 'Você pode fazer login com suas credenciais salvas' 
-                      : 'Faça login online primeiro para usar offline'}
-                  </p>
+                  <p className="font-medium">Modo offline</p>
+                  <AlertDescription className="text-sm">
+                    {offlineAuthAvailable
+                      ? 'Você pode fazer login com credenciais salvas.'
+                      : 'Faça login online primeiro para habilitar o modo offline.'}
+                  </AlertDescription>
                 </div>
               </div>
+            </Alert>
+          )}
+
+          <Card className="backdrop-blur-sm bg-white/90 dark:bg-neutral-900/80 border border-border/60 shadow-sm rounded-2xl">
+            <CardHeader className="text-center pb-2">
+              <div className="flex justify-center mb-3">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                  <Truck className="w-6 h-6 text-primary" />
+                </div>
+              </div>
+              <CardTitle className="text-xl tracking-tight">Checklist Mobile</CardTitle>
+              <CardDescription className="text-sm">Acesso exclusivo para BA-MC e BA-2</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm">E-mail</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="seu.email@exemplo.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={loading}
+                      className="pl-10 h-11 rounded-none border-0 border-b border-muted bg-transparent focus-visible:ring-0 focus-visible:border-primary"
+                      autoComplete="username"
+                      inputMode="email"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm">Senha</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
+                      className="pl-10 h-11 rounded-none border-0 border-b border-muted bg-transparent focus-visible:ring-0 focus-visible:border-primary"
+                      autoComplete="current-password"
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full h-11" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Entrando...
+                    </>
+                  ) : (
+                    'Entrar'
+                  )}
+                </Button>
+                <div className="flex items-center justify-between pt-1">
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Checkbox id="remember" />
+                    Lembrar-me
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handlePasswordReset}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                </div>
+                <p className="text-center text-xs text-muted-foreground">
+                  Não tem conta? Fale com o administrador.
+                </p>
+              </form>
             </CardContent>
           </Card>
-        )}
-
-        {/* Card de Login */}
-        <Card className="w-full">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Truck className="w-12 h-12 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Checklist Mobile</CardTitle>
-            <CardDescription>
-              Acesso exclusivo para BA-MC e BA-2
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu.email@exemplo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  'Entrar'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </div>
   );
