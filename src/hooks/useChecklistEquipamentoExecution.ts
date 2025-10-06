@@ -60,7 +60,6 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
 
             setTemplate(builtTemplate);
             initializeItems(builtTemplate.itens as any);
-            toast.success('Template de equipamentos carregado (template_checklist)');
             loadAutoSavedProgress();
             setLoading(false);
             return;
@@ -82,7 +81,6 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
       };
       setTemplate(fallback);
       initializeItems(fallback.itens as any);
-      toast.info('Usando template de equipamento (fallback)');
       loadAutoSavedProgress();
     } catch (error: any) {
       console.error('Erro ao carregar checklist de equipamento:', error);

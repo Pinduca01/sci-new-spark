@@ -170,7 +170,7 @@ export const buildStaticTemplateForViatura = (tipoViatura: string) => {
   // Tratar CCI como BA-MC por padrão
   if (tipoNorm === 'bamc' || tipoNorm === 'cci' || tipoNorm === 'viaturas') {
     return {
-      nome: 'Template BA-MC/CCI (Estático)',
+      nome: 'BA-MC',
       itens: bamcItems,
     };
   }

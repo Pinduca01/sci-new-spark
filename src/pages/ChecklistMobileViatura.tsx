@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, History, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,6 @@ import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ChecklistItemCard } from '@/components/checklist-mobile/ChecklistItemCard';
 import { ChecklistProgress } from '@/components/checklist-mobile/ChecklistProgress';
-import { AssinaturaDigital } from '@/components/AssinaturaDigital';
 import { OnlineStatusBadge } from '@/components/checklist-mobile/OnlineStatusBadge';
 import { useChecklistMobileExecution } from '@/hooks/useChecklistMobileExecution';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,8 +19,18 @@ export default function ChecklistMobileViatura() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
-  const [showAssinatura, setShowAssinatura] = useState(false);
+  const [finalizado, setFinalizado] = useState(false);
+  const [createdChecklistId, setCreatedChecklistId] = useState<string | null>(null);
   const [currentSection, setCurrentSection] = useState<string>('');
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const firstItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const lastAnsweredItemIdRef = useRef<string | null>(null);
+  const SCROLL_OFFSET = 80; // ajuste conforme altura do header fixo
+
+  const smoothScrollToTop = (el: HTMLElement, offset = SCROLL_OFFSET) => {
+    const y = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  };
 
   // Validação simples de UUID (versões com 36 chars e hífens)
   const isValidUUID = (value: string | undefined) => {
@@ -48,6 +57,17 @@ export default function ChecklistMobileViatura() {
   } = useChecklistMobileExecution(viaturaIdValida ? id! : '');
 
   const progress = getProgress();
+
+  // Auto-scroll para o primeiro item ao mudar a categoria
+  useEffect(() => {
+    if (!currentSection) return;
+    // Aguardar transição de abertura do Accordion para calcular posição final
+    const timer = setTimeout(() => {
+      const el = firstItemRefs.current[currentSection];
+      if (el) smoothScrollToTop(el);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [currentSection]);
 
   // Render de proteção para id inválido de viatura (evita erro 22P02 - UUID)
   if (!viaturaIdValida) {
@@ -87,22 +107,47 @@ export default function ChecklistMobileViatura() {
     return grouped;
   }, [items, currentSection]);
 
-  const handleFinalizarChecklist = () => {
+  // Após classificar um item, avançar para o próximo item não classificado.
+  useEffect(() => {
+    const lastId = lastAnsweredItemIdRef.current;
+    if (!lastId) return;
+
+    // Identificar categoria e posição do item respondido
+    const answeredItem = items.find(i => i.id === lastId);
+    const category = answeredItem?.categoria || 'Geral';
+    const categoryItems = itemsByCategory[category] || [];
+    const currentIndex = categoryItems.findIndex(i => i.id === lastId);
+
+    // Buscar próximo item não classificado na mesma categoria
+    const nextInCategory = categoryItems.find((i, idx) => idx > currentIndex && !i.status);
+    if (nextInCategory) {
+      const target = itemRefs.current[nextInCategory.id];
+      if (target) smoothScrollToTop(target);
+      lastAnsweredItemIdRef.current = null;
+      return;
+    }
+
+    // Caso não tenha, avançar para a próxima categoria com itens pendentes
+    const categories = Object.keys(itemsByCategory);
+    const catIndex = categories.indexOf(category);
+    const nextCategory = categories.slice(catIndex + 1).find(cat => itemsByCategory[cat]?.some(i => !i.status));
+    if (nextCategory) {
+      setCurrentSection(nextCategory);
+    }
+
+    lastAnsweredItemIdRef.current = null;
+  }, [items, itemsByCategory]);
+
+  const handleFinalizarChecklist = async () => {
     const validation = validateChecklist();
     if (!validation.valid) {
       toast.error(validation.message);
       return;
     }
-    setShowAssinatura(true);
-  };
-
-  const handleAssinaturaConcluida = async (dados: { documentoId: string; linkAssinatura: string; status: string; assinaturaBase64?: string }) => {
     setSaving(true);
     const isOnline = navigator.onLine;
     
     try {
-      const assinaturaUrl = dados.assinaturaBase64 || dados.linkAssinatura;
-
       // Se offline, salvar localmente
       if (!isOnline) {
         const naoConformidades = items.filter(item => item.status === 'nao_conforme').map(item => ({
@@ -129,7 +174,6 @@ export default function ChecklistMobileViatura() {
             status: item.status,
             observacao: item.observacao
           })),
-          assinatura_base64: assinaturaUrl,
           photos: items
             .filter(item => item.fotos && item.fotos.length > 0)
             .flatMap(item => 
@@ -143,8 +187,9 @@ export default function ChecklistMobileViatura() {
         });
 
         clearAutoSavedProgress();
-        toast.success('Checklist salvo offline! Será sincronizado quando houver conexão.');
-        navigate('/checklist-mobile');
+        setFinalizado(true);
+        setCreatedChecklistId(null);
+        toast.success('Checklist finalizado (offline). Será sincronizado quando houver conexão.');
         return;
       }
       // 1. Fazer upload de todas as fotos de NC
@@ -204,7 +249,6 @@ export default function ChecklistMobileViatura() {
             observacao: item.observacao
           })),
           observacoes_gerais: `Checklist realizado via mobile. ${uploadedNCs.length} não conformidade(s) detectada(s).`,
-          assinatura_digital: assinaturaUrl,
           timestamp_conclusao: new Date().toISOString()
         })
         .select()
@@ -247,15 +291,14 @@ export default function ChecklistMobileViatura() {
 
       // 5. Limpar progresso salvo
       clearAutoSavedProgress();
-
+      setFinalizado(true);
+      setCreatedChecklistId(checklistData.id);
       toast.success('Checklist finalizado com sucesso!');
-      navigate('/checklist-mobile');
     } catch (error: any) {
       console.error('Erro ao salvar checklist:', error);
       toast.error('Erro ao finalizar checklist: ' + error.message);
     } finally {
       setSaving(false);
-      setShowAssinatura(false);
     }
   };
 
@@ -282,22 +325,15 @@ export default function ChecklistMobileViatura() {
     );
   }
 
-  if (showAssinatura) {
+  if (finalizado) {
     return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-2xl mx-auto">
-          <Button
-            variant="ghost"
-            onClick={() => setShowAssinatura(false)}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-
-          <AssinaturaDigital
-            onAssinaturaConcluida={handleAssinaturaConcluida}
-          />
+      <div className="min-h-screen bg-background p-6 flex flex-col items-center justify-center text-center">
+        <CheckCircle className="w-16 h-16 text-green-600 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Checklist Finalizado</h2>
+        <p className="text-muted-foreground mb-6">Registro concluído no SCI Core{createdChecklistId ? '' : ' (offline)'}.</p>
+        <div className="flex gap-3">
+          <Button onClick={() => navigate(`/checklist-mobile/historico/${id}`)} className="min-w-[160px]">Ver detalhes</Button>
+          <Button variant="outline" onClick={() => navigate('/checklist-mobile')} className="min-w-[160px]">Voltar ao início</Button>
         </div>
       </div>
     );
@@ -312,7 +348,7 @@ export default function ChecklistMobileViatura() {
         <div className="relative">
           <ShineBorder className="rounded-none" shineColor={["#f97316","#8b5cf6","#06b6d4"]} />
         </div>
-        <div className="flex items-center justify-between p-4">
+        <div className="flex items-center justify-between p-3">
           <Button
             variant="ghost"
             size="icon"
@@ -333,52 +369,28 @@ export default function ChecklistMobileViatura() {
           </Button>
         </div>
 
-        <div className="px-4 pb-3">
+        <div className="px-3 pb-2">
           <ChecklistProgress {...progress} />
         </div>
-        {/* Navegação rápida por categorias */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {Object.entries(itemsByCategory).map(([categoria, categoryItems]) => {
-              const done = categoryItems.filter(i => i.status !== null).length;
-              const total = categoryItems.length;
-              const perc = Math.round((done / total) * 100);
-              const active = currentSection === categoria;
-              return (
-                <button
-                  key={categoria}
-                  type="button"
-                  onClick={() => setCurrentSection(categoria)}
-                  className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs transition-all ${active ? 'bg-primary/10 border-primary text-primary' : 'bg-muted/50 hover:bg-muted'}`}
-                  aria-label={`Ir para categoria ${categoria}`}
-                >
-                  <span className="font-medium">{categoria}</span>
-                  <span className="rounded-full bg-background px-2 py-0.5 text-[10px] border">
-                    {done}/{total}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* Navbar horizontal removida conforme solicitação */}
       </div>
 
       {/* Conteúdo */}
-      <div className="p-4 space-y-4">
+      <div className="p-3 space-y-3">
         <Accordion
           type="single"
           collapsible
           value={currentSection}
           onValueChange={setCurrentSection}
-          className="space-y-3"
+          className="space-y-2"
         >
           {Object.entries(itemsByCategory).map(([categoria, categoryItems]) => {
             const done = categoryItems.filter(i => i.status !== null).length;
             const total = categoryItems.length;
             const percentage = Math.round((done / total) * 100);
             return (
-            <AccordionItem key={categoria} value={categoria} className="border rounded-xl bg-card shadow-sm">
-              <AccordionTrigger className="px-4 hover:no-underline">
+            <AccordionItem key={categoria} value={categoria} className="border rounded-xl bg-card shadow-sm data-[state=open]:border-primary data-[state=open]:shadow-md">
+              <AccordionTrigger className="px-3 py-2 hover:no-underline rounded-lg transition-colors data-[state=open]:bg-primary/5 data-[state=open]:text-primary">
                 <div className="flex items-center justify-between w-full gap-3 pr-2">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{categoria}</span>
@@ -392,17 +404,30 @@ export default function ChecklistMobileViatura() {
                   <span className="text-xs text-muted-foreground w-10 text-right">{percentage}%</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4 space-y-3">
+              <AccordionContent className="px-3 pb-3 space-y-2">
                 {categoryItems.map((item, index) => (
-                  <ChecklistItemCard
+                  <div
                     key={item.id}
-                    item={item}
-                    index={index}
-                    onStatusChange={(status) => updateItemStatus(item.id, status)}
-                    onObservacaoChange={(obs) => updateItemObservacao(item.id, obs)}
-                    onAddFotos={(fotos) => addItemFotos(item.id, fotos)}
-                    onRemoveFoto={(idx) => removeItemFoto(item.id, idx)}
-                  />
+                    ref={(el) => {
+                      itemRefs.current[item.id] = el;
+                      if (index === 0) {
+                        firstItemRefs.current[categoria] = el;
+                      }
+                    }}
+                    style={{ scrollMarginTop: SCROLL_OFFSET }}
+                  >
+                    <ChecklistItemCard
+                      item={item}
+                      index={index}
+                      onStatusChange={(status) => {
+                        lastAnsweredItemIdRef.current = item.id;
+                        updateItemStatus(item.id, status);
+                      }}
+                      onObservacaoChange={(obs) => updateItemObservacao(item.id, obs)}
+                      onAddFotos={(fotos) => addItemFotos(item.id, fotos)}
+                      onRemoveFoto={(idx) => removeItemFoto(item.id, idx)}
+                    />
+                  </div>
                 ))}
               </AccordionContent>
             </AccordionItem>
