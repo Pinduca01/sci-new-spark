@@ -32,8 +32,16 @@ const WaveHeader: React.FC<WaveHeaderProps> = ({ title = 'Welcome', subtitle = '
       {/* Header text (optional) */}
       {(title || subtitle) && (
         <div className="absolute inset-0 flex flex-col items-start justify-end px-6 pb-6 text-white">
-          {title && <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>}
-          {subtitle && <p className="text-sm opacity-90">{subtitle}</p>}
+          {title && (
+            <h1 className="text-2xl font-semibold tracking-tight font-heading">
+              {title}
+            </h1>
+          )}
+          {subtitle && (
+            <p className="text-sm opacity-90 font-body">
+              {subtitle}
+            </p>
+          )}
         </div>
       )}
     </div>

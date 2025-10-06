@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Truck, Download, WifiOff, Mail, Lock } from 'lucide-react';
+import { Loader2, Truck, Download, WifiOff } from 'lucide-react';
+import { EnvelopeSimple, LockSimple, Eye, EyeSlash } from 'phosphor-react';
 import { toast } from 'sonner';
 import { useOfflineAuth } from '@/hooks/useOfflineAuth';
 import { OnlineStatusBadge } from '@/components/checklist-mobile/OnlineStatusBadge';
@@ -20,9 +21,20 @@ const ChecklistMobileLogin = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [lastAttemptAt, setLastAttemptAt] = useState<number>(0);
+  const [attemptCooldownMs, setAttemptCooldownMs] = useState<number>(2000);
+  const [failedAttempts, setFailedAttempts] = useState<number>(0);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIosHint, setShowIosHint] = useState(false);
+  const [greeting, setGreeting] = useState('Bom dia');
+  const [showPassword, setShowPassword] = useState(false);
   
   const { saveOfflineAuth, loginOffline, offlineAuthAvailable } = useOfflineAuth();
 
@@ -52,14 +64,35 @@ const ChecklistMobileLogin = () => {
 
     checkSession();
 
-    // PWA Install Prompt
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    setIsStandalone(standalone);
+
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isiOS = /iphone|ipad|ipod/.test(ua);
+    setIsIOS(isiOS);
+
+    const dismissed = localStorage.getItem('pwaInstallDismissed') === '1';
+    if (!standalone && !dismissed && isiOS) {
+      setShowIosHint(true);
+    }
+
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
+      if (standalone || dismissed || isiOS) return;
       setDeferredPrompt(e);
       setShowInstallButton(true);
     };
 
+    const handleAppInstalled = () => {
+      localStorage.removeItem('pwaInstallDismissed');
+      setShowInstallButton(false);
+      setShowIosHint(false);
+      setDeferredPrompt(null);
+      toast.success('App instalado com sucesso!');
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     // Online/Offline listeners
     const handleOnline = () => setIsOnline(true);
@@ -70,10 +103,24 @@ const ChecklistMobileLogin = () => {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, [navigate]);
+
+  // Cumprimento dinâmico conforme horário
+  useEffect(() => {
+    const computeGreeting = () => {
+      const h = new Date().getHours();
+      if (h >= 5 && h < 12) return 'Bom dia';
+      if (h >= 12 && h < 18) return 'Boa tarde';
+      return 'Boa noite';
+    };
+    setGreeting(computeGreeting());
+    const id = setInterval(() => setGreeting(computeGreeting()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -89,11 +136,31 @@ const ChecklistMobileLogin = () => {
     setShowInstallButton(false);
   };
 
+  const handleDismissInstall = () => {
+    localStorage.setItem('pwaInstallDismissed', '1');
+    setShowInstallButton(false);
+    setShowIosHint(false);
+    setDeferredPrompt(null);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      toast.error('Preencha todos os campos');
+    const now = Date.now();
+    if (now - lastAttemptAt < attemptCooldownMs) {
+      const waitMs = attemptCooldownMs - (now - lastAttemptAt);
+      const waitSeconds = Math.ceil(waitMs / 1000);
+      toast.error(`Aguarde ${waitSeconds}s antes de tentar novamente`);
+      return;
+    }
+    setLastAttemptAt(now);
+
+    const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    const emailValid = !!email && isValidEmail(email);
+    const passwordValid = !!password && password.length >= 6;
+    setEmailError(emailValid ? '' : 'Informe um e-mail válido');
+    setPasswordError(passwordValid ? '' : 'A senha deve ter ao menos 6 caracteres');
+    if (!emailValid || !passwordValid) {
+      toast.error('Verifique os campos de e-mail e senha');
       return;
     }
 
@@ -152,15 +219,20 @@ const ChecklistMobileLogin = () => {
         .eq('user_id', authData.user.id)
         .single();
 
-      // Salvar credenciais para login offline
-      await saveOfflineAuth(email, password, {
-        user: authData.user,
-        role: roleData.role,
-        funcao: bombeiroData?.funcao,
-        bombeiro: bombeiroData
-      });
+      // Salvar credenciais para login offline se "Lembrar-me" estiver marcado
+      if (rememberMe) {
+        await saveOfflineAuth(email, password, {
+          user: authData.user,
+          role: roleData.role,
+          funcao: bombeiroData?.funcao,
+          bombeiro: bombeiroData
+        });
+      }
 
       toast.success('Login realizado com sucesso!');
+      // Resetar contadores/cooldown após sucesso
+      setFailedAttempts(0);
+      setAttemptCooldownMs(2000);
       navigate('/checklist-mobile');
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
@@ -177,6 +249,15 @@ const ChecklistMobileLogin = () => {
       } else {
         toast.error(errorMessage || 'Erro ao fazer login');
       }
+      // Ajustar cooldown por tentativas falhas (backoff simples)
+      setFailedAttempts((prev) => {
+        const next = prev + 1;
+        // Após 3 falhas, aumentar cooldown para 5s, limite 10s
+        if (next >= 3) {
+          setAttemptCooldownMs((ms) => Math.min(ms * 2, 10000));
+        }
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -214,31 +295,56 @@ const ChecklistMobileLogin = () => {
 
       {/* Hero com onda */}
       <div className="relative z-10">
-        <WaveHeader title="Welcome" subtitle="Faça login para continuar" />
+        <WaveHeader title={`${greeting}!`} subtitle="Faça login para continuar" />
       </div>
 
-      {/* Conteúdo sobreposto ao hero */}
-      <div className="relative z-20 -mt-10 flex items-start justify-center px-4">
-        <div className="w-full max-w-sm space-y-4">
-          {showInstallButton && (
+      {(showInstallButton || showIosHint) && (
+        <div className="relative z-10 px-4 mt-2">
+          <div className="w-full max-w-sm mx-auto">
             <Alert className="border-primary/20 bg-primary/5">
               <div className="flex items-start gap-3">
                 <div className="bg-primary text-primary-foreground p-2 rounded-lg">
                   <Download className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">Instalar App</p>
-                  <AlertDescription>
-                    Instale para acesso rápido e funcionamento offline.
-                  </AlertDescription>
-                  <Button onClick={handleInstallClick} className="mt-3 w-full h-10">
-                    <Download className="w-4 h-4 mr-2" />
-                    Instalar agora
-                  </Button>
+                  {showIosHint ? (
+                    <>
+                      <p className="font-medium">Instalar no iOS</p>
+                      <AlertDescription>
+                        No Safari, toque em "Compartilhar" e depois "Adicionar à Tela de Início".
+                      </AlertDescription>
+                      <Button variant="outline" size="sm" className="mt-3 w-full h-10" onClick={handleDismissInstall}>
+                        Não mostrar novamente
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium">Instalar App</p>
+                      <AlertDescription>
+                        Instale para acesso rápido e funcionamento offline.
+                      </AlertDescription>
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <Button onClick={handleInstallClick} className="h-10">
+                          <Download className="w-4 h-4 mr-2" />
+                          Instalar agora
+                        </Button>
+                        <Button variant="outline" onClick={handleDismissInstall} className="h-10">
+                          Não mostrar novamente
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </Alert>
-          )}
+          </div>
+        </div>
+      )}
+
+      {/* Conteúdo sobreposto ao hero */}
+      <div className="relative z-20 -mt-10 flex items-start justify-center px-4">
+        <div className="w-full max-w-sm space-y-4">
+          
 
           {!isOnline && (
             <Alert className="border-orange-500/30 bg-orange-50 dark:bg-orange-950">
@@ -256,7 +362,7 @@ const ChecklistMobileLogin = () => {
             </Alert>
           )}
 
-          <Card className="backdrop-blur-sm bg-white/90 dark:bg-neutral-900/80 border border-border/60 shadow-sm rounded-2xl">
+          <Card className="bg-white dark:bg-neutral-900 border border-border/60 shadow-sm rounded-2xl">
             <CardHeader className="text-center pb-2">
               <div className="flex justify-center mb-3">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
@@ -271,39 +377,84 @@ const ChecklistMobileLogin = () => {
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm">E-mail</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <EnvelopeSimple
+                      size={22}
+                      weight="regular"
+                      className="absolute left-3 inset-y-0 my-auto text-muted-foreground pointer-events-none [shape-rendering:geometricPrecision]"
+                      aria-hidden
+                    />
                     <Input
                       id="email"
                       type="email"
                       placeholder="seu.email@exemplo.com"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (emailError) setEmailError('');
+                      }}
+                      onBlur={() => {
+                        const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                        setEmailError(isValid ? '' : 'Informe um e-mail válido');
+                      }}
                       disabled={loading}
                       className="pl-10 h-11 rounded-none border-0 border-b border-muted bg-transparent focus-visible:ring-0 focus-visible:border-primary"
                       autoComplete="username"
                       inputMode="email"
+                      aria-invalid={!!emailError}
+                      aria-describedby={emailError ? 'email-error' : undefined}
                     />
+                    {emailError && (
+                      <p id="email-error" className="mt-1 text-xs text-destructive">{emailError}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm">Senha</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <LockSimple
+                      size={22}
+                      weight="regular"
+                      className="absolute left-3 inset-y-0 my-auto text-muted-foreground pointer-events-none [shape-rendering:geometricPrecision]"
+                      aria-hidden
+                    />
                     <Input
                       id="password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (passwordError) setPasswordError('');
+                      }}
+                      onBlur={() => {
+                        setPasswordError(password.length >= 6 ? '' : 'A senha deve ter ao menos 6 caracteres');
+                      }}
                       disabled={loading}
-                      className="pl-10 h-11 rounded-none border-0 border-b border-muted bg-transparent focus-visible:ring-0 focus-visible:border-primary"
+                      className="pl-10 pr-10 h-11 rounded-none border-0 border-b border-muted bg-transparent focus-visible:ring-0 focus-visible:border-primary"
                       autoComplete="current-password"
+                      aria-invalid={!!passwordError}
+                      aria-describedby={passwordError ? 'password-error' : undefined}
                     />
+                    {passwordError && (
+                      <p id="password-error" className="mt-1 text-xs text-destructive">{passwordError}</p>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 inset-y-0 my-auto text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? (
+                        <EyeSlash size={24} weight="regular" className="[shape-rendering:geometricPrecision]" />
+                      ) : (
+                        <Eye size={24} weight="regular" className="[shape-rendering:geometricPrecision]" />
+                      )}
+                    </button>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full h-11" disabled={loading}>
+                <Button type="submit" className="w-full h-11" disabled={loading || !!emailError || !!passwordError}>
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -314,8 +465,8 @@ const ChecklistMobileLogin = () => {
                   )}
                 </Button>
                 <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Checkbox id="remember" />
+                  <label htmlFor="remember" className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Checkbox id="remember" checked={rememberMe} onCheckedChange={(v) => setRememberMe(!!v)} />
                     Lembrar-me
                   </label>
                   <button

@@ -26,50 +26,63 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     const files = event.target.files;
     if (!files) return;
 
-    setUploading(true);
+    const MAX_INPUT_MB = 5;
+    const MAX_WIDTH = 1280; // resolução máxima para compressão
+    const QUALITY = 0.75;   // qualidade JPEG
 
-    Array.from(files).forEach((file) => {
-      if (images.length >= maxImages) {
-        toast({
-          title: "Limite atingido",
-          description: `Máximo de ${maxImages} imagens permitidas.`,
-          variant: "destructive",
-        });
-        return;
+    const processImages = async () => {
+      try {
+        setUploading(true);
+
+        const remainingSlots = Math.max(0, (maxImages ?? 0) - images.length);
+        if (remainingSlots <= 0) {
+          toast({
+            title: "Limite atingido",
+            description: `Máximo de ${maxImages} imagens permitidas.`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const selectedFiles = Array.from(files).slice(0, remainingSlots);
+        const additions: string[] = [];
+
+        for (const file of selectedFiles) {
+          if (!file.type.startsWith('image/')) {
+            toast({
+              title: "Arquivo inválido",
+              description: "Apenas imagens são permitidas.",
+              variant: "destructive",
+            });
+            continue;
+          }
+
+          if (file.size > MAX_INPUT_MB * 1024 * 1024) {
+            toast({
+              title: "Arquivo muito grande",
+              description: `Tamanho máximo: ${MAX_INPUT_MB}MB.`,
+              variant: "destructive",
+            });
+            continue;
+          }
+
+          const dataUrl = await compressImage(file, MAX_WIDTH, QUALITY);
+          additions.push(dataUrl);
+        }
+
+        if (additions.length > 0) {
+          onImagesChange([...images, ...additions]);
+        }
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
+    };
 
-      // Validar tipo de arquivo
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Arquivo inválido",
-          description: "Apenas imagens são permitidas.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validar tamanho (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Arquivo muito grande",
-          description: "Tamanho máximo: 5MB.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newImage = e.target?.result as string;
-        onImagesChange([...images, newImage]);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    setUploading(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    // executar processamento assíncrono
+    void processImages();
   };
 
   const removeImage = (index: number) => {
@@ -171,3 +184,42 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     </div>
   );
 };
+
+// Utilitário de compressão de imagem via canvas
+async function compressImage(file: File, maxWidth = 1280, quality = 0.75): Promise<string> {
+  const dataUrl = await readFileAsDataURL(file);
+  const img = await loadImage(dataUrl);
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return dataUrl;
+
+  const scale = Math.min(1, maxWidth / img.width);
+  const targetWidth = Math.round(img.width * scale);
+  const targetHeight = Math.round(img.height * scale);
+
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+  const mime = 'image/jpeg';
+  return canvas.toDataURL(mime, quality);
+}
+
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}

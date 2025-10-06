@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
 import AuthErrorHandler from "@/components/AuthErrorHandler";
 
@@ -25,10 +26,13 @@ import NotFound from "./pages/NotFound";
 import TestBombeiroSelector from "./components/TestBombeiroSelector";
 import TestSupabaseConnection from "./components/TestSupabaseConnection";
 import TestEquipeData from "./components/TestEquipeData";
-import ChecklistMobileLogin from "./pages/ChecklistMobileLogin";
-import ChecklistMobile from "./pages/ChecklistMobile";
-import ChecklistMobileViatura from "./pages/ChecklistMobileViatura";
-import ChecklistMobileSyncStatus from "./pages/ChecklistMobileSyncStatus";
+const ChecklistMobileLogin = lazy(() => import("./pages/ChecklistMobileLogin"));
+const ChecklistMobile = lazy(() => import("./pages/ChecklistMobile"));
+const ChecklistMobileDispatcher = lazy(() => import("./pages/ChecklistMobileDispatcher"));
+const ChecklistMobileEquipamentos = lazy(() => import("./pages/ChecklistMobileEquipamentos"));
+const ChecklistMobileEquipamentoExecucao = lazy(() => import("./pages/ChecklistMobileEquipamentoExecucao"));
+const ChecklistMobileViatura = lazy(() => import("./pages/ChecklistMobileViatura"));
+const ChecklistMobileSyncStatus = lazy(() => import("./pages/ChecklistMobileSyncStatus"));
 import AdminCreateUsers from "./pages/AdminCreateUsers";
 
 
@@ -51,11 +55,15 @@ const App = () => (
     >
       <BrowserRouter>
         <AuthErrorHandler />
+        <Suspense fallback={<div className="p-4 text-sm">Carregando…</div>}>
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/checklist-mobile/login" element={<ChecklistMobileLogin />} />
-          <Route path="/checklist-mobile" element={<ChecklistMobile />} />
+          <Route path="/checklist-mobile" element={<ChecklistMobileDispatcher />} />
+          <Route path="/checklist-mobile/viaturas" element={<ChecklistMobile />} />
+          <Route path="/checklist-mobile/equipamentos" element={<ChecklistMobileEquipamentos />} />
+          <Route path="/checklist-mobile/equipamento/:id" element={<ChecklistMobileEquipamentoExecucao />} />
           <Route path="/checklist-mobile/viatura/:id" element={<ChecklistMobileViatura />} />
           <Route path="/checklist-mobile/sync" element={<ChecklistMobileSyncStatus />} />
           <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
@@ -85,6 +93,7 @@ const App = () => (
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
       <Toaster />
       <Sonner />

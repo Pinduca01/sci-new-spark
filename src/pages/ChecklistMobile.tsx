@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useCurrentUserName } from '@/hooks/useCurrentUserName';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Truck, LogOut, RefreshCw } from 'lucide-react';
@@ -20,6 +21,7 @@ interface Viatura {
 const ChecklistMobile = () => {
   const navigate = useNavigate();
   const { role, baseId, baseName, loading: roleLoading, canDoChecklist } = useUserRole();
+  const { name: userName } = useCurrentUserName();
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
@@ -112,7 +114,13 @@ const ChecklistMobile = () => {
   };
 
   const handleViatura = (viaturaId: string) => {
-    navigate(`/checklist-mobile/viatura/${viaturaId}`);
+    if (role === 'ba_2') {
+      // BA-2 realiza checklist de equipamentos, preservando viatura selecionada
+      navigate('/checklist-mobile/equipamentos', { state: { viaturaId } });
+    } else {
+      // BA-MC realiza checklist de viatura
+      navigate(`/checklist-mobile/viatura/${viaturaId}`);
+    }
   };
 
   if (roleLoading || loading) {
@@ -135,6 +143,7 @@ const ChecklistMobile = () => {
             <p className="text-sm text-muted-foreground">
               {baseName} - {role === 'ba_mc' ? 'Motorista Condutor' : 'Bombeiro Aeródromo 2'}
             </p>
+            <p className="mt-1 text-sm font-medium">Usuário: {userName ?? '—'}</p>
           </div>
           <div className="flex gap-2">
             {pendingCount > 0 && (
@@ -154,6 +163,12 @@ const ChecklistMobile = () => {
           </div>
         </div>
 
+        {/* Métricas rápidas */}
+        <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
+          <span>Base: {baseName}</span>
+          <span>{viaturas.length} viatura(s) disponível(is)</span>
+        </div>
+
         {/* Lista de Viaturas */}
         {viaturas.length === 0 ? (
           <Card>
@@ -164,28 +179,38 @@ const ChecklistMobile = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {viaturas.map((viatura) => (
-              <Card key={viatura.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
+              <Card
+                key={viatura.id}
+                className="group cursor-pointer rounded-xl border bg-white shadow-sm hover:shadow-lg transition-all"
+                onClick={() => handleViatura(viatura.id)}
+              >
+                <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2">
-                    <Truck className="w-5 h-5" />
+                    <Truck className="w-5 h-5 text-primary" />
                     {viatura.prefixo}
+                    <span className="ml-auto inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {viatura.tipo}
+                    </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Placa:</span>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Placa</span>
                       <span className="font-medium">{viatura.placa}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Tipo:</span>
-                      <span className="font-medium">{viatura.tipo}</span>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Status</span>
+                      <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 px-2 py-0.5 text-xs">
+                        Ativa
+                      </span>
                     </div>
-                    <Button 
-                      className="w-full mt-4" 
-                      onClick={() => handleViatura(viatura.id)}
+                    <Button
+                      className="w-full mt-3"
+                      onClick={(e) => { e.stopPropagation(); handleViatura(viatura.id); }}
+                      aria-label={`Iniciar checklist da viatura ${viatura.prefixo}`}
                     >
                       Iniciar Checklist
                     </Button>

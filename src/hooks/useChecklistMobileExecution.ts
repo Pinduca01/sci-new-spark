@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { buildRealTemplateForViatura } from '@/utils/checklistTemplatesReal';
 import { toast } from 'sonner';
 import { saveToCache, getFromCache } from '@/lib/offlineDb';
+import { buildFallbackTemplateForViatura } from '@/utils/checklistTemplatesFallback';
+import { buildStaticTemplateForViatura } from '@/hooks/checklistStaticTemplates';
 
 export interface ChecklistItem {
   id: string;
@@ -39,6 +42,15 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
   const loadChecklistData = async () => {
     try {
       setLoading(true);
+      // Proteger contra id inválido (não-UUID) para evitar erro 22P02 no Postgres
+      const isUuid = (value: string) => {
+        return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(value);
+      };
+      if (!viaturaId || !isUuid(viaturaId)) {
+        setLoading(false);
+        toast.error('ID da viatura inválido. Abra a viatura pela lista.');
+        return;
+      }
       const isOnline = navigator.onLine;
 
       // Tentar carregar do cache primeiro se offline
@@ -77,8 +89,106 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
         .eq('user_id', user.id)
         .single();
 
-      if (bombeiroError) throw bombeiroError;
+  if (bombeiroError) throw bombeiroError;
       setBombeiro(bombeiroData);
+
+      // 3A. Tentar carregar itens do template_checklist via tipos_checklist (robusto com normalização)
+      try {
+        const normalize = (s: string | null) => (s || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .trim();
+
+        // Candidatos de descrição para tipos de checklist de viaturas
+        const descricaoCandidates = [
+          viaturaData.tipo,
+          'BA-MC',
+          'BA-2',
+          'VIATURAS',
+          'GERAL',
+        ].filter(Boolean) as string[];
+
+        const normalizedCandidates = descricaoCandidates.map(normalize);
+
+        // Buscar todos os tipos para resolução mais flexível
+        const { data: todosTipos } = await supabase
+          .from('tipos_checklist')
+          .select('id, descricao');
+
+        // Resolver todos os candidatos possíveis por normalização
+        const candidatosResolvidos: any[] = (todosTipos || []).filter((t: any) => normalizedCandidates.includes(normalize(t.descricao)));
+
+        // Caso nenhum resolvido por normalização, tentar igualdade e adicionar se existir
+        if (candidatosResolvidos.length === 0) {
+          for (const descricao of descricaoCandidates) {
+            const { data: tipoPorIgualdade } = await supabase
+              .from('tipos_checklist')
+              .select('id, descricao')
+              .eq('descricao', descricao)
+              .single();
+            if (tipoPorIgualdade?.id) {
+              candidatosResolvidos.push(tipoPorIgualdade);
+            }
+          }
+        }
+
+        // Se temos candidatos, buscar itens de todos e escolher o mais completo
+        if (candidatosResolvidos.length > 0) {
+          const ids = candidatosResolvidos.map(t => t.id);
+          const { data: itensDeTodos, error: itensTodosError } = await supabase
+            .from('template_checklist')
+            .select('id, item, categoria, ordem, tipo_checklist_id')
+            .in('tipo_checklist_id', ids)
+            .order('ordem', { ascending: true });
+
+          if (!itensTodosError && Array.isArray(itensDeTodos) && itensDeTodos.length > 0) {
+            // Agrupar por tipo_checklist_id e escolher o grupo com mais itens
+            const grupos: Record<string, any[]> = {};
+            for (const it of itensDeTodos) {
+              const key = String((it as any).tipo_checklist_id);
+              if (!grupos[key]) grupos[key] = [];
+              grupos[key].push(it);
+            }
+
+            const melhorTipoId = Object.keys(grupos).sort((a, b) => grupos[b].length - grupos[a].length)[0];
+            const melhorItens = grupos[melhorTipoId] || [];
+            const tipoRegistro = candidatosResolvidos.find(t => String(t.id) === String(melhorTipoId));
+
+            const builtTemplate = {
+              id: tipoRegistro?.id ?? melhorTipoId,
+              nome: `Template ${tipoRegistro?.descricao || viaturaData.tipo}`,
+              tipo_viatura: viaturaData.tipo,
+              itens: melhorItens.map((it: any) => ({
+                id: (it.id ?? crypto.randomUUID()).toString(),
+                nome: it.item,
+                categoria: it.categoria,
+              }))
+            } as ChecklistTemplate;
+
+            console.info('[Checklist] Usando template_checklist mais completo para', tipoRegistro?.descricao, 'itens:', melhorItens.length);
+
+            setTemplate(builtTemplate as any);
+            initializeItems((builtTemplate.itens as any) || []);
+            toast.success(`Template carregado (${tipoRegistro?.descricao || 'Mais completo'}) do template_checklist`);
+
+            await saveToCache(`checklist_data_${viaturaId}`, {
+              viatura: viaturaData,
+              bombeiro: bombeiroData,
+              template: builtTemplate
+            });
+
+            // Após carregar com sucesso do template_checklist, não seguir para outros fallbacks
+            loadAutoSavedProgress();
+            setLoading(false);
+            return;
+          }
+        }
+
+        console.warn('[Checklist] Nenhum item encontrado em template_checklist para candidatos', descricaoCandidates);
+      } catch (e) {
+        // Continua para demais estratégias se não conseguir carregar de template_checklist
+        console.warn('Falha ao carregar itens de template_checklist, tentando outras fontes...', e);
+      }
 
       // 3. Buscar template ativo para o tipo de viatura
       const { data: templateData, error: templateError } = await supabase
@@ -97,16 +207,71 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
           .eq('ativo', true)
           .single();
 
-        if (generalError) throw new Error('Nenhum template ativo encontrado');
-        setTemplate(generalTemplate as any);
-        initializeItems((generalTemplate.itens as any) || []);
-        
-        // Salvar no cache
-        await saveToCache(`checklist_data_${viaturaId}`, {
-          viatura: viaturaData,
-          bombeiro: bombeiroData,
-          template: generalTemplate
-        });
+        if (generalError || !generalTemplate) {
+          // Tentar construir template real com base nas tabelas (equipamentos/agentes)
+          try {
+            const realTemplate = await buildRealTemplateForViatura(viaturaId, viaturaData.tipo as 'BA-MC' | 'BA-2');
+            // Se o template real estiver muito pequeno, preferir o estático completo
+            if (!realTemplate?.itens || realTemplate.itens.length < 12) {
+              const staticTemplate = buildStaticTemplateForViatura(viaturaData.tipo);
+              setTemplate(staticTemplate as any);
+              initializeItems((staticTemplate.itens as any) || []);
+              toast.success(`Usando template estático completo (${staticTemplate.nome})`);
+
+              await saveToCache(`checklist_data_${viaturaId}`, {
+                viatura: viaturaData,
+                bombeiro: bombeiroData,
+                template: staticTemplate
+              });
+            } else {
+              setTemplate(realTemplate as any);
+              initializeItems((realTemplate.itens as any) || []);
+              toast.success('Usando template real baseado em dados da viatura');
+
+              await saveToCache(`checklist_data_${viaturaId}`, {
+                viatura: viaturaData,
+                bombeiro: bombeiroData,
+                template: realTemplate
+              });
+            }
+          } catch (e) {
+            // Se não foi possível montar o template real, usar fallback estático completo (BA‑MC/CCI ou BA‑2)
+            const staticTemplate = buildStaticTemplateForViatura(viaturaData.tipo);
+            if (staticTemplate?.itens?.length) {
+              setTemplate(staticTemplate as any);
+              initializeItems((staticTemplate.itens as any) || []);
+              toast.success(`Usando template estático completo (${staticTemplate.nome})`);
+
+              await saveToCache(`checklist_data_${viaturaId}`, {
+                viatura: viaturaData,
+                bombeiro: bombeiroData,
+                template: staticTemplate
+              });
+            } else {
+              // Fallback mínimo caso o estático falhe
+              const fallback = buildFallbackTemplateForViatura(viaturaData.tipo);
+              setTemplate(fallback as any);
+              initializeItems((fallback.itens as any) || []);
+              toast.info('Usando template fallback mínimo');
+
+              await saveToCache(`checklist_data_${viaturaId}`, {
+                viatura: viaturaData,
+                bombeiro: bombeiroData,
+                template: fallback
+              });
+            }
+          }
+        } else {
+          setTemplate(generalTemplate as any);
+          initializeItems((generalTemplate.itens as any) || []);
+          
+          // Salvar no cache
+          await saveToCache(`checklist_data_${viaturaId}`, {
+            viatura: viaturaData,
+            bombeiro: bombeiroData,
+            template: generalTemplate
+          });
+        }
       } else {
         setTemplate(templateData as any);
         initializeItems((templateData.itens as any) || []);

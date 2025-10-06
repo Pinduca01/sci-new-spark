@@ -1,0 +1,49 @@
+{
+  "tech_stack": {
+    "frontend": ["React", "TypeScript", "Vite", "TailwindCSS", "shadcn/ui"],
+    "state": ["React Hooks", "TanStack Query"],
+    "backend": ["Supabase (Auth, Postgres, Storage, RLS)", "Edge Functions"],
+    "tooling": ["ESLint", "PostCSS", "Sonner", "Service Worker (PWA)", "Vercel"]
+  },
+  "key_modules": [
+    "src/hooks/useChecklistMobileExecution.ts: fluxo de execução do checklist de viaturas",
+    "src/hooks/useChecklistTemplates.ts: CRUD e listagem de checklist_templates",
+    "src/utils/checklistTemplatesReal.ts: montagem dinâmica de template por equipamentos/agentes",
+    "src/components/checklist-mobile/*: UI do checklist móvel",
+    "src/pages/ChecklistMobile.tsx e ChecklistMobileLogin.tsx: entrada e autenticação",
+    "src/hooks/useChecklistsHistorico.ts: histórico e timeline",
+    "src/lib/offlineDb.ts: cache offline e sincronização"
+  ],
+  "data_models": {
+    "checklist_templates": {"id":"uuid","nome":"text","tipo_viatura":"text","categoria":"text","itens":"json","ativo":"boolean"},
+    "tipos_checklist": {"id":"uuid","descricao":"text"},
+    "template_checklist": {"id":"uuid","tipo_checklist_id":"uuid","item":"text","categoria":"text","ordem":"int","obrigatorio":"boolean","permite_foto":"boolean"},
+    "checklists_viaturas": {"id":"uuid","viatura_id":"uuid","tipo_checklist":"text","template_id":"uuid","itens_checklist":"json","status_geral":"text"},
+    "nao_conformidades": {"id":"uuid","checklist_id":"uuid","item_id":"uuid","item_nome":"text","secao":"text","imagens":"json"}
+  },
+  "feature_focus": "Checklist Mobile - Carregar itens de template_checklist ao iniciar checklist",
+  "current_behavior": [
+    "Busca viatura e bombeiro logado",
+    "Tenta carregar itens via tipos_checklist + template_checklist (por descricao do tipo de viatura, fallback 'GERAL')",
+    "Se falhar, tenta checklist_templates ativo; senão, monta template real; por fim, fallback hardcoded",
+    "Inicializa itens com status nulo e persiste em cache offline",
+    "Recupera progresso autosalvo"
+  ],
+  "entry_points": [
+    "src/pages/ChecklistMobile.tsx: lista de viaturas e botão Iniciar Checklist",
+    "src/pages/ChecklistMobileViatura.tsx: execução usando useChecklistMobileExecution"
+  ],
+  "risks": [
+    "Dependência de descricao em tipos_checklist pode variar; ausência de 'GERAL' quebra fallback",
+    "Campos obrigatorio/permite_foto em template_checklist ainda não são usados na UI",
+    "RLS pode bloquear leituras no mobile se policies não configuradas",
+    "Cache offline precisa invalidação ao alterar templates"
+  ],
+  "test_recommendations": [
+    "Render: quando tipos_checklist existe para o tipo de viatura, itens ordenados por ordem aparecem",
+    "Fallback: sem tipos_checklist, carrega checklist_templates ativo; senão, template real; senão, hardcoded",
+    "Cache: modo offline carrega do cache e exibe toast de offline",
+    "Autosave: item nao_conforme requer foto ou observação antes de concluir",
+    "Performance: lista grande de itens não causa travamentos"
+  ]
+}

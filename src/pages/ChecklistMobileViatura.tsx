@@ -13,6 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { saveChecklistOffline } from '@/lib/offlineDb';
+import { Progress } from '@/components/ui/progress';
+import { ShineBorder } from '../components/ui/shine-border';
 
 export default function ChecklistMobileViatura() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +23,15 @@ export default function ChecklistMobileViatura() {
   const [showAssinatura, setShowAssinatura] = useState(false);
   const [currentSection, setCurrentSection] = useState<string>('');
 
+  // Validação simples de UUID (versões com 36 chars e hífens)
+  const isValidUUID = (value: string | undefined) => {
+    if (!value) return false;
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(value);
+  };
+
+  const viaturaIdValida = isValidUUID(id);
+
+  // Se o id da rota for inválido, evitar inicializar o hook que consulta Supabase
   const {
     loading,
     template,
@@ -34,9 +45,31 @@ export default function ChecklistMobileViatura() {
     getProgress,
     validateChecklist,
     clearAutoSavedProgress
-  } = useChecklistMobileExecution(id!);
+  } = useChecklistMobileExecution(viaturaIdValida ? id! : '');
 
   const progress = getProgress();
+
+  // Render de proteção para id inválido de viatura (evita erro 22P02 - UUID)
+  if (!viaturaIdValida) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/checklist-mobile')}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h1 className="font-bold text-lg">Checklist de Viatura</h1>
+        </div>
+        <Alert>
+          <AlertDescription>
+            ID da viatura inválido. Use um link gerado pela lista de viaturas.
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4">
+          <Button onClick={() => navigate('/checklist-mobile')}>Voltar para lista</Button>
+        </div>
+      </div>
+    );
+  }
 
   // Agrupar itens por categoria
   const itemsByCategory = useMemo(() => {
@@ -46,8 +79,13 @@ export default function ChecklistMobileViatura() {
       acc[category].push(item);
       return acc;
     }, {} as Record<string, typeof items>);
+    // Definir seção inicial na primeira categoria com itens não concluídos
+    const firstIncomplete = Object.entries(grouped).find(([_, arr]) => arr.some(i => !i.status));
+    if (!currentSection && firstIncomplete) {
+      setCurrentSection(firstIncomplete[0]);
+    }
     return grouped;
-  }, [items]);
+  }, [items, currentSection]);
 
   const handleFinalizarChecklist = () => {
     const validation = validateChecklist();
@@ -266,11 +304,14 @@ export default function ChecklistMobileViatura() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-24">
       <OnlineStatusBadge />
       
       {/* Header Fixo */}
-      <div className="sticky top-0 z-10 bg-background border-b">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
+        <div className="relative">
+          <ShineBorder className="rounded-none" shineColor={["#f97316","#8b5cf6","#06b6d4"]} />
+        </div>
         <div className="flex items-center justify-between p-4">
           <Button
             variant="ghost"
@@ -295,6 +336,31 @@ export default function ChecklistMobileViatura() {
         <div className="px-4 pb-3">
           <ChecklistProgress {...progress} />
         </div>
+        {/* Navegação rápida por categorias */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {Object.entries(itemsByCategory).map(([categoria, categoryItems]) => {
+              const done = categoryItems.filter(i => i.status !== null).length;
+              const total = categoryItems.length;
+              const perc = Math.round((done / total) * 100);
+              const active = currentSection === categoria;
+              return (
+                <button
+                  key={categoria}
+                  type="button"
+                  onClick={() => setCurrentSection(categoria)}
+                  className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs transition-all ${active ? 'bg-primary/10 border-primary text-primary' : 'bg-muted/50 hover:bg-muted'}`}
+                  aria-label={`Ir para categoria ${categoria}`}
+                >
+                  <span className="font-medium">{categoria}</span>
+                  <span className="rounded-full bg-background px-2 py-0.5 text-[10px] border">
+                    {done}/{total}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Conteúdo */}
@@ -306,14 +372,24 @@ export default function ChecklistMobileViatura() {
           onValueChange={setCurrentSection}
           className="space-y-3"
         >
-          {Object.entries(itemsByCategory).map(([categoria, categoryItems]) => (
-            <AccordionItem key={categoria} value={categoria} className="border rounded-lg">
+          {Object.entries(itemsByCategory).map(([categoria, categoryItems]) => {
+            const done = categoryItems.filter(i => i.status !== null).length;
+            const total = categoryItems.length;
+            const percentage = Math.round((done / total) * 100);
+            return (
+            <AccordionItem key={categoria} value={categoria} className="border rounded-xl bg-card shadow-sm">
               <AccordionTrigger className="px-4 hover:no-underline">
-                <div className="flex items-center justify-between w-full pr-2">
-                  <span className="font-semibold">{categoria}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {categoryItems.filter(i => i.status !== null).length}/{categoryItems.length}
-                  </span>
+                <div className="flex items-center justify-between w-full gap-3 pr-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{categoria}</span>
+                    <span className="text-xs rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                      {done}/{total}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <Progress value={percentage} className="h-1" />
+                  </div>
+                  <span className="text-xs text-muted-foreground w-10 text-right">{percentage}%</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4 space-y-3">
@@ -330,12 +406,12 @@ export default function ChecklistMobileViatura() {
                 ))}
               </AccordionContent>
             </AccordionItem>
-          ))}
+          );})}
         </Accordion>
       </div>
 
       {/* Footer Fixo */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t p-4">
         <Button
           onClick={handleFinalizarChecklist}
           disabled={saving || progress.percentage < 100}
