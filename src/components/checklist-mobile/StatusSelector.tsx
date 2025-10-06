@@ -9,7 +9,7 @@ interface StatusSelectorProps {
 
 export const StatusSelector = ({ value, onChange, disabled }: StatusSelectorProps) => {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
       <Button
         type="button"
         variant={value === 'conforme' ? 'default' : 'outline'}
@@ -18,7 +18,7 @@ export const StatusSelector = ({ value, onChange, disabled }: StatusSelectorProp
         disabled={disabled}
         aria-label="Conforme"
         title="Conforme"
-        className="min-w-[96px] flex-1 h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
+        className="w-full h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
       >
         <Check className="w-4 h-4 mr-1.5" />
         <span className="text-sm">Conforme</span>
@@ -32,7 +32,7 @@ export const StatusSelector = ({ value, onChange, disabled }: StatusSelectorProp
         disabled={disabled}
         aria-label="Não Conforme"
         title="Não Conforme"
-        className="min-w-[96px] flex-1 h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
+        className="w-full h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
       >
         <X className="w-4 h-4 mr-1.5" />
         <span className="text-sm">Não Conforme</span>
@@ -46,7 +46,7 @@ export const StatusSelector = ({ value, onChange, disabled }: StatusSelectorProp
         disabled={disabled}
         aria-label="Não Aplicável"
         title="Não Aplicável"
-        className="min-w-[88px] flex-1 h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
+        className="w-full h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
       >
         <Minus className="w-4 h-4 mr-1.5" />
         <span className="text-sm">N/A</span>

@@ -229,6 +229,9 @@ export default function ChecklistMobileViatura() {
       );
 
       // 2. Criar registro do checklist
+      // Garantir que o campo tipo_checklist nunca seja nulo
+      const normalize = (s: string | null | undefined) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const tipoChecklist = normalize(viatura?.tipo) === 'ba2' ? 'BA-2' : 'BA-MC';
       const { data: checklistData, error: checklistError } = await supabase
         .from('checklists_viaturas')
         .insert({
@@ -236,7 +239,7 @@ export default function ChecklistMobileViatura() {
           template_id: template?.id,
           bombeiro_responsavel_id: bombeiro?.id,
           bombeiro_responsavel: bombeiro?.nome,
-          tipo_checklist: template?.tipo_viatura,
+          tipo_checklist: tipoChecklist,
           equipe: bombeiro?.equipe,
           data_checklist: new Date().toISOString().split('T')[0],
           hora_checklist: new Date().toTimeString().split(' ')[0],
