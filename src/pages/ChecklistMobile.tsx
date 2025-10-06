@@ -78,7 +78,7 @@ const ChecklistMobile = () => {
         .from('viaturas')
         .select('id, prefixo, placa, tipo, status')
         .eq('base_id', baseId)
-        .eq('status', 'ativo')
+        .eq('status', 'ativa')
         .order('prefixo');
 
       if (error) throw error;
