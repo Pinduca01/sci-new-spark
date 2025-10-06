@@ -169,7 +169,6 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
 
             setTemplate(builtTemplate as any);
             initializeItems((builtTemplate.itens as any) || []);
-            toast.success(`Template carregado (${tipoRegistro?.descricao || 'Mais completo'}) do template_checklist`);
 
             await saveToCache(`checklist_data_${viaturaId}`, {
               viatura: viaturaData,
@@ -216,7 +215,6 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
               const staticTemplate = buildStaticTemplateForViatura(viaturaData.tipo);
               setTemplate(staticTemplate as any);
               initializeItems((staticTemplate.itens as any) || []);
-              toast.success(`Usando template estático completo (${staticTemplate.nome})`);
 
               await saveToCache(`checklist_data_${viaturaId}`, {
                 viatura: viaturaData,
@@ -226,7 +224,6 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
             } else {
               setTemplate(realTemplate as any);
               initializeItems((realTemplate.itens as any) || []);
-              toast.success('Usando template real baseado em dados da viatura');
 
               await saveToCache(`checklist_data_${viaturaId}`, {
                 viatura: viaturaData,
@@ -240,7 +237,6 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
             if (staticTemplate?.itens?.length) {
               setTemplate(staticTemplate as any);
               initializeItems((staticTemplate.itens as any) || []);
-              toast.success(`Usando template estático completo (${staticTemplate.nome})`);
 
               await saveToCache(`checklist_data_${viaturaId}`, {
                 viatura: viaturaData,
@@ -252,7 +248,6 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
               const fallback = buildFallbackTemplateForViatura(viaturaData.tipo);
               setTemplate(fallback as any);
               initializeItems((fallback.itens as any) || []);
-              toast.info('Usando template fallback mínimo');
 
               await saveToCache(`checklist_data_${viaturaId}`, {
                 viatura: viaturaData,
