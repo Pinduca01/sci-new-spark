@@ -1,9 +1,7 @@
-const CACHE_NAME = 'sci-checklist-v2';
-const RUNTIME_CACHE = 'sci-runtime-v2';
+const CACHE_NAME = 'sci-checklist-v3';
+const RUNTIME_CACHE = 'sci-runtime-v3';
 
 const STATIC_ASSETS = [
-  '/checklist-mobile/login',
-  '/checklist-mobile',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
@@ -90,15 +88,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Navigations (HTML) should be Network First to avoid stale pages
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirstWithTimeout(request));
+    return;
+  }
+
   // API routes - Network First with timeout
   if (url.pathname.includes('/rest/v1/') || url.pathname.includes('/auth/v1/')) {
     event.respondWith(networkFirstWithTimeout(request));
     return;
   }
 
-  // Static assets and pages - Cache First
+  // Static assets - Cache First
   if (
-    url.pathname.startsWith('/checklist-mobile') ||
     url.pathname.includes('.js') ||
     url.pathname.includes('.css') ||
     url.pathname.includes('.png') ||
