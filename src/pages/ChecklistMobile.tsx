@@ -60,6 +60,12 @@ const ChecklistMobile = () => {
   const loadViaturas = async () => {
     try {
       setLoading(true);
+      console.log('🔍 ChecklistMobile Debug:', { 
+        baseId, 
+        baseName,
+        role,
+        canDoChecklist 
+      });
       const isOnline = navigator.onLine;
 
       // Tentar carregar do cache primeiro se offline
@@ -80,6 +86,12 @@ const ChecklistMobile = () => {
         .eq('base_id', baseId)
         .eq('status', 'ativa')
         .order('prefixo');
+
+      console.log('🚗 Viaturas Query Result:', { 
+        viaturasCount: data?.length || 0, 
+        viaturas: data,
+        error: error?.message 
+      });
 
       if (error) throw error;
       setViaturas(data || []);
