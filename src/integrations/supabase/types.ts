@@ -661,7 +661,7 @@ export type Database = {
             foreignKeyName: "checklists_viaturas_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
-            referencedRelation: "checklist_templates"
+            referencedRelation: "tipos_checklist"
             referencedColumns: ["id"]
           },
         ]
