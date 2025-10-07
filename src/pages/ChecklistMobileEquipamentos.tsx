@@ -36,9 +36,9 @@ export default function ChecklistMobileEquipamentos() {
       }
 
       if (!roleLoading) {
-        if (!canDoChecklist || !isBA2) {
+        if (!canDoChecklist) {
           toast.error('Acesso negado ao checklist de equipamentos');
-          navigate('/login');
+          navigate('/checklist-mobile/login');
           return;
         }
 
@@ -47,7 +47,7 @@ export default function ChecklistMobileEquipamentos() {
     };
 
     init();
-  }, [navigate, roleLoading, canDoChecklist, isBA2]);
+  }, [navigate, roleLoading, canDoChecklist]);
 
   const handleEquipamentoClick = useCallback((id: string) => {
     navigate(`/checklist-mobile/equipamento/${id}`, { state: { viaturaId } });
@@ -68,9 +68,9 @@ export default function ChecklistMobileEquipamentos() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
-            Checklist de Equipamentos (BA-2)
+            Checklist de Equipamentos
           </h1>
-          <Button variant="outline" onClick={() => navigate('/checklist-mobile')}>Voltar</Button>
+          <Button variant="outline" onClick={() => navigate(viaturaId ? `/checklist-mobile/tipo/${viaturaId}` : '/checklist-mobile/viaturas')}>Voltar</Button>
         </div>
 
         <div className="flex items-center justify-between text-sm text-muted-foreground">

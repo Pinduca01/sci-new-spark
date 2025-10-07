@@ -44,17 +44,17 @@ const ChecklistMobileLogin = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // Verificar se é BA-MC ou BA-2
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
+        // Verificar se o usuário está cadastrado e ativo
+        const { data: bombeiro } = await supabase
+          .from('bombeiros')
+          .select('id, nome, ativo')
           .eq('user_id', session.user.id)
           .single();
 
-        if (roleData?.role === 'ba_mc' || roleData?.role === 'ba_2') {
-          navigate('/checklist-mobile');
+        if (bombeiro && bombeiro.ativo) {
+          navigate('/checklist-mobile/viaturas');
         } else {
-          // Não é BA-MC/BA-2, fazer logout
+          // Não está cadastrado ou inativo, fazer logout
           await supabase.auth.signOut();
         }
       }
@@ -183,47 +183,24 @@ const ChecklistMobileLogin = () => {
 
       if (authError) throw authError;
 
-      // Verificar role do usuário
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', authData.user.id)
-        .single();
-
-      if (roleError) throw roleError;
-
-      // Verificar se é BA-MC ou BA-2
-      if (roleData.role !== 'ba_mc' && roleData.role !== 'ba_2') {
-        await supabase.auth.signOut();
-        toast.error('Acesso negado. Esta área é exclusiva para BA-MC e BA-2.');
-        return;
-      }
-
-      // Verificar se está ativo
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('ativo')
-        .eq('user_id', authData.user.id)
-        .single();
-
-      if (!profileData?.ativo) {
-        await supabase.auth.signOut();
-        toast.error('Usuário inativo. Entre em contato com o administrador.');
-        return;
-      }
-
-      // Buscar dados do bombeiro
+      // Verificar se o usuário está cadastrado e ativo
       const { data: bombeiroData } = await supabase
         .from('bombeiros')
         .select('*')
         .eq('user_id', authData.user.id)
         .single();
 
+      if (!bombeiroData || !bombeiroData.ativo) {
+        await supabase.auth.signOut();
+        toast.error('Usuário não cadastrado ou inativo. Entre em contato com o administrador.');
+        return;
+      }
+
       // Salvar credenciais para login offline se "Lembrar-me" estiver marcado
       if (rememberMe) {
         await saveOfflineAuth(email, password, {
           user: authData.user,
-          role: roleData.role,
+          role: authData.user.role,
           funcao: bombeiroData?.funcao,
           bombeiro: bombeiroData
         });
@@ -233,7 +210,7 @@ const ChecklistMobileLogin = () => {
       // Resetar contadores/cooldown após sucesso
       setFailedAttempts(0);
       setAttemptCooldownMs(2000);
-      navigate('/checklist-mobile');
+      navigate('/checklist-mobile/viaturas');
     } catch (error: any) {
       console.error('Erro ao fazer login:', error);
       
@@ -370,7 +347,7 @@ const ChecklistMobileLogin = () => {
                 </div>
               </div>
               <CardTitle className="text-xl tracking-tight">Checklist Mobile</CardTitle>
-              <CardDescription className="text-sm">Acesso exclusivo para BA-MC e BA-2</CardDescription>
+              <CardDescription className="text-sm">Sistema de verificação de viaturas e equipamentos</CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
               <form onSubmit={handleLogin} className="space-y-4">

@@ -29,6 +29,7 @@ import TestEquipeData from "./components/TestEquipeData";
 const ChecklistMobileLogin = lazy(() => import("./pages/ChecklistMobileLogin"));
 const ChecklistMobile = lazy(() => import("./pages/ChecklistMobile"));
 const ChecklistMobileDispatcher = lazy(() => import("./pages/ChecklistMobileDispatcher"));
+const ChecklistMobileTipoSelecao = lazy(() => import("./pages/ChecklistMobileTipoSelecao"));
 const ChecklistMobileEquipamentos = lazy(() => import("./pages/ChecklistMobileEquipamentos"));
 const ChecklistMobileEquipamentoExecucao = lazy(() => import("./pages/ChecklistMobileEquipamentoExecucao"));
 const ChecklistMobileViatura = lazy(() => import("./pages/ChecklistMobileViatura"));
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/checklist-mobile/login" element={<ChecklistMobileLogin />} />
           <Route path="/checklist-mobile" element={<ChecklistMobileDispatcher />} />
           <Route path="/checklist-mobile/viaturas" element={<ChecklistMobile />} />
+          <Route path="/checklist-mobile/tipo/:viaturaId" element={<ChecklistMobileTipoSelecao />} />
           <Route path="/checklist-mobile/equipamentos" element={<ChecklistMobileEquipamentos />} />
           <Route path="/checklist-mobile/equipamento/:id" element={<ChecklistMobileEquipamentoExecucao />} />
           <Route path="/checklist-mobile/viatura/:id" element={<ChecklistMobileViatura />} />

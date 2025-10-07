@@ -113,14 +113,9 @@ const ChecklistMobile = () => {
     navigate('/checklist-mobile/login');
   };
 
-  const handleViatura = (viaturaId: string) => {
-    if (role === 'ba_2') {
-      // BA-2 realiza checklist de equipamentos, preservando viatura selecionada
-      navigate('/checklist-mobile/equipamentos', { state: { viaturaId } });
-    } else {
-      // BA-MC realiza checklist de viatura
-      navigate(`/checklist-mobile/viatura/${viaturaId}`);
-    }
+  const handleViatura = (viatura: Viatura) => {
+    // Navega para seleção de tipo de checklist
+    navigate(`/checklist-mobile/tipo/${viatura.id}`);
   };
 
   if (roleLoading || loading) {
@@ -140,9 +135,7 @@ const ChecklistMobile = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Checklist de Viaturas</h1>
-            <p className="text-sm text-muted-foreground">
-              {baseName} - {role === 'ba_mc' ? 'Motorista Condutor' : 'Bombeiro Aeródromo 2'}
-            </p>
+            <p className="text-sm text-muted-foreground">{baseName}</p>
             <p className="mt-1 text-sm font-medium">Usuário: {userName ?? '—'}</p>
           </div>
           <div className="flex gap-2">
@@ -184,7 +177,7 @@ const ChecklistMobile = () => {
               <Card
                 key={viatura.id}
                 className="group cursor-pointer rounded-xl border bg-white shadow-sm hover:shadow-lg transition-all"
-                onClick={() => handleViatura(viatura.id)}
+                onClick={() => handleViatura(viatura)}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2">
@@ -209,7 +202,7 @@ const ChecklistMobile = () => {
                     </div>
                     <Button
                       className="w-full mt-3"
-                      onClick={(e) => { e.stopPropagation(); handleViatura(viatura.id); }}
+                      onClick={(e) => { e.stopPropagation(); handleViatura(viatura); }}
                       aria-label={`Iniciar checklist da viatura ${viatura.prefixo}`}
                     >
                       Iniciar Checklist

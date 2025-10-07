@@ -51,9 +51,9 @@ export default function ChecklistMobileEquipamentoExecucao() {
       }
 
       if (!roleLoading) {
-        if (!canDoChecklist || !isBA2) {
+        if (!canDoChecklist) {
           toast.error('Acesso negado ao checklist de equipamentos');
-          navigate('/login');
+          navigate('/checklist-mobile/login');
           return;
         }
         setLoading(false);
@@ -265,7 +265,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
           template_id: template?.id,
           bombeiro_responsavel_id: session.user.id,
           bombeiro_responsavel: userName || 'Usuário',
-          tipo_checklist: 'BA-2',
+          tipo_checklist: 'EQUIPAMENTOS',
           data_checklist: new Date().toISOString().split('T')[0],
           hora_checklist: new Date().toTimeString().split(' ')[0],
           status_geral: uploadedNCs.length > 0 ? 'pendente' : 'aprovado',
