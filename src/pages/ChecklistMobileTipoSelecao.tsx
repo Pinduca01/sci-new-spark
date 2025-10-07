@@ -87,7 +87,7 @@ export default function ChecklistMobileTipoSelecao() {
                 ) : (
                   <Truck className="h-6 w-6 text-primary" />
                 )}
-                {isCRS ? 'Checklist de Viatura CRS' : 'Checklist de Viatura'}
+                {isCRS ? 'Checklist CRS' : 'Checklist de Viatura'}
               </CardTitle>
             </CardHeader>
             <CardContent>
