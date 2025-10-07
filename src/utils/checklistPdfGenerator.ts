@@ -339,13 +339,13 @@ export const transformarDadosParaFormatoMensal = (
   return Array.from(itensUnicos.values());
 };
 
-// Fase 2: Gerar PDF no formato oficial (landscape)
+// Fase 2: Gerar PDF no formato oficial (landscape) - MELHORADO
 export const generateChecklistMensalFormatoOficialPDF = (
   viaturaPlaca: string,
   mes: number,
   ano: number,
   checklists: ChecklistDetalhado[],
-  tipoChecklist: string = 'GERAL'
+  tipoFiltro?: string // 'CCI', 'EQUIPAMENTOS', 'CRS', undefined = todos
 ) => {
   // Landscape orientation
   const doc = new jsPDF({ orientation: 'landscape' }) as jsPDFWithAutoTable;
@@ -355,26 +355,83 @@ export const generateChecklistMensalFormatoOficialPDF = (
   const diasNoMes = new Date(ano, mes, 0).getDate();
   const mesNome = new Date(ano, mes - 1).toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
 
+  // Filtrar por tipo se especificado
+  let checklistsFiltrados = checklists;
+  let codigoDocumento = 'MMS.BR.BA.FOR.014';
+  let tituloDocumento = 'CHECKLIST GERAL';
+
+  if (tipoFiltro) {
+    if (tipoFiltro === 'CCI') {
+      checklistsFiltrados = checklists.filter(c => 
+        c.tipo_detalhe?.toUpperCase().includes('CCI') || 
+        c.tipo_detalhe?.toUpperCase().includes('INSPEÇÃO')
+      );
+      codigoDocumento = 'MMS.BR.BA.FOR.007';
+      tituloDocumento = 'CHECKLIST DE INSPEÇÃO DE CCIs';
+    } else if (tipoFiltro === 'EQUIPAMENTOS') {
+      checklistsFiltrados = checklists.filter(c => 
+        c.tipo_detalhe?.toUpperCase().includes('EQUIPAMENTO')
+      );
+      codigoDocumento = 'MMS.BR.BA.FOR.012';
+      tituloDocumento = 'CHECKLIST DE EQUIPAMENTOS';
+    } else if (tipoFiltro === 'CRS') {
+      checklistsFiltrados = checklists.filter(c => 
+        c.tipo_detalhe?.toUpperCase().includes('CRS')
+      );
+      codigoDocumento = 'MMS.BR.BA.FOR.014';
+      tituloDocumento = 'FORMULÁRIO DE INSPEÇÃO DE CRS';
+    }
+  }
+
+  if (checklistsFiltrados.length === 0) {
+    throw new Error(`Nenhum checklist do tipo "${tipoFiltro}" encontrado para o período selecionado`);
+  }
+
   // Transformar dados
-  const itensMensais = transformarDadosParaFormatoMensal(checklists, mes, ano);
+  const itensMensais = transformarDadosParaFormatoMensal(checklistsFiltrados, mes, ano);
 
-  let yPos = 15;
+  // Calcular estatísticas
+  const totalDiasComChecklist = itensMensais[0]?.diasStatus.filter(d => d.status !== '-').length || 0;
+  const totalNC = itensMensais.reduce((sum, item) => 
+    sum + item.diasStatus.filter(d => d.status === 'NC').length, 0
+  );
 
-  // Cabeçalho oficial
-  doc.setFontSize(10);
+  let yPos = 12;
+
+  // Cabeçalho oficial melhorado
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('MMS BRASIL SERVIÇOS DE AVIAÇÃO LTDA', 15, yPos);
+  doc.setTextColor(0, 51, 102); // Azul escuro
+  doc.text('MMS BRASIL SERVIÇOS DE AVIAÇÃO LTDA', pageWidth / 2, yPos, { align: 'center' });
   
-  yPos += 5;
-  doc.setFontSize(8);
-  doc.text(`CÓDIGO: ${tipoChecklist}`, 15, yPos);
-  doc.text('SCI-CORE SISTEMA DE CHECKLIST INTEGRADO', pageWidth / 2, yPos, { align: 'center' });
-  doc.text(`VIATURA: ${viaturaPlaca}`, pageWidth - 15, yPos, { align: 'right' });
-
-  yPos += 5;
-  doc.text(`MÊS: ${mesNome}/${ano}`, pageWidth / 2, yPos, { align: 'center' });
+  yPos += 6;
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.text(tituloDocumento, pageWidth / 2, yPos, { align: 'center' });
   
   yPos += 8;
+  
+  // Linha de separação
+  doc.setDrawColor(0, 51, 102);
+  doc.setLineWidth(0.5);
+  doc.line(15, yPos, pageWidth - 15, yPos);
+  
+  yPos += 5;
+  
+  // Informações do documento
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`CÓDIGO: ${codigoDocumento}`, 15, yPos);
+  doc.text(`VIATURA: ${viaturaPlaca}`, pageWidth / 2, yPos, { align: 'center' });
+  doc.text(`PERÍODO: ${mesNome}/${ano}`, pageWidth - 15, yPos, { align: 'right' });
+
+  yPos += 4;
+  doc.setFontSize(7);
+  doc.setTextColor(100);
+  doc.text(`Total de dias com checklist: ${totalDiasComChecklist} | Não conformidades: ${totalNC}`, pageWidth / 2, yPos, { align: 'center' });
+  doc.setTextColor(0);
+  
+  yPos += 6;
 
   // Preparar dados da tabela
   const headerRow = ['ITEM', ...Array.from({ length: diasNoMes }, (_, i) => String(i + 1).padStart(2, '0'))];
@@ -384,15 +441,22 @@ export const generateChecklistMensalFormatoOficialPDF = (
     ...item.diasStatus.map(d => d.status)
   ]);
 
-  // Configuração de cores por status
+  // Configuração de cores por status - PROFISSIONAL
   const getStatusColor = (status: string): [number, number, number] => {
-    if (status === 'C') return [144, 238, 144]; // Verde claro
-    if (status === 'NC') return [255, 182, 193]; // Vermelho claro
-    if (status === 'NA') return [211, 211, 211]; // Cinza
+    if (status === 'C') return [200, 255, 200]; // Verde mais suave
+    if (status === 'NC') return [255, 200, 200]; // Vermelho mais suave
+    if (status === 'NA') return [240, 240, 240]; // Cinza bem claro
     return [255, 255, 255]; // Branco (sem checklist)
   };
 
-  // Gerar tabela
+  const getStatusTextColor = (status: string): [number, number, number] => {
+    if (status === 'C') return [0, 100, 0]; // Verde escuro
+    if (status === 'NC') return [139, 0, 0]; // Vermelho escuro
+    if (status === 'NA') return [100, 100, 100]; // Cinza escuro
+    return [150, 150, 150]; // Cinza claro
+  };
+
+  // Gerar tabela com cores profissionais
   doc.autoTable({
     startY: yPos,
     head: [headerRow],
@@ -400,20 +464,29 @@ export const generateChecklistMensalFormatoOficialPDF = (
     theme: 'grid',
     styles: { 
       fontSize: 6,
-      cellPadding: 1,
+      cellPadding: 1.5,
       overflow: 'linebreak',
       halign: 'center',
-      valign: 'middle'
+      valign: 'middle',
+      lineColor: [200, 200, 200],
+      lineWidth: 0.1
     },
     headStyles: { 
-      fillColor: [41, 128, 185],
-      textColor: 255,
+      fillColor: [0, 51, 102], // Azul escuro profissional
+      textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 6,
-      halign: 'center'
+      halign: 'center',
+      cellPadding: 2
     },
     columnStyles: {
-      0: { cellWidth: 40, halign: 'left', fontStyle: 'bold' }, // Coluna ITEM mais larga
+      0: { 
+        cellWidth: 45, 
+        halign: 'left', 
+        fontStyle: 'bold',
+        fontSize: 6.5,
+        fillColor: [245, 245, 245]
+      },
       ...Object.fromEntries(
         Array.from({ length: diasNoMes }, (_, i) => [i + 1, { cellWidth: 7 }])
       )
@@ -423,24 +496,52 @@ export const generateChecklistMensalFormatoOficialPDF = (
       if (data.section === 'body' && data.column.index > 0) {
         const status = data.cell.raw as string;
         data.cell.styles.fillColor = getStatusColor(status);
-        data.cell.styles.textColor = status === 'NC' ? [139, 0, 0] : [0, 0, 0];
+        data.cell.styles.textColor = getStatusTextColor(status);
         data.cell.styles.fontStyle = status === 'NC' ? 'bold' : 'normal';
+        data.cell.styles.fontSize = status === 'NC' ? 7 : 6;
       }
     },
     margin: { left: 15, right: 15 }
   });
 
-  // Legenda
-  const finalY = doc.lastAutoTable.finalY + 8;
+  // Legenda visual aprimorada
+  const finalY = doc.lastAutoTable.finalY + 6;
   doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0);
   doc.text('LEGENDA:', 15, finalY);
   
+  // Quadrados coloridos para legenda
+  const legendaX = 35;
+  const legendaSpacing = 42;
+  
+  // C = Conforme
+  doc.setFillColor(200, 255, 200);
+  doc.rect(legendaX, finalY - 3, 4, 4, 'F');
   doc.setFont('helvetica', 'normal');
-  doc.text('C = Conforme', 30, finalY);
-  doc.text('NC = Não Conforme', 60, finalY);
-  doc.text('NA = Não Aplicável', 95, finalY);
-  doc.text('- = Sem Checklist', 130, finalY);
+  doc.setTextColor(0, 100, 0);
+  doc.text('C = Conforme', legendaX + 6, finalY);
+  
+  // NC = Não Conforme
+  doc.setFillColor(255, 200, 200);
+  doc.rect(legendaX + legendaSpacing, finalY - 3, 4, 4, 'F');
+  doc.setTextColor(139, 0, 0);
+  doc.text('NC = Não Conforme', legendaX + legendaSpacing + 6, finalY);
+  
+  // NA = Não Aplicável
+  doc.setFillColor(240, 240, 240);
+  doc.rect(legendaX + legendaSpacing * 2, finalY - 3, 4, 4, 'F');
+  doc.setTextColor(100, 100, 100);
+  doc.text('NA = Não Aplicável', legendaX + legendaSpacing * 2 + 6, finalY);
+  
+  // - = Sem Checklist
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(200, 200, 200);
+  doc.rect(legendaX + legendaSpacing * 3, finalY - 3, 4, 4, 'FD');
+  doc.setTextColor(150, 150, 150);
+  doc.text('- = Sem Checklist', legendaX + legendaSpacing * 3 + 6, finalY);
+  
+  doc.setTextColor(0);
 
   // Rodapé com assinaturas
   const footerY = pageHeight - 20;

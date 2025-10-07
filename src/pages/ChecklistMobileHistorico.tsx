@@ -27,10 +27,11 @@ export default function ChecklistMobileHistorico() {
   // Filtrar checklists da viatura específica
   const checklists = checklistsData?.viaturas.filter(c => c.viatura_id === viaturaId) || [];
   
-  // Estado para seleção de mês/ano do PDF
+  // Estado para seleção de mês/ano/tipo do PDF
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<string>(String(currentDate.getMonth() + 1));
   const [selectedYear, setSelectedYear] = useState<string>(String(currentDate.getFullYear()));
+  const [selectedTipo, setSelectedTipo] = useState<string>("TODOS");
 
   // Gerar PDF mensal formato oficial
   const handleGerarPDFMensal = () => {
@@ -51,12 +52,13 @@ export default function ChecklistMobileHistorico() {
     const viaturaPlaca = checklistsMes[0]?.viatura_placa || 'VIATURA';
     
     try {
+      const tipoFiltro = selectedTipo === 'TODOS' ? undefined : selectedTipo;
       // Cast para ChecklistDetalhado[] pois sabemos que itens é um array de objetos
-      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsMes as any);
-      toast.success('PDF mensal gerado com sucesso!');
-    } catch (error) {
+      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsMes as any, tipoFiltro);
+      toast.success(`PDF mensal ${tipoFiltro ? `de ${tipoFiltro}` : ''} gerado com sucesso!`);
+    } catch (error: any) {
       console.error('Erro ao gerar PDF:', error);
-      toast.error('Erro ao gerar PDF mensal');
+      toast.error(error.message || 'Erro ao gerar PDF mensal');
     }
   };
 
@@ -106,7 +108,22 @@ export default function ChecklistMobileHistorico() {
 
         {/* Exportar PDF Mensal */}
         <div className="bg-primary-foreground/10 rounded-lg p-3 space-y-2">
-          <p className="text-xs font-semibold mb-2">Exportar PDF Mensal (Formato Oficial)</p>
+          <p className="text-xs font-semibold mb-2">📄 Exportar PDF Mensal (Formato Oficial)</p>
+          
+          {/* Linha 1: Tipo de Checklist */}
+          <Select value={selectedTipo} onValueChange={setSelectedTipo}>
+            <SelectTrigger className="w-full bg-background text-foreground">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TODOS">Todos os Tipos</SelectItem>
+              <SelectItem value="CCI">CCI - Inspeção de CCIs</SelectItem>
+              <SelectItem value="EQUIPAMENTOS">Equipamentos</SelectItem>
+              <SelectItem value="CRS">CRS - Inspeção de CRS</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Linha 2: Mês, Ano e Botão */}
           <div className="flex gap-2">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="flex-1 bg-background text-foreground">
@@ -137,10 +154,10 @@ export default function ChecklistMobileHistorico() {
             <Button
               size="sm"
               onClick={handleGerarPDFMensal}
-              className="bg-background text-primary hover:bg-background/90"
+              className="bg-background text-primary hover:bg-background/90 font-semibold"
             >
               <Download className="h-4 w-4 mr-1" />
-              PDF
+              Gerar
             </Button>
           </div>
         </div>
