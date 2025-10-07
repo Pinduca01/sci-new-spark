@@ -9,7 +9,7 @@ interface StatusSelectorProps {
 
 export const StatusSelector = ({ value, onChange, disabled }: StatusSelectorProps) => {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid grid-cols-3 gap-3">
       <Button
         type="button"
         variant={value === 'conforme' ? 'default' : 'outline'}
@@ -18,10 +18,10 @@ export const StatusSelector = ({ value, onChange, disabled }: StatusSelectorProp
         disabled={disabled}
         aria-label="Conforme"
         title="Conforme"
-        className="min-w-[96px] flex-1 h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
+        className="h-14 touch-manipulation rounded-lg shadow-sm active:scale-95 transition-transform flex-col gap-1 px-2"
       >
-        <Check className="w-4 h-4 mr-1.5" />
-        <span className="text-sm">Conforme</span>
+        <Check className="w-5 h-5" />
+        <span className="text-xs font-medium">Conforme</span>
       </Button>
 
       <Button
@@ -32,10 +32,10 @@ export const StatusSelector = ({ value, onChange, disabled }: StatusSelectorProp
         disabled={disabled}
         aria-label="Não Conforme"
         title="Não Conforme"
-        className="min-w-[96px] flex-1 h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
+        className="h-14 touch-manipulation rounded-lg shadow-sm active:scale-95 transition-transform flex-col gap-1 px-2"
       >
-        <X className="w-4 h-4 mr-1.5" />
-        <span className="text-sm">Não Conforme</span>
+        <X className="w-5 h-5" />
+        <span className="text-xs font-medium">Não Conforme</span>
       </Button>
 
       <Button
@@ -46,10 +46,10 @@ export const StatusSelector = ({ value, onChange, disabled }: StatusSelectorProp
         disabled={disabled}
         aria-label="Não Aplicável"
         title="Não Aplicável"
-        className="min-w-[88px] flex-1 h-12 touch-manipulation rounded-lg shadow-sm active:scale-[0.98] whitespace-nowrap justify-center"
+        className="h-14 touch-manipulation rounded-lg shadow-sm active:scale-95 transition-transform flex-col gap-1 px-2"
       >
-        <Minus className="w-4 h-4 mr-1.5" />
-        <span className="text-sm">N/A</span>
+        <Minus className="w-5 h-5" />
+        <span className="text-xs font-medium">N/A</span>
       </Button>
     </div>
   );

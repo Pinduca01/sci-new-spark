@@ -95,7 +95,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
     if (!currentSection) return;
     const el = firstItemRefs.current[currentSection];
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [currentSection]);
 
@@ -113,7 +113,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
     const nextInCategory = categoryItems.find((i, idx) => idx > currentIndex && !i.status);
     if (nextInCategory) {
       const target = itemRefs.current[nextInCategory.id];
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       lastAnsweredItemIdRef.current = null;
       return;
     }
