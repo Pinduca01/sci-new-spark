@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 // Reutiliza o tipo de item para compatibilidade com ChecklistItemCard
 import type { ChecklistItem, ChecklistTemplate } from '@/hooks/useChecklistMobileExecution';
 
-export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
+export const useChecklistEquipamentoExecution = (viaturaId?: string | null) => {
   const [loading, setLoading] = useState(true);
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
   const [items, setItems] = useState<ChecklistItem[]>([]);
@@ -13,12 +13,12 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
   useEffect(() => {
     loadChecklistData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [equipamentoId]);
+  }, []);
 
   const loadChecklistData = async () => {
     setLoading(true);
     try {
-      console.log('[Checklist Equipamento] Iniciando carregamento para equipamento:', equipamentoId);
+      console.log('[Checklist Equipamento] Iniciando carregamento template CCI Equipamentos');
       
       // Buscar template de EQUIPAMENTOS CCI via tipos_checklist
       const { data: tipoEquip, error: tipoError } = await supabase
@@ -105,7 +105,7 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
 
   const autoSaveProgress = () => {
     try {
-      const saveKey = `equip_checklist_progress_${equipamentoId}`;
+      const saveKey = `equip_checklist_progress_${viaturaId || 'geral'}`;
       const dataToSave = items.map(({ id, status, observacao }) => ({
         id,
         status,
@@ -119,7 +119,7 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
 
   const loadAutoSavedProgress = () => {
     try {
-      const savedKey = `equip_checklist_progress_${equipamentoId}`;
+      const savedKey = `equip_checklist_progress_${viaturaId || 'geral'}`;
       const savedData = localStorage.getItem(savedKey);
       if (savedData) {
         const parsed = JSON.parse(savedData);
@@ -129,7 +129,7 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
             return saved ? { ...item, ...saved, fotos: [] } : item;
           })
         );
-        toast.info('Progresso anterior de equipamento recuperado');
+        toast.info('Progresso anterior recuperado');
       }
     } catch (error) {
       console.error('Erro ao carregar progresso de equipamento:', error);
@@ -176,7 +176,7 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
 
   const clearAutoSavedProgress = () => {
     try {
-      localStorage.removeItem(`equip_checklist_progress_${equipamentoId}`);
+      localStorage.removeItem(`equip_checklist_progress_${viaturaId || 'geral'}`);
     } catch (error) {
       console.error('Erro ao limpar progresso de equipamento:', error);
     }

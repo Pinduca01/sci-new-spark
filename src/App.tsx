@@ -66,7 +66,7 @@ const App = () => (
           <Route path="/checklist-mobile/viaturas" element={<ChecklistMobile />} />
           <Route path="/checklist-mobile/tipo/:viaturaId" element={<ChecklistMobileTipoSelecao />} />
           <Route path="/checklist-mobile/equipamentos" element={<ChecklistMobileEquipamentos />} />
-          <Route path="/checklist-mobile/equipamento/:id" element={<ChecklistMobileEquipamentoExecucao />} />
+          <Route path="/checklist-mobile/equipamentos/execucao" element={<ChecklistMobileEquipamentoExecucao />} />
           <Route path="/checklist-mobile/viatura/:id" element={<ChecklistMobileViatura />} />
           <Route path="/checklist-mobile/historico/:viaturaId" element={<ChecklistMobileHistorico />} />
           <Route path="/checklist-mobile/sync" element={<ChecklistMobileSyncStatus />} />

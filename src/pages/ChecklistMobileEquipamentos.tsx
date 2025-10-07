@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState, memo, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package } from 'lucide-react';
+import { Loader2, Package, ClipboardCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAgentesExtintores, AgenteExtintor } from '@/hooks/useAgentesExtintores';
 
 interface EquipamentoResumo {
   id: string;
@@ -19,7 +18,6 @@ export default function ChecklistMobileEquipamentos() {
   const navigate = useNavigate();
   const location = useLocation();
   const { loading: roleLoading, canDoChecklist, isBA2, baseName } = useUserRole();
-  const { agentes, loading: equipamentosLoading } = useAgentesExtintores();
   const [loading, setLoading] = useState(true);
 
   const viaturaId = useMemo(() => {
@@ -49,11 +47,11 @@ export default function ChecklistMobileEquipamentos() {
     init();
   }, [navigate, roleLoading, canDoChecklist]);
 
-  const handleEquipamentoClick = useCallback((id: string) => {
-    navigate(`/checklist-mobile/equipamento/${id}`, { state: { viaturaId } });
-  }, [navigate, viaturaId]);
+  const handleIniciarChecklist = () => {
+    navigate('/checklist-mobile/equipamentos/execucao', { state: { viaturaId } });
+  };
 
-  if (loading || roleLoading || equipamentosLoading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen p-6 flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -70,47 +68,33 @@ export default function ChecklistMobileEquipamentos() {
             <Package className="h-5 w-5 text-primary" />
             Checklist de Equipamentos
           </h1>
-          <Button variant="outline" onClick={() => navigate(viaturaId ? `/checklist-mobile/tipo/${viaturaId}` : '/checklist-mobile/viaturas')}>Voltar</Button>
+          <Button variant="outline" onClick={() => navigate(viaturaId ? `/checklist-mobile/tipo/${viaturaId}` : '/checklist-mobile/viaturas')}>
+            Voltar
+          </Button>
         </div>
 
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground">
           <span>Base: {baseName}</span>
-          <span>{agentes.length} equipamento(s) disponível(is)</span>
         </div>
 
-        {agentes.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                Nenhum equipamento disponível. Em breve: seleção por almoxarifado/material.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {agentes.map((eq: AgenteExtintor) => (
-              <EquipamentoCard key={eq.id} eq={eq} onClick={() => handleEquipamentoClick(eq.id)} />
-            ))}
-          </div>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              CCI Equipamentos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Checklist completo de equipamentos da viatura conforme procedimento CCI.
+              Inclui 64 itens de verificação distribuídos em categorias.
+            </p>
+            <Button onClick={handleIniciarChecklist} className="w-full">
+              Iniciar Checklist
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-
-const EquipamentoCard = memo(function EquipamentoCard(
-  { eq, onClick }: { eq: AgenteExtintor; onClick: () => void }
-) {
-  return (
-    <Card onClick={onClick} className="cursor-pointer">
-      <CardHeader>
-        <CardTitle className="text-base">{eq.tipo_agente || eq.tipo}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-sm text-muted-foreground">
-          Lote: {eq.lote ?? '—'} • Quantidade: {eq.quantidade} {eq.unidade}
-        </div>
-      </CardContent>
-    </Card>
-  );
-});

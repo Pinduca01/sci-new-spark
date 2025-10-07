@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUserName } from '@/hooks/useCurrentUserName';
-import { useAgentesExtintores } from '@/hooks/useAgentesExtintores';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, Package, ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { saveChecklistOffline } from '@/lib/offlineDb';
@@ -18,10 +16,8 @@ import { useChecklistEquipamentoExecution } from '@/hooks/useChecklistEquipament
 export default function ChecklistMobileEquipamentoExecucao() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { id } = useParams();
   const { loading: roleLoading, canDoChecklist, isBA2, baseName } = useUserRole();
   const { name: userName } = useCurrentUserName();
-  const { agentes, loading: equipamentosLoading } = useAgentesExtintores();
 
   const [loading, setLoading] = useState(true);
   const [currentSection, setCurrentSection] = useState<string>('');
@@ -62,8 +58,6 @@ export default function ChecklistMobileEquipamentoExecucao() {
     init();
   }, [navigate, roleLoading, canDoChecklist, isBA2]);
 
-  const equipamento = useMemo(() => agentes.find(a => a.id === id), [agentes, id]);
-
   // Hook de execução específico para equipamentos (carrega template_checklist via tipos_checklist -> EQUIPAMENTOS)
   const {
     loading: execLoading,
@@ -76,7 +70,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
     getProgress,
     validateChecklist,
     clearAutoSavedProgress
-  } = useChecklistEquipamentoExecution(id!);
+  } = useChecklistEquipamentoExecution(viaturaId);
 
   const progress = getProgress();
 
@@ -151,7 +145,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
         return;
       }
 
-      const offlineId = `equip-${id}-${Date.now()}`;
+      const offlineId = `equip-${viaturaId}-${Date.now()}`;
 
       // Mapear itens preenchidos
       const itensChecklist = items.map((item) => ({
@@ -330,24 +324,11 @@ export default function ChecklistMobileEquipamentoExecucao() {
     }
   };
 
-  if (loading || roleLoading || equipamentosLoading || execLoading) {
+  if (loading || roleLoading || execLoading) {
     return (
       <div className="min-h-screen p-6 flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="mt-4 text-sm text-muted-foreground">Carregando execução do checklist...</p>
-      </div>
-    );
-  }
-
-  if (!equipamento) {
-    return (
-      <div className="min-h-screen p-6">
-        <Button variant="outline" onClick={() => navigate('/checklist-mobile/equipamentos')}>Voltar</Button>
-        <Card className="mt-4">
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Equipamento não encontrado.</p>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -398,30 +379,18 @@ export default function ChecklistMobileEquipamentoExecucao() {
           </div>
         </div>
 
-        {/* Info do equipamento */}
+        {/* Info do checklist */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{equipamento.tipo_agente || equipamento.tipo}</CardTitle>
+            <CardTitle className="text-base">CCI Equipamentos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Lote</span>
-                <div className="font-medium">{equipamento.lote ?? '—'}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Quantidade</span>
-                <div className="font-medium">{equipamento.quantidade} {equipamento.unidade}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Situação</span>
-                <div>
-                  <Badge variant="secondary">{equipamento.situacao}</Badge>
-                </div>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Viatura</span>
-                <div className="font-medium">{viaturaId ? viaturaId : '—'}</div>
+            <div className="text-sm space-y-2">
+              <p className="text-muted-foreground">
+                Checklist completo de equipamentos da viatura conforme procedimento CCI.
+              </p>
+              <div className="font-medium">
+                Total de itens: {template?.itens?.length || 0}
               </div>
             </div>
           </CardContent>
