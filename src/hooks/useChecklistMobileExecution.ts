@@ -92,95 +92,97 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
       if (bombeiroError) throw bombeiroError;
       setBombeiro(bombeiroData);
 
-      // 3. Tentar carregar itens do template_checklist (estratégia direta e robusta)
+      // 3. Tentar carregar itens do template_checklist
       try {
-        let tipoChecklistId: string | null = null;
+        let tipoChecklistNome: string | null = null;
         
-        // Estratégia 1: Se tipoChecklistOverride for fornecido, usar ele
-        if (tipoChecklistOverride) {
-          if (tipoChecklistOverride === 'CRS') {
-            const { data: tipoCRS } = await supabase
-              .from('tipos_checklist')
-              .select('id, nome, descricao')
-              .eq('nome', 'CRS Viatura')
-              .maybeSingle();
-            tipoChecklistId = tipoCRS?.id || null;
-          } else if (tipoChecklistOverride === 'EQUIPAMENTOS') {
-            const { data: tipoEquip } = await supabase
-              .from('tipos_checklist')
-              .select('id, nome, descricao')
-              .eq('nome', 'CCI Equipamentos')
-              .maybeSingle();
-            tipoChecklistId = tipoEquip?.id || null;
-          }
-        }
+        console.log('[Checklist] Iniciando busca de template', {
+          tipoChecklistOverride,
+          viaturaId,
+          viaturaData
+        });
         
-        // Estratégia 2: Mapear por tipo de viatura
-        if (!tipoChecklistId) {
-          if (viaturaData.tipo === 'CRS') {
-            const { data: tipoCRS } = await supabase
-              .from('tipos_checklist')
-              .select('id, nome, descricao')
-              .eq('nome', 'CRS Viatura')
-              .maybeSingle();
-            tipoChecklistId = tipoCRS?.id || null;
-          } else if (viaturaData.tipo === 'CCI') {
-            // Para CCI, assumir checklist de VIATURA por padrão
-            const { data: tipoViatura } = await supabase
-              .from('tipos_checklist')
-              .select('id, nome, descricao')
-              .eq('nome', 'CCI Viatura')
-              .maybeSingle();
-            tipoChecklistId = tipoViatura?.id || null;
-          }
-        }
-        
-        // Se encontrou um tipo válido, buscar os itens
-        if (tipoChecklistId) {
-          const { data: itensTemplate, error: itensError } = await supabase
-            .from('template_checklist')
-            .select('id, item, categoria, ordem, tipo_checklist_id')
-            .eq('tipo_checklist_id', tipoChecklistId)
-            .order('ordem', { ascending: true });
-
-          if (!itensError && Array.isArray(itensTemplate) && itensTemplate.length > 0) {
-            const { data: tipoInfo } = await supabase
-              .from('tipos_checklist')
-              .select('nome, descricao')
-              .eq('id', tipoChecklistId)
-              .maybeSingle();
-
-            const builtTemplate = {
-              id: tipoChecklistId,
-              nome: tipoInfo?.descricao || `Template ${viaturaData.tipo}`,
-              tipo_viatura: viaturaData.tipo,
-              itens: itensTemplate.map((it: any) => ({
-                id: (it.id ?? crypto.randomUUID()).toString(),
-                nome: it.item,
-                categoria: it.categoria,
-              }))
-            } as ChecklistTemplate;
-
-            console.info('[Checklist] Template carregado:', tipoInfo?.nome, 'com', itensTemplate.length, 'itens');
-
-            setTemplate(builtTemplate as any);
-            initializeItems((builtTemplate.itens as any) || []);
-
-            await saveToCache(`checklist_data_${viaturaId}`, {
-              viatura: viaturaData,
-              bombeiro: bombeiroData,
-              template: builtTemplate
-            });
-
-            loadAutoSavedProgress();
-            setLoading(false);
-            return;
-          }
+        // Determinar qual template buscar baseado no override ou tipo da viatura
+        if (tipoChecklistOverride === 'CRS') {
+          tipoChecklistNome = 'CRS Viatura';
+        } else if (tipoChecklistOverride === 'EQUIPAMENTOS') {
+          tipoChecklistNome = 'CCI Equipamentos';
+        } else if (viaturaData.tipo === 'CRS') {
+          tipoChecklistNome = 'CRS Viatura';
+        } else if (viaturaData.tipo === 'CCI' || viaturaData.tipo === 'BA-MC') {
+          tipoChecklistNome = 'CCI Viatura';
+        } else {
+          // Fallback: tentar CCI Viatura como padrão
+          tipoChecklistNome = 'CCI Viatura';
         }
 
-        console.warn('[Checklist] Nenhum template encontrado em template_checklist');
+        console.log('[Checklist] Buscando template:', tipoChecklistNome);
+        
+        // Buscar o tipo de checklist
+        const { data: tipoChecklist, error: tipoError } = await supabase
+          .from('tipos_checklist')
+          .select('id, nome, descricao')
+          .eq('nome', tipoChecklistNome)
+          .maybeSingle();
+
+        if (tipoError) {
+          console.error('[Checklist] Erro ao buscar tipo:', tipoError);
+          throw tipoError;
+        }
+
+        if (!tipoChecklist) {
+          console.warn('[Checklist] Tipo de checklist não encontrado:', tipoChecklistNome);
+          throw new Error(`Tipo de checklist não encontrado: ${tipoChecklistNome}`);
+        }
+
+        console.log('[Checklist] Tipo encontrado:', tipoChecklist);
+        
+        // Buscar os itens do template
+        const { data: itensTemplate, error: itensError } = await supabase
+          .from('template_checklist')
+          .select('id, item, categoria, ordem')
+          .eq('tipo_checklist_id', tipoChecklist.id)
+          .order('ordem', { ascending: true });
+
+        if (itensError) {
+          console.error('[Checklist] Erro ao buscar itens:', itensError);
+          throw itensError;
+        }
+
+        if (!itensTemplate || itensTemplate.length === 0) {
+          console.warn('[Checklist] Nenhum item encontrado para tipo:', tipoChecklist.nome);
+          throw new Error(`Nenhum item encontrado para ${tipoChecklist.nome}`);
+        }
+
+        console.log('[Checklist] Itens carregados:', itensTemplate.length);
+
+        const builtTemplate = {
+          id: tipoChecklist.id,
+          nome: tipoChecklist.descricao,
+          tipo_viatura: viaturaData.tipo,
+          itens: itensTemplate.map((it: any) => ({
+            id: it.id.toString(),
+            nome: it.item,
+            categoria: it.categoria,
+          }))
+        } as ChecklistTemplate;
+
+        console.info('[Checklist] Template montado:', tipoChecklist.nome, 'com', itensTemplate.length, 'itens');
+
+        setTemplate(builtTemplate as any);
+        initializeItems((builtTemplate.itens as any) || []);
+
+        await saveToCache(`checklist_data_${viaturaId}`, {
+          viatura: viaturaData,
+          bombeiro: bombeiroData,
+          template: builtTemplate
+        });
+
+        loadAutoSavedProgress();
+        setLoading(false);
+        return;
       } catch (e) {
-        console.warn('Falha ao carregar itens de template_checklist, tentando outras fontes...', e);
+        console.error('[Checklist] Erro ao carregar template:', e);
       }
 
       // 4. Fallback: Buscar template ativo antigo (checklist_templates JSONB)

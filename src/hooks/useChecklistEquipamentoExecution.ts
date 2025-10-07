@@ -18,56 +18,62 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
   const loadChecklistData = async () => {
     setLoading(true);
     try {
+      console.log('[Checklist Equipamento] Iniciando carregamento para equipamento:', equipamentoId);
+      
       // Buscar template de EQUIPAMENTOS CCI via tipos_checklist
-      const { data: tipoEquip } = await supabase
+      const { data: tipoEquip, error: tipoError } = await supabase
         .from('tipos_checklist')
         .select('id, nome, descricao')
         .eq('nome', 'CCI Equipamentos')
         .maybeSingle();
 
-      if (tipoEquip?.id) {
-        const { data: itensTemplate, error: itensError } = await supabase
-          .from('template_checklist')
-          .select('id, item, categoria, ordem')
-          .eq('tipo_checklist_id', tipoEquip.id)
-          .order('ordem', { ascending: true });
-
-        if (!itensError && Array.isArray(itensTemplate) && itensTemplate.length > 0) {
-          const builtTemplate: ChecklistTemplate = {
-            id: tipoEquip.id,
-            nome: tipoEquip.descricao,
-            tipo_viatura: 'EQUIPAMENTOS',
-            itens: itensTemplate.map((it: any) => ({
-              id: (it.id ?? crypto.randomUUID()).toString(),
-              nome: it.item,
-              categoria: it.categoria,
-            }))
-          };
-
-          console.info('[Checklist Equipamento] Template carregado:', tipoEquip.nome, 'com', itensTemplate.length, 'itens');
-
-          setTemplate(builtTemplate);
-          initializeItems(builtTemplate.itens as any);
-          loadAutoSavedProgress();
-          setLoading(false);
-          return;
-        }
+      if (tipoError) {
+        console.error('[Checklist Equipamento] Erro ao buscar tipo:', tipoError);
+        throw tipoError;
       }
 
-      // Fallback: criar template mínimo
-      const fallback: ChecklistTemplate = {
-        id: `equip_fallback`,
-        nome: 'Checklist de Equipamento (Fallback)',
+      if (!tipoEquip) {
+        console.warn('[Checklist Equipamento] Tipo CCI Equipamentos não encontrado');
+        throw new Error('Template de equipamentos não encontrado');
+      }
+
+      console.log('[Checklist Equipamento] Tipo encontrado:', tipoEquip);
+
+      const { data: itensTemplate, error: itensError } = await supabase
+        .from('template_checklist')
+        .select('id, item, categoria, ordem')
+        .eq('tipo_checklist_id', tipoEquip.id)
+        .order('ordem', { ascending: true });
+
+      if (itensError) {
+        console.error('[Checklist Equipamento] Erro ao buscar itens:', itensError);
+        throw itensError;
+      }
+
+      if (!itensTemplate || itensTemplate.length === 0) {
+        console.warn('[Checklist Equipamento] Nenhum item encontrado');
+        throw new Error('Nenhum item encontrado para checklist de equipamentos');
+      }
+
+      console.log('[Checklist Equipamento] Itens carregados:', itensTemplate.length);
+
+      const builtTemplate: ChecklistTemplate = {
+        id: tipoEquip.id,
+        nome: tipoEquip.descricao,
         tipo_viatura: 'EQUIPAMENTOS',
-        itens: [
-          { id: crypto.randomUUID(), nome: 'Condição geral do equipamento', categoria: 'EQUIPAMENTO' },
-          { id: crypto.randomUUID(), nome: 'Quantidade disponível', categoria: 'EQUIPAMENTO' },
-          { id: crypto.randomUUID(), nome: 'Número de série legível', categoria: 'EQUIPAMENTO' },
-        ]
+        itens: itensTemplate.map((it: any) => ({
+          id: it.id.toString(),
+          nome: it.item,
+          categoria: it.categoria,
+        }))
       };
-      setTemplate(fallback);
-      initializeItems(fallback.itens as any);
+
+      console.info('[Checklist Equipamento] Template montado:', tipoEquip.nome, 'com', itensTemplate.length, 'itens');
+
+      setTemplate(builtTemplate);
+      initializeItems(builtTemplate.itens as any);
       loadAutoSavedProgress();
+      setLoading(false);
     } catch (error: any) {
       console.error('Erro ao carregar checklist de equipamento:', error);
       toast.error(error.message || 'Erro ao carregar checklist');
