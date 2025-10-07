@@ -5,7 +5,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useCurrentUserName } from '@/hooks/useCurrentUserName';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Truck, LogOut, RefreshCw } from 'lucide-react';
+import { Loader2, Truck, LogOut, RefreshCw, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { OnlineStatusBadge } from '@/components/checklist-mobile/OnlineStatusBadge';
 import { saveToCache, getFromCache, getPendingCount } from '@/lib/offlineDb';
@@ -131,30 +131,62 @@ const ChecklistMobile = () => {
       <OnlineStatusBadge />
       
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Checklist de Viaturas</h1>
-            <p className="text-sm text-muted-foreground">{baseName}</p>
-            <p className="mt-1 text-sm font-medium">Usuário: {userName ?? '—'}</p>
-          </div>
-          <div className="flex gap-2">
-            {pendingCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/checklist-mobile/sync')}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                {pendingCount}
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </div>
+        {/* Header Profissional */}
+        <Card className="mb-6 border-none shadow-lg bg-gradient-to-br from-primary/5 via-background to-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Truck className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Checklist de Viaturas</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">{baseName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="font-medium">{userName ?? 'Carregando...'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {pendingCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigate('/checklist-mobile/sync')}
+                    className="relative"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                      {pendingCount}
+                    </span>
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => navigate('/checklist-mobile/meu-historico')}
+                  title="Meu histórico"
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleLogout}
+                  title="Sair"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Métricas rápidas */}
         <div className="flex items-center justify-between mb-4 text-sm text-muted-foreground">
