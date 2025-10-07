@@ -259,7 +259,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
           template_id: template?.id,
           bombeiro_responsavel_id: session.user.id,
           bombeiro_responsavel: userName || 'Usuário',
-          tipo_checklist: 'EQUIPAMENTOS',
+          tipo_checklist: 'BA-2',
           data_checklist: new Date().toISOString().split('T')[0],
           hora_checklist: new Date().toTimeString().split(' ')[0],
           status_geral: uploadedNCs.length > 0 ? 'pendente' : 'aprovado',

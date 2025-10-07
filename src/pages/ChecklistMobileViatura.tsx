@@ -238,7 +238,7 @@ export default function ChecklistMobileViatura() {
           template_id: template?.id,
           bombeiro_responsavel_id: bombeiro?.id,
           bombeiro_responsavel: bombeiro?.nome,
-          tipo_checklist: tipoCRS ? 'CRS' : 'VIATURA',
+          tipo_checklist: 'BA-MC',
           equipe: bombeiro?.equipe,
           data_checklist: new Date().toISOString().split('T')[0],
           hora_checklist: new Date().toTimeString().split(' ')[0],
