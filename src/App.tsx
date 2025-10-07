@@ -29,7 +29,7 @@ import TestSupabaseConnection from "./components/TestSupabaseConnection";
 import TestEquipeData from "./components/TestEquipeData";
 const ChecklistMobileLogin = lazy(() => import("./pages/ChecklistMobileLogin"));
 const ChecklistMobile = lazy(() => import("./pages/ChecklistMobile"));
-const ChecklistMobileDispatcher = lazy(() => import("./pages/ChecklistMobileDispatcher"));
+
 const ChecklistMobileTipoSelecao = lazy(() => import("./pages/ChecklistMobileTipoSelecao"));
 const ChecklistMobileEquipamentos = lazy(() => import("./pages/ChecklistMobileEquipamentos"));
 const ChecklistMobileEquipamentoExecucao = lazy(() => import("./pages/ChecklistMobileEquipamentoExecucao"));
@@ -64,7 +64,7 @@ const App = () => (
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/checklist-mobile/login" element={<ChecklistMobileLogin />} />
-          <Route path="/checklist-mobile" element={<ErrorBoundary><ChecklistMobileDispatcher /></ErrorBoundary>} />
+          
           <Route path="/checklist-mobile/viaturas" element={<ErrorBoundary><ChecklistMobile /></ErrorBoundary>} />
           <Route path="/checklist-mobile/tipo/:viaturaId" element={<ErrorBoundary><ChecklistMobileTipoSelecao /></ErrorBoundary>} />
           <Route path="/checklist-mobile/equipamentos" element={<ErrorBoundary><ChecklistMobileEquipamentos /></ErrorBoundary>} />

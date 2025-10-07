@@ -35,11 +35,11 @@ export const useUserRole = (): UserRoleData => {
           return;
         }
 
-        // Timeout de segurança
+        // Timeout de segurança (reduzido para 3s)
         const timeout = setTimeout(() => {
           console.warn('useUserRole: Timeout ao buscar dados do usuário');
-          setLoading(false); // ✅ Finalizar loading após timeout
-        }, 8000);
+          setLoading(false);
+        }, 3000);
 
         // Buscar role do usuário
         const { data: roleData, error: roleError } = await supabase
