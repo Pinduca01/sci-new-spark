@@ -77,8 +77,7 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
     } catch (error: any) {
       console.error('Erro ao carregar checklist de equipamento:', error);
       toast.error(error.message || 'Erro ao carregar checklist');
-    } finally {
-      setLoading(false);
+      setLoading(false); // Permitir que o componente mostre erro
     }
   };
 

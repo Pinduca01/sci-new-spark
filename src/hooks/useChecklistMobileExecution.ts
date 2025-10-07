@@ -180,9 +180,10 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
 
         loadAutoSavedProgress();
         setLoading(false);
-        return;
+        return; // Sucesso, não precisa de fallback
       } catch (e) {
         console.error('[Checklist] Erro ao carregar template:', e);
+        console.warn('[Checklist] Tentando fallback para templates antigos...');
       }
 
       // 4. Fallback: Buscar template ativo antigo (checklist_templates JSONB)
