@@ -297,10 +297,7 @@ export default function ChecklistMobileViatura() {
       setCreatedChecklistId(checklistData.id);
       toast.success('Checklist finalizado com sucesso!');
       
-      // Navegar para o histórico após 1.5 segundos
-      setTimeout(() => {
-        navigate(`/checklist-mobile/historico/${viatura.id}`);
-      }, 1500);
+      // Não navegar automaticamente - usuário escolhe via botão
     } catch (error: any) {
       console.error('Erro ao salvar checklist:', error);
       toast.error('Erro ao finalizar checklist: ' + error.message);

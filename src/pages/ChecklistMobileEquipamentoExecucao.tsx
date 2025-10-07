@@ -39,24 +39,42 @@ export default function ChecklistMobileEquipamentoExecucao() {
   }, [location.state]);
 
   useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/checklist-mobile/login');
-        return;
-      }
+    console.log('[ChecklistEquipamentoExecucao] Montado');
+    let isMounted = true;
 
-      if (!roleLoading) {
-        if (!canDoChecklist) {
-          toast.error('Acesso negado ao checklist de equipamentos');
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        if (!session) {
           navigate('/checklist-mobile/login');
           return;
         }
-        setLoading(false);
+
+        if (!roleLoading) {
+          if (!isMounted) return;
+          
+          if (!canDoChecklist) {
+            toast.error('Acesso negado ao checklist de equipamentos');
+            navigate('/checklist-mobile/login');
+            return;
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('[ChecklistEquipamentoExecucao] Erro no init:', error);
       }
     };
+    
     init();
-  }, [navigate, roleLoading, canDoChecklist, isBA2]);
+
+    return () => {
+      console.log('[ChecklistEquipamentoExecucao] Desmontado');
+      isMounted = false;
+    };
+  }, [navigate]);
 
   // Hook de execução específico para equipamentos (carrega template_checklist via tipos_checklist -> EQUIPAMENTOS)
   const {

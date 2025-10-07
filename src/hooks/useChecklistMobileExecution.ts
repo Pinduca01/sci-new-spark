@@ -36,12 +36,47 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadChecklistData();
+    console.log('[useChecklistMobileExecution] Iniciando hook');
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const load = async () => {
+      if (!viaturaId) return;
+      
+      try {
+        await loadChecklistData(controller.signal, isMounted);
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.log('[useChecklistMobileExecution] Request abortado');
+          return;
+        }
+        console.error('[useChecklistMobileExecution] Erro no load:', error);
+      }
+    };
+
+    load();
+
+    return () => {
+      console.log('[useChecklistMobileExecution] Cleanup');
+      controller.abort();
+      isMounted = false;
+    };
   }, [viaturaId, tipoChecklistOverride]);
 
-  const loadChecklistData = async () => {
+  const loadChecklistData = async (signal?: AbortSignal, isMounted: boolean = true) => {
+    // Timeout de segurança
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('[useChecklistMobileExecution] Timeout de 10s atingido');
+        setLoading(false);
+      }
+    }, 10000);
+
     try {
       setLoading(true);
+      
+      if (signal?.aborted) return;
+      
       // Proteger contra id inválido (não-UUID) para evitar erro 22P02 no Postgres
       const isUuid = (value: string) => {
         return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(value);
@@ -51,6 +86,8 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
         toast.error('ID da viatura inválido. Abra a viatura pela lista.');
         return;
       }
+      
+      if (signal?.aborted) return;
       const isOnline = navigator.onLine;
 
       // Tentar carregar do cache primeiro se offline
@@ -278,12 +315,20 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
       }
 
       // 5. Tentar carregar progresso salvo do localStorage
-      loadAutoSavedProgress();
+      if (isMounted) {
+        loadAutoSavedProgress();
+      }
     } catch (error: any) {
+      if (error.name === 'AbortError') return;
       console.error('Erro ao carregar dados:', error);
-      toast.error(error.message || 'Erro ao carregar checklist');
+      if (isMounted) {
+        toast.error(error.message || 'Erro ao carregar checklist');
+      }
     } finally {
-      setLoading(false);
+      clearTimeout(timeoutId);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
   };
 

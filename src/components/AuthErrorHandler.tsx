@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { isAuthError, isNetworkError } from '@/utils/connectivityUtils';
 export const AuthErrorHandler = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const handlingRef = useRef(false);
 
   useEffect(() => {
     // Interceptar erros do Supabase
@@ -60,6 +61,13 @@ export const AuthErrorHandler = () => {
   }, []);
 
   const handleAuthError = async () => {
+    if (handlingRef.current) {
+      console.log('[AuthErrorHandler] Já está tratando erro, ignorando...');
+      return;
+    }
+    
+    handlingRef.current = true;
+    
     try {
       console.log('[AuthErrorHandler] Iniciando limpeza de sessão expirada...');
       
@@ -115,6 +123,11 @@ export const AuthErrorHandler = () => {
       console.error('[AuthErrorHandler] Erro ao limpar sessão:', error);
       // Mesmo com erro, redirecionar para login
       navigate('/login', { replace: true });
+    } finally {
+      // Reset flag após 5 segundos para evitar lock permanente
+      setTimeout(() => {
+        handlingRef.current = false;
+      }, 5000);
     }
   };
 

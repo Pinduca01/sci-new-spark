@@ -11,13 +11,45 @@ export const useChecklistEquipamentoExecution = (viaturaId?: string | null) => {
   const [items, setItems] = useState<ChecklistItem[]>([]);
 
   useEffect(() => {
-    loadChecklistData();
+    console.log('[useChecklistEquipamentoExecution] Iniciando hook');
+    const controller = new AbortController();
+    let isMounted = true;
+
+    const load = async () => {
+      try {
+        await loadChecklistData(controller.signal, isMounted);
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.log('[useChecklistEquipamentoExecution] Request abortado');
+          return;
+        }
+        console.error('[useChecklistEquipamentoExecution] Erro no load:', error);
+      }
+    };
+
+    load();
+
+    return () => {
+      console.log('[useChecklistEquipamentoExecution] Cleanup');
+      controller.abort();
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadChecklistData = async () => {
+  const loadChecklistData = async (signal?: AbortSignal, isMounted: boolean = true) => {
     setLoading(true);
+    
+    // Timeout de segurança
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('[useChecklistEquipamentoExecution] Timeout de 10s atingido');
+        setLoading(false);
+      }
+    }, 10000);
+    
     try {
+      if (signal?.aborted) return;
       console.log('[Checklist Equipamento] Iniciando carregamento template CCI Equipamentos');
       
       // Buscar template de EQUIPAMENTOS CCI via tipos_checklist
@@ -75,19 +107,27 @@ export const useChecklistEquipamentoExecution = (viaturaId?: string | null) => {
       loadAutoSavedProgress();
       setLoading(false);
     } catch (error: any) {
+      if (error.name === 'AbortError') return;
       console.error('Erro ao carregar checklist de equipamento:', error);
-      toast.error(error.message || 'Erro ao carregar checklist');
       
-      // Template vazio para evitar crashes
-      setTemplate({
-        id: '',
-        nome: 'Erro ao carregar',
-        tipo_viatura: 'EQUIPAMENTOS',
-        itens: []
-      });
-      
-      setItems([]);
-      setLoading(false);
+      if (isMounted) {
+        toast.error(error.message || 'Erro ao carregar checklist');
+        
+        // Template vazio para evitar crashes
+        setTemplate({
+          id: '',
+          nome: 'Erro ao carregar',
+          tipo_viatura: 'EQUIPAMENTOS',
+          itens: []
+        });
+        
+        setItems([]);
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      if (isMounted) {
+        setLoading(false);
+      }
     }
   };
 

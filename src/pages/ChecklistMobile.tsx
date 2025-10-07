@@ -29,32 +29,48 @@ const ChecklistMobile = () => {
   const { isOnline } = useSyncManager();
 
   useEffect(() => {
-    // Verificar autenticação
+    console.log('[ChecklistMobile] Montado');
+    let isMounted = true;
+
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/checklist-mobile/login');
-        return;
-      }
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        if (!session) {
+          navigate('/checklist-mobile/login');
+          return;
+        }
 
-      // Verificar se tem permissão para checklist
-      if (!roleLoading && !canDoChecklist) {
-        toast.error('Você não tem permissão para acessar checklists');
-        navigate('/login');
-        return;
-      }
+        // Verificar se tem permissão para checklist
+        if (!roleLoading && !canDoChecklist) {
+          toast.error('Você não tem permissão para acessar checklists');
+          navigate('/login');
+          return;
+        }
 
-      // Carregar viaturas da base
-      if (baseId) {
-        await loadViaturas();
+        // Carregar viaturas da base
+        if (baseId && isMounted) {
+          await loadViaturas();
+        }
+        
+        // Atualizar contador de pendentes
+        if (isMounted) {
+          updatePendingCount();
+        }
+      } catch (error) {
+        console.error('[ChecklistMobile] Erro no checkAuth:', error);
       }
-      
-      // Atualizar contador de pendentes
-      updatePendingCount();
     };
 
     checkAuth();
-  }, [roleLoading, canDoChecklist, baseId, navigate]);
+
+    return () => {
+      console.log('[ChecklistMobile] Desmontado');
+      isMounted = false;
+    };
+  }, [navigate]);
 
   const updatePendingCount = async () => {
     const count = await getPendingCount();
