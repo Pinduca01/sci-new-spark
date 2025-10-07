@@ -27,7 +27,7 @@ export interface ChecklistTemplate {
   }>;
 }
 
-export const useChecklistMobileExecution = (viaturaId: string) => {
+export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOverride?: string) => {
   const [loading, setLoading] = useState(true);
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
   const [items, setItems] = useState<ChecklistItem[]>([]);
@@ -37,7 +37,7 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
 
   useEffect(() => {
     loadChecklistData();
-  }, [viaturaId]);
+  }, [viaturaId, tipoChecklistOverride]);
 
   const loadChecklistData = async () => {
     try {
@@ -189,11 +189,12 @@ export const useChecklistMobileExecution = (viaturaId: string) => {
         console.warn('Falha ao carregar itens de template_checklist, tentando outras fontes...', e);
       }
 
-      // 3. Buscar template ativo para o tipo de viatura
+      // 3. Buscar template ativo para o tipo de viatura (ou usar override se fornecido)
+      const tipoParaBuscar = tipoChecklistOverride || viaturaData.tipo;
       const { data: templateData, error: templateError } = await supabase
         .from('checklist_templates')
         .select('*')
-        .eq('tipo_viatura', viaturaData.tipo)
+        .eq('tipo_viatura', tipoParaBuscar)
         .eq('ativo', true)
         .single();
 

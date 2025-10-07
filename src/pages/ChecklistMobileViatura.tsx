@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Save, History, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -18,6 +18,8 @@ import { ShineBorder } from '../components/ui/shine-border';
 export default function ChecklistMobileViatura() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const tipoCRS = location.state?.tipoCRS === true;
   const [saving, setSaving] = useState(false);
   const [finalizado, setFinalizado] = useState(false);
   const [createdChecklistId, setCreatedChecklistId] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export default function ChecklistMobileViatura() {
     getProgress,
     validateChecklist,
     clearAutoSavedProgress
-  } = useChecklistMobileExecution(viaturaIdValida ? id! : '');
+  } = useChecklistMobileExecution(viaturaIdValida ? id! : '', tipoCRS ? 'CRS' : undefined);
 
   const progress = getProgress();
 
@@ -236,7 +238,7 @@ export default function ChecklistMobileViatura() {
           template_id: template?.id,
           bombeiro_responsavel_id: bombeiro?.id,
           bombeiro_responsavel: bombeiro?.nome,
-          tipo_checklist: 'VIATURA',
+          tipo_checklist: tipoCRS ? 'CRS' : 'VIATURA',
           equipe: bombeiro?.equipe,
           data_checklist: new Date().toISOString().split('T')[0],
           hora_checklist: new Date().toTimeString().split(' ')[0],
