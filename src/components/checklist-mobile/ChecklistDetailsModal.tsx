@@ -60,32 +60,51 @@ export default function ChecklistDetailsModal({ checklistId, onClose }: Checklis
     try {
       setLoading(true);
       
-      // Buscar checklist
-      const { data: checklistData, error: checklistError } = await supabase
+      // @ts-ignore - Ignorar inferência de tipos para evitar recursão
+      const checklistResult = await supabase
         .from("checklists_viaturas")
-        .select(`
-          *,
-          viaturas!inner(prefixo)
-        `)
+        .select("*")
         .eq("id", checklistId)
         .single();
+      
+      if (checklistResult.error) throw checklistResult.error;
+      const checklistData = checklistResult.data;
 
-      if (checklistError) throw checklistError;
+      // Buscar viatura separadamente
+      let viaturaData = null;
+      if (checklistData.viatura_id) {
+        // @ts-ignore
+        const viaturaResult = await supabase
+          .from("viaturas")
+          .select("prefixo")
+          .eq("id", checklistData.viatura_id)
+          .single();
+        viaturaData = viaturaResult.data;
+      }
 
-      // Buscar não conformidades
-      const { data: ncsData } = await supabase
+      // @ts-ignore - Ignorar inferência de tipos
+      const ncsResult = await supabase
         .from("nao_conformidades")
-        .select("*")
+        .select("id, item_nome, descricao, imagem_url")
         .eq("checklist_id", checklistId)
-        .eq("checklist_tipo", "viatura") as any;
+        .eq("checklist_tipo", "viatura");
+      
+      const ncsData = (ncsResult.data || []).map((nc: any) => ({
+        id: nc.id,
+        item_nome: nc.item_nome,
+        descricao: nc.descricao,
+        foto_url: nc.imagem_url,
+      }));
 
-      // Buscar timeline
-      const { data: timelineData } = await supabase
+      // @ts-ignore - Ignorar inferência de tipos
+      const timelineResult = await supabase
         .from("checklist_timeline")
-        .select("*")
+        .select("id, operacao, descricao, usuario_nome, created_at")
         .eq("checklist_id", checklistId)
         .eq("checklist_tipo", "viatura")
-        .order("created_at", { ascending: true }) as any;
+        .order("created_at", { ascending: true });
+      
+      const timelineData = timelineResult.data || [];
 
       const rawItens = checklistData.itens_checklist;
       let itensArray = [];
@@ -98,7 +117,7 @@ export default function ChecklistDetailsModal({ checklistId, onClose }: Checklis
 
       setChecklist({
         id: checklistData.id,
-        viatura_prefixo: (checklistData.viaturas as any)?.prefixo || "N/A",
+        viatura_prefixo: viaturaData?.prefixo || "N/A",
         tipo_checklist: checklistData.tipo_checklist,
         data_checklist: checklistData.data_checklist,
         hora_checklist: checklistData.hora_checklist,
@@ -107,9 +126,9 @@ export default function ChecklistDetailsModal({ checklistId, onClose }: Checklis
         status_geral: checklistData.status_geral,
         observacoes_gerais: checklistData.observacoes_gerais,
         itens_checklist: itensArray,
-        nao_conformidades: ncsData || [],
-        timeline: timelineData || [],
-      } as ChecklistDetails);
+        nao_conformidades: ncsData,
+        timeline: timelineData,
+      });
     } catch (error: any) {
       toast({
         title: "Erro ao carregar detalhes",
