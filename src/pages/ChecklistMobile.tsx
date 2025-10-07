@@ -29,7 +29,7 @@ const ChecklistMobile = () => {
   const { isOnline } = useSyncManager();
 
   useEffect(() => {
-    console.log('[ChecklistMobile] Montado');
+    console.log('[ChecklistMobile] Montado/Atualizado', { roleLoading, baseId, canDoChecklist });
     let isMounted = true;
 
     const checkAuth = async () => {
@@ -43,24 +43,30 @@ const ChecklistMobile = () => {
           return;
         }
 
+        // Aguardar roleLoading terminar
+        if (roleLoading) {
+          console.log('[ChecklistMobile] Aguardando roleLoading...');
+          return;
+        }
+
         // Verificar se tem permissão para checklist
-        if (!roleLoading && !canDoChecklist) {
+        if (!canDoChecklist) {
           toast.error('Você não tem permissão para acessar checklists');
           navigate('/login');
           return;
         }
 
-        // Carregar viaturas da base
+        // Carregar viaturas da base quando baseId estiver disponível
         if (baseId && isMounted) {
           await loadViaturas();
-        }
-        
-        // Atualizar contador de pendentes
-        if (isMounted) {
-          updatePendingCount();
+          await updatePendingCount();
+        } else if (!baseId) {
+          console.warn('[ChecklistMobile] baseId não disponível ainda');
+          setLoading(false);
         }
       } catch (error) {
         console.error('[ChecklistMobile] Erro no checkAuth:', error);
+        setLoading(false);
       }
     };
 
@@ -70,7 +76,7 @@ const ChecklistMobile = () => {
       console.log('[ChecklistMobile] Desmontado');
       isMounted = false;
     };
-  }, [navigate]);
+  }, [navigate, roleLoading, baseId, canDoChecklist]);
 
   const updatePendingCount = async () => {
     const count = await getPendingCount();
