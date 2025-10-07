@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Truck, Package } from 'lucide-react';
+import { ArrowLeft, Truck, Package, Ambulance } from 'lucide-react';
 
 export default function ChecklistMobileTipoSelecao() {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export default function ChecklistMobileTipoSelecao() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card 
             className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary"
             onClick={() => navigate(`/checklist-mobile/viatura/${viaturaId}`)}
@@ -60,6 +60,23 @@ export default function ChecklistMobileTipoSelecao() {
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Verificação de equipamentos de combate a incêndio, EPIs, EPRs e materiais especializados.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary"
+            onClick={() => navigate(`/checklist-mobile/viatura/${viaturaId}`, { state: { tipoCRS: true } })}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Ambulance className="h-6 w-6 text-primary" />
+                Checklist CRS
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Carro de Resgate e Salvamento - Equipamentos especializados, ferramentas e materiais de resgate.
               </p>
             </CardContent>
           </Card>
