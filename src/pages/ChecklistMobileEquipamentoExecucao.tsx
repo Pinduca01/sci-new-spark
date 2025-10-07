@@ -220,6 +220,13 @@ export default function ChecklistMobileEquipamentoExecucao() {
         return;
       }
 
+      // Buscar bombeiro_id do usuário logado
+      const { data: bombeiroData } = await supabase
+        .from('bombeiros')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
       // 1) Upload das imagens de não conformidade (até 3 por item)
       const uploadedNCs = await Promise.all(
         items
@@ -257,7 +264,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
         .insert({
           viatura_id: viaturaId,
           template_id: template?.id,
-          bombeiro_responsavel_id: session.user.id,
+          bombeiro_responsavel_id: bombeiroData?.id || null,
           bombeiro_responsavel: userName || 'Usuário',
           tipo_checklist: 'BA-2',
           data_checklist: new Date().toISOString().split('T')[0],
