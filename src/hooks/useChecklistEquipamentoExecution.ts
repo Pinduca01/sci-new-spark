@@ -77,7 +77,17 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
     } catch (error: any) {
       console.error('Erro ao carregar checklist de equipamento:', error);
       toast.error(error.message || 'Erro ao carregar checklist');
-      setLoading(false); // Permitir que o componente mostre erro
+      
+      // Template vazio para evitar crashes
+      setTemplate({
+        id: '',
+        nome: 'Erro ao carregar',
+        tipo_viatura: 'EQUIPAMENTOS',
+        itens: []
+      });
+      
+      setItems([]);
+      setLoading(false);
     }
   };
 
@@ -173,6 +183,9 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
   };
 
   const getProgress = () => {
+    if (!items || items.length === 0) {
+      return { total: 0, completed: 0, percentage: 0 };
+    }
     const total = items.length;
     const completed = items.filter(item => item.status !== null).length;
     return { total, completed, percentage: total > 0 ? (completed / total) * 100 : 0 };

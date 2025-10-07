@@ -84,7 +84,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
   const itemsByCategory = useMemo(() => {
     const grouped = items.reduce((acc, item) => {
       const category = item.categoria || 'Geral';
-      if (!acc[category]) acc[category] = [] as typeof items;
+      if (!acc[category]) acc[category] = [];
       acc[category].push(item);
       return acc;
     }, {} as Record<string, typeof items>);
@@ -346,6 +346,19 @@ export default function ChecklistMobileEquipamentoExecucao() {
         <Card className="mt-4">
           <CardContent className="pt-6">
             <p className="text-center text-muted-foreground">Equipamento não encontrado.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!template) {
+    return (
+      <div className="min-h-screen p-6">
+        <Button variant="outline" onClick={() => navigate('/checklist-mobile/equipamentos')}>Voltar</Button>
+        <Card className="mt-4">
+          <CardContent className="pt-6">
+            <p className="text-center text-destructive">Erro ao carregar template do checklist. Verifique sua conexão.</p>
           </CardContent>
         </Card>
       </div>

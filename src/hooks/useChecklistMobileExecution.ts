@@ -383,6 +383,9 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
   };
 
   const getProgress = () => {
+    if (!items || items.length === 0) {
+      return { total: 0, completed: 0, percentage: 0 };
+    }
     const total = items.length;
     const completed = items.filter(item => item.status !== null).length;
     return { total, completed, percentage: total > 0 ? (completed / total) * 100 : 0 };
