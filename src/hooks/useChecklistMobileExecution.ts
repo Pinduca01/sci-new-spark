@@ -89,83 +89,79 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
         .eq('user_id', user.id)
         .single();
 
-  if (bombeiroError) throw bombeiroError;
+      if (bombeiroError) throw bombeiroError;
       setBombeiro(bombeiroData);
 
-      // 3A. Tentar carregar itens do template_checklist via tipos_checklist (robusto com normalização)
+      // 3. Tentar carregar itens do template_checklist (estratégia direta e robusta)
       try {
-        const normalize = (s: string | null) => (s || '')
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '')
-          .trim();
-
-        // Candidatos de descrição para tipos de checklist de viaturas
-        const descricaoCandidates = [
-          viaturaData.tipo,
-          'BA-MC',
-          'BA-2',
-          'VIATURAS',
-          'GERAL',
-        ].filter(Boolean) as string[];
-
-        const normalizedCandidates = descricaoCandidates.map(normalize);
-
-        // Buscar todos os tipos para resolução mais flexível
-        const { data: todosTipos } = await supabase
-          .from('tipos_checklist')
-          .select('id, descricao');
-
-        // Resolver todos os candidatos possíveis por normalização
-        const candidatosResolvidos: any[] = (todosTipos || []).filter((t: any) => normalizedCandidates.includes(normalize(t.descricao)));
-
-        // Caso nenhum resolvido por normalização, tentar igualdade e adicionar se existir
-        if (candidatosResolvidos.length === 0) {
-          for (const descricao of descricaoCandidates) {
-            const { data: tipoPorIgualdade } = await supabase
+        let tipoChecklistId: string | null = null;
+        
+        // Estratégia 1: Se tipoChecklistOverride for fornecido, usar ele
+        if (tipoChecklistOverride) {
+          if (tipoChecklistOverride === 'CRS') {
+            const { data: tipoCRS } = await supabase
               .from('tipos_checklist')
-              .select('id, descricao')
-              .eq('descricao', descricao)
-              .single();
-            if (tipoPorIgualdade?.id) {
-              candidatosResolvidos.push(tipoPorIgualdade);
-            }
+              .select('id, nome, descricao')
+              .eq('nome', 'CRS Viatura')
+              .maybeSingle();
+            tipoChecklistId = tipoCRS?.id || null;
+          } else if (tipoChecklistOverride === 'EQUIPAMENTOS') {
+            const { data: tipoEquip } = await supabase
+              .from('tipos_checklist')
+              .select('id, nome, descricao')
+              .eq('nome', 'CCI Equipamentos')
+              .maybeSingle();
+            tipoChecklistId = tipoEquip?.id || null;
           }
         }
-
-        // Se temos candidatos, buscar itens de todos e escolher o mais completo
-        if (candidatosResolvidos.length > 0) {
-          const ids = candidatosResolvidos.map(t => t.id);
-          const { data: itensDeTodos, error: itensTodosError } = await supabase
+        
+        // Estratégia 2: Mapear por tipo de viatura
+        if (!tipoChecklistId) {
+          if (viaturaData.tipo === 'CRS') {
+            const { data: tipoCRS } = await supabase
+              .from('tipos_checklist')
+              .select('id, nome, descricao')
+              .eq('nome', 'CRS Viatura')
+              .maybeSingle();
+            tipoChecklistId = tipoCRS?.id || null;
+          } else if (viaturaData.tipo === 'CCI') {
+            // Para CCI, assumir checklist de VIATURA por padrão
+            const { data: tipoViatura } = await supabase
+              .from('tipos_checklist')
+              .select('id, nome, descricao')
+              .eq('nome', 'CCI Viatura')
+              .maybeSingle();
+            tipoChecklistId = tipoViatura?.id || null;
+          }
+        }
+        
+        // Se encontrou um tipo válido, buscar os itens
+        if (tipoChecklistId) {
+          const { data: itensTemplate, error: itensError } = await supabase
             .from('template_checklist')
             .select('id, item, categoria, ordem, tipo_checklist_id')
-            .in('tipo_checklist_id', ids)
+            .eq('tipo_checklist_id', tipoChecklistId)
             .order('ordem', { ascending: true });
 
-          if (!itensTodosError && Array.isArray(itensDeTodos) && itensDeTodos.length > 0) {
-            // Agrupar por tipo_checklist_id e escolher o grupo com mais itens
-            const grupos: Record<string, any[]> = {};
-            for (const it of itensDeTodos) {
-              const key = String((it as any).tipo_checklist_id);
-              if (!grupos[key]) grupos[key] = [];
-              grupos[key].push(it);
-            }
-
-            const melhorTipoId = Object.keys(grupos).sort((a, b) => grupos[b].length - grupos[a].length)[0];
-            const melhorItens = grupos[melhorTipoId] || [];
-            const tipoRegistro = candidatosResolvidos.find(t => String(t.id) === String(melhorTipoId));
+          if (!itensError && Array.isArray(itensTemplate) && itensTemplate.length > 0) {
+            const { data: tipoInfo } = await supabase
+              .from('tipos_checklist')
+              .select('nome, descricao')
+              .eq('id', tipoChecklistId)
+              .maybeSingle();
 
             const builtTemplate = {
-              id: tipoRegistro?.id ?? melhorTipoId,
-              nome: `Template ${tipoRegistro?.descricao || viaturaData.tipo}`,
+              id: tipoChecklistId,
+              nome: tipoInfo?.descricao || `Template ${viaturaData.tipo}`,
               tipo_viatura: viaturaData.tipo,
-              itens: melhorItens.map((it: any) => ({
+              itens: itensTemplate.map((it: any) => ({
                 id: (it.id ?? crypto.randomUUID()).toString(),
                 nome: it.item,
                 categoria: it.categoria,
               }))
             } as ChecklistTemplate;
 
-            console.info('[Checklist] Usando template_checklist mais completo para', tipoRegistro?.descricao, 'itens:', melhorItens.length);
+            console.info('[Checklist] Template carregado:', tipoInfo?.nome, 'com', itensTemplate.length, 'itens');
 
             setTemplate(builtTemplate as any);
             initializeItems((builtTemplate.itens as any) || []);
@@ -176,27 +172,25 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
               template: builtTemplate
             });
 
-            // Após carregar com sucesso do template_checklist, não seguir para outros fallbacks
             loadAutoSavedProgress();
             setLoading(false);
             return;
           }
         }
 
-        console.warn('[Checklist] Nenhum item encontrado em template_checklist para candidatos', descricaoCandidates);
+        console.warn('[Checklist] Nenhum template encontrado em template_checklist');
       } catch (e) {
-        // Continua para demais estratégias se não conseguir carregar de template_checklist
         console.warn('Falha ao carregar itens de template_checklist, tentando outras fontes...', e);
       }
 
-      // 3. Buscar template ativo para o tipo de viatura (ou usar override se fornecido)
+      // 4. Fallback: Buscar template ativo antigo (checklist_templates JSONB)
       const tipoParaBuscar = tipoChecklistOverride || viaturaData.tipo;
       const { data: templateData, error: templateError } = await supabase
         .from('checklist_templates')
         .select('*')
         .eq('tipo_viatura', tipoParaBuscar)
         .eq('ativo', true)
-        .single();
+        .maybeSingle();
 
       if (templateError) {
         // Se não houver template específico, tentar buscar template geral
@@ -205,7 +199,7 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
           .select('*')
           .eq('tipo_viatura', 'GERAL')
           .eq('ativo', true)
-          .single();
+          .maybeSingle();
 
         if (generalError || !generalTemplate) {
           // Tentar construir template real com base nas tabelas (equipamentos/agentes)
@@ -280,7 +274,7 @@ export const useChecklistMobileExecution = (viaturaId: string, tipoChecklistOver
         });
       }
 
-      // 4. Tentar carregar progresso salvo do localStorage
+      // 5. Tentar carregar progresso salvo do localStorage
       loadAutoSavedProgress();
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error);

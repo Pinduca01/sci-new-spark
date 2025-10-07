@@ -18,58 +18,43 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
   const loadChecklistData = async () => {
     setLoading(true);
     try {
-      // 1) Tenta carregar template de EQUIPAMENTOS via tipos_checklist
-      let tipoChecklist: { id: string; descricao: string } | null = null;
-      try {
-        const { data: tipoEquip } = await supabase
-          .from('tipos_checklist')
-          .select('id, descricao')
-          .eq('descricao', 'EQUIPAMENTOS')
-          .single();
+      // Buscar template de EQUIPAMENTOS CCI via tipos_checklist
+      const { data: tipoEquip } = await supabase
+        .from('tipos_checklist')
+        .select('id, nome, descricao')
+        .eq('nome', 'CCI Equipamentos')
+        .maybeSingle();
 
-        tipoChecklist = tipoEquip || null;
+      if (tipoEquip?.id) {
+        const { data: itensTemplate, error: itensError } = await supabase
+          .from('template_checklist')
+          .select('id, item, categoria, ordem')
+          .eq('tipo_checklist_id', tipoEquip.id)
+          .order('ordem', { ascending: true });
 
-        // Fallback: GERAL
-        if (!tipoChecklist) {
-          const { data: tipoGeral } = await supabase
-            .from('tipos_checklist')
-            .select('id, descricao')
-            .eq('descricao', 'GERAL')
-            .single();
-          tipoChecklist = tipoGeral || null;
+        if (!itensError && Array.isArray(itensTemplate) && itensTemplate.length > 0) {
+          const builtTemplate: ChecklistTemplate = {
+            id: tipoEquip.id,
+            nome: tipoEquip.descricao,
+            tipo_viatura: 'EQUIPAMENTOS',
+            itens: itensTemplate.map((it: any) => ({
+              id: (it.id ?? crypto.randomUUID()).toString(),
+              nome: it.item,
+              categoria: it.categoria,
+            }))
+          };
+
+          console.info('[Checklist Equipamento] Template carregado:', tipoEquip.nome, 'com', itensTemplate.length, 'itens');
+
+          setTemplate(builtTemplate);
+          initializeItems(builtTemplate.itens as any);
+          loadAutoSavedProgress();
+          setLoading(false);
+          return;
         }
-
-        if (tipoChecklist?.id) {
-          const { data: itensTemplate, error: itensError } = await supabase
-            .from('template_checklist')
-            .select('id, item, categoria, ordem')
-            .eq('tipo_checklist_id', tipoChecklist.id)
-            .order('ordem', { ascending: true });
-
-          if (!itensError && Array.isArray(itensTemplate) && itensTemplate.length > 0) {
-            const builtTemplate: ChecklistTemplate = {
-              id: tipoChecklist.id,
-              nome: `Template ${tipoChecklist.descricao}`,
-              tipo_viatura: 'EQUIPAMENTOS',
-              itens: itensTemplate.map((it: any) => ({
-                id: (it.id ?? crypto.randomUUID()).toString(),
-                nome: it.item,
-                categoria: it.categoria,
-              }))
-            };
-
-            setTemplate(builtTemplate);
-            initializeItems(builtTemplate.itens as any);
-            loadAutoSavedProgress();
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn('Falha ao carregar template de equipamentos', e);
       }
 
-      // 2) Se nada foi carregado, cria um fallback simples
+      // Fallback: criar template mínimo
       const fallback: ChecklistTemplate = {
         id: `equip_fallback`,
         nome: 'Checklist de Equipamento (Fallback)',
@@ -77,6 +62,7 @@ export const useChecklistEquipamentoExecution = (equipamentoId: string) => {
         itens: [
           { id: crypto.randomUUID(), nome: 'Condição geral do equipamento', categoria: 'EQUIPAMENTO' },
           { id: crypto.randomUUID(), nome: 'Quantidade disponível', categoria: 'EQUIPAMENTO' },
+          { id: crypto.randomUUID(), nome: 'Número de série legível', categoria: 'EQUIPAMENTO' },
         ]
       };
       setTemplate(fallback);
