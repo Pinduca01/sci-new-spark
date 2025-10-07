@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Truck, LogOut, RefreshCw, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { OnlineStatusBadge } from '@/components/checklist-mobile/OnlineStatusBadge';
 import { saveToCache, getFromCache, getPendingCount } from '@/lib/offlineDb';
+import { useSyncManager } from '@/hooks/useSyncManager';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface Viatura {
   id: string;
@@ -25,6 +26,7 @@ const ChecklistMobile = () => {
   const [viaturas, setViaturas] = useState<Viatura[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
+  const { isOnline } = useSyncManager();
 
   useEffect(() => {
     // Verificar autenticação
@@ -128,8 +130,6 @@ const ChecklistMobile = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <OnlineStatusBadge />
-      
       <div className="max-w-2xl mx-auto">
         {/* Header Profissional */}
         <Card className="mb-6 border-none shadow-lg bg-gradient-to-br from-primary/5 via-background to-primary/5">
@@ -146,10 +146,19 @@ const ChecklistMobile = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="font-medium">{userName ?? 'Carregando...'}</span>
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 cursor-default">
+                          <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                          <span className="font-medium">{userName ?? 'Carregando...'}</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        {isOnline ? 'Online' : 'Offline'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
 
