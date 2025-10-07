@@ -48,28 +48,28 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
             full_name: user?.user_metadata?.full_name || 'Usuário',
             ativo: true
           });
-          setLoading(false); // ✅ Finalizar loading
+          setLoading(false);
           return;
         } else {
           throw fetchError;
         }
       } else {
         setProfile(data);
-        setRetryCount(0); // Reset retry count on success
+        setRetryCount(0);
       }
     } catch (err: any) {
       console.error(`Erro ao buscar perfil (tentativa ${attempt}):`, err);
       
-      // Retry logic for network errors
+      // Retry logic for network errors com timeout reduzido
       if (attempt < 3 && isNetworkError(err)) {
-        console.log(`Tentando novamente em ${attempt * 1000}ms...`);
+        console.log(`Tentando novamente em 1000ms...`);
         setTimeout(() => {
           fetchProfile(userId, attempt + 1);
-        }, attempt * 1000);
-        return; // Não finalizar loading ainda durante retry
+        }, 1000);
+        return;
       }
       
-      // ✅ Após 3 tentativas, finalizar loading com fallback
+      // Após 3 tentativas, finalizar loading com fallback
       setProfile({
         user_id: userId,
         email: user?.email || 'usuario@exemplo.com',
@@ -79,7 +79,7 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
       
       setError(`Erro ao carregar perfil: ${err.message}`);
     } finally {
-      setLoading(false); // ✅ SEMPRE finalizar loading
+      setLoading(false);
     }
   };
 
@@ -126,6 +126,20 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
   useEffect(() => {
     if (user?.id) {
       fetchProfile(user.id);
+      
+      // Timeout de segurança - forçar finalização após 5s
+      const timeoutId = setTimeout(() => {
+        console.warn('Timeout ao carregar perfil - usando fallback');
+        setProfile({
+          user_id: user.id,
+          email: user.email || 'usuario@exemplo.com',
+          full_name: user.user_metadata?.full_name || 'Usuário',
+          ativo: true
+        });
+        setLoading(false);
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
     } else {
       setProfile(null);
       setError(null);

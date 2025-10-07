@@ -139,23 +139,18 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     });
 
     const loadingTimeout = setTimeout(() => {
-      if (isLoading || profileLoading) {
-        console.error('Loading timeout - forçando navegação para login');
-        toast({
-          title: "Erro de Carregamento",
-          description: "Tempo esgotado ao carregar perfil. Redirecionando...",
-          variant: "destructive",
-        });
-        navigate('/login');
+      if (isLoading) {
+        console.warn('Loading timeout - finalizando com estado atual');
+        setIsLoading(false);
       }
     }, 10000); // 10 segundos
 
     return () => clearTimeout(loadingTimeout);
-  }, [isLoading, profileLoading, navigate, toast, user]);
+  }, [isLoading]);
 
 
 
-  if (isLoading || (user && profileLoading)) {
+  if (isLoading) {
     return (
       <div className="min-h-screen abstract-bg flex items-center justify-center">
         <Card className="glass-card">
@@ -173,6 +168,13 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full abstract-bg">
+        {profileLoading && (
+          <div className="fixed top-0 left-0 right-0 z-50">
+            <div className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 px-4 py-2 text-sm text-center backdrop-blur-sm border-b border-yellow-500/20">
+              Carregando perfil do usuário...
+            </div>
+          </div>
+        )}
         <AppSidebar userRole="user" />
         
         <div className="flex-1 flex flex-col relative z-50">
