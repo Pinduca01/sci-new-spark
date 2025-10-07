@@ -33,6 +33,7 @@ const ChecklistMobileEquipamentos = lazy(() => import("./pages/ChecklistMobileEq
 const ChecklistMobileEquipamentoExecucao = lazy(() => import("./pages/ChecklistMobileEquipamentoExecucao"));
 const ChecklistMobileViatura = lazy(() => import("./pages/ChecklistMobileViatura"));
 const ChecklistMobileSyncStatus = lazy(() => import("./pages/ChecklistMobileSyncStatus"));
+const ChecklistMobileHistorico = lazy(() => import("./pages/ChecklistMobileHistorico"));
 import AdminCreateUsers from "./pages/AdminCreateUsers";
 
 
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/checklist-mobile/equipamentos" element={<ChecklistMobileEquipamentos />} />
           <Route path="/checklist-mobile/equipamento/:id" element={<ChecklistMobileEquipamentoExecucao />} />
           <Route path="/checklist-mobile/viatura/:id" element={<ChecklistMobileViatura />} />
+          <Route path="/checklist-mobile/historico/:viaturaId" element={<ChecklistMobileHistorico />} />
           <Route path="/checklist-mobile/sync" element={<ChecklistMobileSyncStatus />} />
           <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/pessoal" element={<MainLayout><ControlePessoal /></MainLayout>} />

@@ -152,7 +152,7 @@ export async function buildRealTemplateForEquipamento(equipamentoId: string): Pr
   return {
     id: `equip_${equipamento.id}_template_real`,
     nome: `Checklist - ${baseNome}`,
-    tipo_viatura: equipamento?.viaturas?.tipo || 'GERAL',
+    tipo_viatura: 'EQUIPAMENTO',
     categoria: 'EQUIPAMENTO',
     itens,
     ativo: true,
