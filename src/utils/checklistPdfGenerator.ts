@@ -256,3 +256,217 @@ export const generateChecklistMensalViaturaPDF = (
   const fileName = `relatorio_mensal_${viaturaPlaca.replace(/\s+/g, '_')}_${mesNome}_${ano}.pdf`;
   doc.save(fileName);
 };
+
+// ============= FORMATO OFICIAL - PDF MENSAL LANDSCAPE =============
+
+interface ItemDiarioStatus {
+  dia: number;
+  status: 'C' | 'NC' | 'NA' | '-'; // C=Conforme, NC=Não Conforme, NA=Não Aplicável, -=Sem checklist
+}
+
+interface ItemMensal {
+  nome: string;
+  diasStatus: ItemDiarioStatus[];
+}
+
+// Fase 1: Transformar dados para formato mensal
+export const transformarDadosParaFormatoMensal = (
+  checklists: ChecklistDetalhado[],
+  mes: number,
+  ano: number
+): ItemMensal[] => {
+  const diasNoMes = new Date(ano, mes, 0).getDate();
+  
+  // Agrupar checklists por dia
+  const checklistsPorDia: { [dia: number]: ChecklistDetalhado[] } = {};
+  
+  checklists.forEach(checklist => {
+    const dia = new Date(checklist.data).getDate();
+    if (!checklistsPorDia[dia]) {
+      checklistsPorDia[dia] = [];
+    }
+    checklistsPorDia[dia].push(checklist);
+  });
+
+  // Extrair todos os itens únicos
+  const itensUnicos = new Map<string, ItemMensal>();
+
+  checklists.forEach(checklist => {
+    checklist.itens.forEach(item => {
+      if (!itensUnicos.has(item.nome)) {
+        itensUnicos.set(item.nome, {
+          nome: item.nome,
+          diasStatus: Array.from({ length: diasNoMes }, (_, i) => ({
+            dia: i + 1,
+            status: '-'
+          }))
+        });
+      }
+    });
+  });
+
+  // Preencher status de cada item por dia
+  itensUnicos.forEach((itemMensal) => {
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+      const checklistsDoDia = checklistsPorDia[dia] || [];
+      
+      if (checklistsDoDia.length === 0) {
+        itemMensal.diasStatus[dia - 1].status = '-';
+        continue;
+      }
+
+      // Se houver múltiplos checklists no dia, pegar o pior status
+      let piorStatus: 'C' | 'NC' | 'NA' = 'C';
+      let itemEncontrado = false;
+
+      checklistsDoDia.forEach(checklist => {
+        const item = checklist.itens.find(i => i.nome === itemMensal.nome);
+        if (item) {
+          itemEncontrado = true;
+          const status = item.status === 'conforme' ? 'C' : 
+                        item.status === 'nao_conforme' ? 'NC' : 'NA';
+          
+          // Hierarquia: NC > NA > C
+          if (status === 'NC') piorStatus = 'NC';
+          else if (status === 'NA' && piorStatus !== 'NC') piorStatus = 'NA';
+        }
+      });
+
+      itemMensal.diasStatus[dia - 1].status = itemEncontrado ? piorStatus : '-';
+    }
+  });
+
+  return Array.from(itensUnicos.values());
+};
+
+// Fase 2: Gerar PDF no formato oficial (landscape)
+export const generateChecklistMensalFormatoOficialPDF = (
+  viaturaPlaca: string,
+  mes: number,
+  ano: number,
+  checklists: ChecklistDetalhado[],
+  tipoChecklist: string = 'GERAL'
+) => {
+  // Landscape orientation
+  const doc = new jsPDF({ orientation: 'landscape' }) as jsPDFWithAutoTable;
+  const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
+  
+  const diasNoMes = new Date(ano, mes, 0).getDate();
+  const mesNome = new Date(ano, mes - 1).toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
+
+  // Transformar dados
+  const itensMensais = transformarDadosParaFormatoMensal(checklists, mes, ano);
+
+  let yPos = 15;
+
+  // Cabeçalho oficial
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('MMS BRASIL SERVIÇOS DE AVIAÇÃO LTDA', 15, yPos);
+  
+  yPos += 5;
+  doc.setFontSize(8);
+  doc.text(`CÓDIGO: ${tipoChecklist}`, 15, yPos);
+  doc.text('SCI-CORE SISTEMA DE CHECKLIST INTEGRADO', pageWidth / 2, yPos, { align: 'center' });
+  doc.text(`VIATURA: ${viaturaPlaca}`, pageWidth - 15, yPos, { align: 'right' });
+
+  yPos += 5;
+  doc.text(`MÊS: ${mesNome}/${ano}`, pageWidth / 2, yPos, { align: 'center' });
+  
+  yPos += 8;
+
+  // Preparar dados da tabela
+  const headerRow = ['ITEM', ...Array.from({ length: diasNoMes }, (_, i) => String(i + 1).padStart(2, '0'))];
+  
+  const bodyRows = itensMensais.map(item => [
+    item.nome,
+    ...item.diasStatus.map(d => d.status)
+  ]);
+
+  // Configuração de cores por status
+  const getStatusColor = (status: string): [number, number, number] => {
+    if (status === 'C') return [144, 238, 144]; // Verde claro
+    if (status === 'NC') return [255, 182, 193]; // Vermelho claro
+    if (status === 'NA') return [211, 211, 211]; // Cinza
+    return [255, 255, 255]; // Branco (sem checklist)
+  };
+
+  // Gerar tabela
+  doc.autoTable({
+    startY: yPos,
+    head: [headerRow],
+    body: bodyRows,
+    theme: 'grid',
+    styles: { 
+      fontSize: 6,
+      cellPadding: 1,
+      overflow: 'linebreak',
+      halign: 'center',
+      valign: 'middle'
+    },
+    headStyles: { 
+      fillColor: [41, 128, 185],
+      textColor: 255,
+      fontStyle: 'bold',
+      fontSize: 6,
+      halign: 'center'
+    },
+    columnStyles: {
+      0: { cellWidth: 40, halign: 'left', fontStyle: 'bold' }, // Coluna ITEM mais larga
+      ...Object.fromEntries(
+        Array.from({ length: diasNoMes }, (_, i) => [i + 1, { cellWidth: 7 }])
+      )
+    },
+    didParseCell: (data) => {
+      // Colorir células de status
+      if (data.section === 'body' && data.column.index > 0) {
+        const status = data.cell.raw as string;
+        data.cell.styles.fillColor = getStatusColor(status);
+        data.cell.styles.textColor = status === 'NC' ? [139, 0, 0] : [0, 0, 0];
+        data.cell.styles.fontStyle = status === 'NC' ? 'bold' : 'normal';
+      }
+    },
+    margin: { left: 15, right: 15 }
+  });
+
+  // Legenda
+  const finalY = doc.lastAutoTable.finalY + 8;
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('LEGENDA:', 15, finalY);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.text('C = Conforme', 30, finalY);
+  doc.text('NC = Não Conforme', 60, finalY);
+  doc.text('NA = Não Aplicável', 95, finalY);
+  doc.text('- = Sem Checklist', 130, finalY);
+
+  // Rodapé com assinaturas
+  const footerY = pageHeight - 20;
+  doc.setDrawColor(0);
+  doc.line(15, footerY, 100, footerY);
+  doc.line(pageWidth - 100, footerY, pageWidth - 15, footerY);
+  
+  doc.setFontSize(7);
+  doc.text('Responsável pelo Checklist', 57.5, footerY + 4, { align: 'center' });
+  doc.text('Supervisor/Gerente', pageWidth - 57.5, footerY + 4, { align: 'center' });
+
+  // Número de página
+  const pageCount = (doc as any).internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(100);
+    doc.text(
+      `Página ${i}/${pageCount} - Gerado em ${new Date().toLocaleDateString('pt-BR')}`,
+      pageWidth / 2,
+      pageHeight - 8,
+      { align: 'center' }
+    );
+  }
+
+  // Salvar
+  const fileName = `checklist_mensal_${viaturaPlaca.replace(/\s+/g, '_')}_${mesNome}_${ano}_oficial.pdf`;
+  doc.save(fileName);
+};

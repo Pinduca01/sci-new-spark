@@ -1,13 +1,22 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, Clock, User, AlertCircle, CheckCircle, FileText } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User, AlertCircle, CheckCircle, FileText, Download } from "lucide-react";
 import { useChecklistsHistorico } from "@/hooks/useChecklistsHistorico";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ChecklistDetailsModal from "@/components/checklist-mobile/ChecklistDetailsModal";
+import { generateChecklistMensalFormatoOficialPDF } from "@/utils/checklistPdfGenerator";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function ChecklistMobileHistorico() {
   const navigate = useNavigate();
@@ -17,6 +26,51 @@ export default function ChecklistMobileHistorico() {
 
   // Filtrar checklists da viatura específica
   const checklists = checklistsData?.viaturas.filter(c => c.viatura_id === viaturaId) || [];
+  
+  // Estado para seleção de mês/ano do PDF
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<string>(String(currentDate.getMonth() + 1));
+  const [selectedYear, setSelectedYear] = useState<string>(String(currentDate.getFullYear()));
+
+  // Gerar PDF mensal formato oficial
+  const handleGerarPDFMensal = () => {
+    const mes = parseInt(selectedMonth);
+    const ano = parseInt(selectedYear);
+    
+    // Filtrar checklists do mês selecionado
+    const checklistsMes = checklists.filter(c => {
+      const dataChecklist = new Date(c.data);
+      return dataChecklist.getMonth() + 1 === mes && dataChecklist.getFullYear() === ano;
+    });
+
+    if (checklistsMes.length === 0) {
+      toast.error(`Nenhum checklist encontrado para ${selectedMonth}/${selectedYear}`);
+      return;
+    }
+
+    const viaturaPlaca = checklistsMes[0]?.viatura_placa || 'VIATURA';
+    
+    try {
+      // Cast para ChecklistDetalhado[] pois sabemos que itens é um array de objetos
+      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsMes as any);
+      toast.success('PDF mensal gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF mensal');
+    }
+  };
+
+  // Gerar opções de meses
+  const meses = Array.from({ length: 12 }, (_, i) => ({
+    value: String(i + 1),
+    label: new Date(2000, i).toLocaleString('pt-BR', { month: 'long' })
+  }));
+
+  // Gerar opções de anos (últimos 3 anos)
+  const anos = Array.from({ length: 3 }, (_, i) => {
+    const ano = currentDate.getFullYear() - i;
+    return { value: String(ano), label: String(ano) };
+  });
 
   if (isLoading) {
     return (
@@ -33,7 +87,7 @@ export default function ChecklistMobileHistorico() {
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-10 shadow-md">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-3">
           <Button
             variant="ghost"
             size="icon"
@@ -42,11 +96,52 @@ export default function ChecklistMobileHistorico() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold">Histórico de Checklists</h1>
             <p className="text-sm text-primary-foreground/80">
               {checklists.length} checklist{checklists.length !== 1 ? 's' : ''} encontrado{checklists.length !== 1 ? 's' : ''}
             </p>
+          </div>
+        </div>
+
+        {/* Exportar PDF Mensal */}
+        <div className="bg-primary-foreground/10 rounded-lg p-3 space-y-2">
+          <p className="text-xs font-semibold mb-2">Exportar PDF Mensal (Formato Oficial)</p>
+          <div className="flex gap-2">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="flex-1 bg-background text-foreground">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {meses.map(m => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-24 bg-background text-foreground">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {anos.map(a => (
+                  <SelectItem key={a.value} value={a.value}>
+                    {a.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              size="sm"
+              onClick={handleGerarPDFMensal}
+              className="bg-background text-primary hover:bg-background/90"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              PDF
+            </Button>
           </div>
         </div>
       </div>
