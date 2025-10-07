@@ -363,7 +363,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
   }
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-4 pb-24">
       <div className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -454,7 +454,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
         </Accordion>
 
         {/* Footer: Finalizar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t p-4">
           <Button
             onClick={handleFinalizarChecklist}
             disabled={saving || progress.percentage < 100}
