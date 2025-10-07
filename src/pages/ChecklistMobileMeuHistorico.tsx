@@ -45,6 +45,19 @@ export default function ChecklistMobileMeuHistorico() {
         return;
       }
 
+      // Buscar bombeiro_id do usuário logado
+      const { data: bombeiroData } = await supabase
+        .from('bombeiros')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (!bombeiroData) {
+        toast.error('Usuário não vinculado a um bombeiro');
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('checklists_viaturas')
         .select(`
@@ -57,7 +70,7 @@ export default function ChecklistMobileMeuHistorico() {
           bombeiro_responsavel,
           itens_checklist
         `)
-        .eq('bombeiro_responsavel_id', session.user.id)
+        .eq('bombeiro_responsavel_id', bombeiroData.id)
         .order('data_checklist', { ascending: false })
         .order('hora_checklist', { ascending: false })
         .limit(50);
