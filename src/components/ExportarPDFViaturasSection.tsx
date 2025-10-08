@@ -17,7 +17,6 @@ import { toast } from "sonner";
 export function ExportarPDFViaturasSection() {
   const currentDate = new Date();
   const [selectedViatura, setSelectedViatura] = useState<string>("");
-  const [selectedTipo, setSelectedTipo] = useState<string>("TODOS");
   const [selectedMonth, setSelectedMonth] = useState<string>(String(currentDate.getMonth() + 1));
   const [selectedYear, setSelectedYear] = useState<string>(String(currentDate.getFullYear()));
 
@@ -58,15 +57,11 @@ export function ExportarPDFViaturasSection() {
     const ano = parseInt(selectedYear);
     
     try {
-      // Definir tipos de checklist para viaturas (CCI e CRS)
-      const tiposViatura = selectedTipo === 'TODOS' ? ['CCI', 'CRS'] : [selectedTipo];
-      
-      // Buscar checklists do mês selecionado
+      // Buscar todos os checklists de viatura do mês selecionado
       const { data: checklistsData, error } = await supabase
         .from('checklists_viaturas')
         .select('*')
         .eq('viatura_id', selectedViatura)
-        .in('tipo_checklist', tiposViatura)
         .gte('data_checklist', `${ano}-${String(mes).padStart(2, '0')}-01`)
         .lt('data_checklist', mes === 12 ? `${ano + 1}-01-01` : `${ano}-${String(mes + 1).padStart(2, '0')}-01`)
         .order('data_checklist', { ascending: true });
@@ -82,13 +77,10 @@ export function ExportarPDFViaturasSection() {
       const viatura = viaturas?.find(v => v.id === selectedViatura);
       const viaturaPlaca = viatura?.placa || 'VIATURA';
       
-      // Filtrar por tipo se necessário
-      const tipoFiltro = selectedTipo === 'TODOS' ? undefined : selectedTipo;
-      
       // Gerar PDF
-      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsData as any, tipoFiltro);
+      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsData as any);
       
-      toast.success(`PDF de checklists de viaturas ${tipoFiltro ? `(${tipoFiltro})` : '(CCI/CRS)'} gerado com sucesso!`);
+      toast.success('PDF de checklists de viaturas gerado com sucesso!');
     } catch (error: any) {
       console.error('Erro ao gerar PDF:', error);
       toast.error(error.message || 'Erro ao gerar PDF mensal');
@@ -100,7 +92,7 @@ export function ExportarPDFViaturasSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Truck className="h-5 w-5" />
-          Exportar Checklists de Viaturas (CCI/CRS)
+          Exportar Checklists de Viaturas
         </CardTitle>
         <CardDescription>
           Gere relatórios consolidados de checklists de inspeção de viaturas
@@ -125,22 +117,8 @@ export function ExportarPDFViaturasSection() {
             </Select>
           </div>
 
-          {/* Filtros de Tipo, Mês e Ano */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de Checklist</label>
-              <Select value={selectedTipo} onValueChange={setSelectedTipo}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TODOS">Todos (CCI + CRS)</SelectItem>
-                  <SelectItem value="CCI">CCI - Inspeção de CCIs</SelectItem>
-                  <SelectItem value="CRS">CRS - Inspeção de CRS</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
+          {/* Filtros de Mês e Ano */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Mês</label>
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>

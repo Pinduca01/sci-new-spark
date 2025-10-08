@@ -55,7 +55,7 @@ const aeroportosDisponiveis = [
 
 const equipesDisponiveis = ['Alfa', 'Bravo', 'Charlie', 'Delta'];
 
-const viaturasDisponiveis = ['CCI 01', 'CCI 02', 'CRS', 'ABT 01', 'ABT 02'];
+const viaturasDisponiveis = ['CCI 01', 'CCI 02', 'ABT 01', 'ABT 02'];
 
 const motoristasDisponiveis = [
   'Lopes',

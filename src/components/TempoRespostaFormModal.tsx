@@ -55,7 +55,7 @@ interface TempoRespostaFormModalProps {
   onSave: (formulario: FormularioTempoResposta) => void;
 }
 
-const viaturasDisponiveis = ['CCI 01', 'CCI 02', 'CRS'];
+const viaturasDisponiveis = ['CCI 01', 'CCI 02'];
 
 const bamcDisponiveis = ['Lopes', 'Matheus Gomes', 'Thiago Monteiro'];
 

@@ -25,11 +25,11 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { useBombeiros } from '@/hooks/useBombeiros'
 import { useEquipes } from '@/hooks/useEquipes'
+import { useBases } from '@/hooks/useBases'
 
 
-// Constantes para equipes e bases
+// Constantes para equipes
 const EQUIPES_PADRAO = ['Alfa', 'Bravo', 'Charlie', 'Delta']
-const BASES = ['CCI', 'CRS', 'CCI RT', 'CA']
 
 // Interface para os itens de verificação
 interface ItemVerificacao {
@@ -104,6 +104,7 @@ export default function VerificacaoUniformesSupabase() {
   // Hooks para dados reais
   const { bombeiros, bombeirosAtivos, isLoading: loadingBombeiros } = useBombeiros()
   const { data: equipes, isLoading: loadingEquipes } = useEquipes()
+  const { data: bases, isLoading: loadingBases } = useBases()
   
   const [abaSelecionada, setAbaSelecionada] = useState('nova-verificacao')
   const [bombeiroSelecionado, setBombeiroSelecionado] = useState('')
@@ -316,11 +317,11 @@ export default function VerificacaoUniformesSupabase() {
                   <Label htmlFor="base">Base *</Label>
                   <Select value={novaVerificacao.base} onValueChange={(value) => atualizarItem('base', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione a base" />
+                      <SelectValue placeholder={loadingBases ? "Carregando..." : "Selecione a base"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {BASES.map(base => (
-                        <SelectItem key={base} value={base}>{base}</SelectItem>
+                      {bases?.filter(b => b.ativa).map(base => (
+                        <SelectItem key={base.id} value={base.nome}>{base.nome}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

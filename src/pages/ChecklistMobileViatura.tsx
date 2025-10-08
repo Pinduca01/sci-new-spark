@@ -18,8 +18,6 @@ import { ShineBorder } from '../components/ui/shine-border';
 export default function ChecklistMobileViatura() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const tipoCRS = location.state?.tipoCRS === true;
   const [saving, setSaving] = useState(false);
   const [finalizado, setFinalizado] = useState(false);
   const [createdChecklistId, setCreatedChecklistId] = useState<string | null>(null);
@@ -56,7 +54,7 @@ export default function ChecklistMobileViatura() {
     getProgress,
     validateChecklist,
     clearAutoSavedProgress
-  } = useChecklistMobileExecution(viaturaIdValida ? id! : '', tipoCRS ? 'CRS' : undefined);
+  } = useChecklistMobileExecution(viaturaIdValida ? id! : '');
 
   const progress = getProgress();
 

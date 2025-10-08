@@ -55,8 +55,6 @@ export default function ChecklistMobileTipoSelecao() {
     );
   }
 
-  const isCRS = viatura.tipo === 'CRS';
-
   return (
     <div className="min-h-screen p-4 bg-gradient-to-br from-background to-muted/20">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -75,27 +73,20 @@ export default function ChecklistMobileTipoSelecao() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Card de Viatura - específico por tipo */}
+          {/* Card de Viatura */}
           <Card 
             className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary"
-            onClick={() => navigate(`/checklist-mobile/viatura/${viaturaId}`, isCRS ? { state: { tipoCRS: true } } : undefined)}
+            onClick={() => navigate(`/checklist-mobile/viatura/${viaturaId}`)}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {isCRS ? (
-                  <Ambulance className="h-6 w-6 text-primary" />
-                ) : (
-                  <Truck className="h-6 w-6 text-primary" />
-                )}
-                {isCRS ? 'Checklist CRS' : 'Checklist de Viatura'}
+                <Truck className="h-6 w-6 text-primary" />
+                Checklist de Viatura
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                {isCRS 
-                  ? 'Carro de Resgate e Salvamento - Verificação completa do veículo especializado, equipamentos e itens de segurança.'
-                  : 'Verificação completa da viatura: pneus, luzes, equipamentos, documentação e itens de segurança.'
-                }
+                Verificação completa da viatura: pneus, luzes, equipamentos, documentação e itens de segurança.
               </p>
             </CardContent>
           </Card>

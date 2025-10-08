@@ -167,7 +167,9 @@ export const buildStaticTemplateForViatura = (tipoViatura: string) => {
     };
   }
 
-  // Tratar CCI como BA-MC por padrão
+  // NOTA: CCI é um TIPO DE VIATURA, BA-MC é uma FUNÇÃO DE BOMBEIRO
+  // Viaturas tipo CCI usam o template BA-MC (Bombeiro Aeródromo Motorista de Combate)
+  // Esta é apenas uma compatibilidade para garantir que viaturas CCI recebam o template correto
   if (tipoNorm === 'bamc' || tipoNorm === 'cci' || tipoNorm === 'viaturas') {
     return {
       nome: 'BA-MC',
