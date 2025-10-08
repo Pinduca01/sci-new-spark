@@ -35,50 +35,84 @@ export const useUserRole = (): UserRoleData => {
           return;
         }
 
-        // Timeout de segurança de 5 segundos
-        const timeout = setTimeout(() => {
-          console.warn('useUserRole: Timeout ao buscar dados do usuário');
-          setLoading(false);
-        }, 5000);
+        // Promise.race com timeout de 5 segundos
+        const timeoutPromise = new Promise<null>((resolve) => {
+          setTimeout(() => {
+            console.warn('useUserRole: Timeout ao buscar dados do usuário');
+            resolve(null);
+          }, 5000);
+        });
 
-        // Buscar role do usuário
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
+        const fetchDataPromise = (async () => {
+          // Buscar role do usuário
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .single();
 
-        if (roleError) {
-          console.error('Erro ao buscar role:', roleError);
+          if (roleError) {
+            console.error('Erro ao buscar role:', roleError);
+            return null;
+          }
+
+          // Buscar base_id e nome da base
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select(`
+              base_id,
+              bases (
+                nome
+              )
+            `)
+            .eq('user_id', user.id)
+            .single();
+
+          if (profileError) {
+            console.error('Erro ao buscar profile:', profileError);
+          }
+
+          return {
+            role: roleData?.role || null,
+            baseId: profileData?.base_id || null,
+            baseName: (profileData?.bases as any)?.nome || null,
+          };
+        })();
+
+        // Aguardar o que completar primeiro: fetch ou timeout
+        const result = await Promise.race([fetchDataPromise, timeoutPromise]);
+
+        if (result) {
+          setRole(result.role);
+          setBaseId(result.baseId);
+          setBaseName(result.baseName);
+          console.log('useUserRole: Dados carregados com sucesso', { role: result.role, baseId: result.baseId });
+        } else {
+          // Timeout - permitir acesso limitado
+          setRole(null);
+          setBaseId(null);
+          setBaseName(null);
+          
+          // Retry em background (não bloqueia UI)
+          setTimeout(async () => {
+            try {
+              const retryResult = await fetchDataPromise;
+              if (retryResult) {
+                setRole(retryResult.role);
+                setBaseId(retryResult.baseId);
+                setBaseName(retryResult.baseName);
+                console.log('useUserRole: Dados carregados no retry', retryResult);
+              }
+            } catch (error) {
+              console.error('Erro no retry de useUserRole:', error);
+            }
+          }, 0);
         }
-
-        // Buscar base_id e nome da base
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select(`
-            base_id,
-            bases (
-              nome
-            )
-          `)
-          .eq('user_id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Erro ao buscar profile:', profileError);
-        }
-
-        clearTimeout(timeout); // ✅ Limpar timeout se sucesso
-
-        setRole(roleData?.role || null);
-        setBaseId(profileData?.base_id || null);
-        setBaseName((profileData?.bases as any)?.nome || null);
-        
-        console.log('useUserRole: Dados carregados com sucesso', { role: roleData?.role, baseId: profileData?.base_id });
       } catch (error) {
         console.error('Erro ao buscar dados do usuário:', error);
+        setRole(null);
       } finally {
-        setLoading(false); // ✅ SEMPRE finalizar loading
+        setLoading(false);
       }
     };
 

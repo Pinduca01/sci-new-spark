@@ -43,47 +43,72 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   }, []);
 
   useEffect(() => {
-    // Check for existing session and validate active status
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        navigate('/login');
+    let isMounted = true;
+    let authTimeout: NodeJS.Timeout;
+
+    const initAuth = async () => {
+      // Timeout de segurança de 5 segundos
+      authTimeout = setTimeout(() => {
+        if (isMounted && isLoading) {
+          console.warn('MainLayout: Timeout de autenticação - redirecionando para login');
+          setIsLoading(false);
+          navigate('/login');
+        }
+      }, 5000);
+
+      try {
+        // Verificar sessão inicial
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+
+        if (!session?.user) {
+          navigate('/login');
+          setIsLoading(false);
+          return;
+        }
+
+        // Verificar se o usuário está ativo
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('ativo')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (!isMounted) return;
+
+        if (profileError) {
+          console.error('Erro ao verificar status:', profileError);
+        }
+
+        if (profileData && profileData.ativo === false) {
+          toast({
+            title: "Acesso negado",
+            description: "Sua conta está inativa. Entre em contato com o administrador.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          navigate('/login');
+          setIsLoading(false);
+          return;
+        }
+
+        setSession(session);
+        setUser(session.user);
         setIsLoading(false);
-        return;
+        clearTimeout(authTimeout);
+      } catch (error) {
+        console.error('Erro na inicialização de autenticação:', error);
+        if (isMounted) {
+          setIsLoading(false);
+          navigate('/login');
+        }
       }
-
-      // Verificar se o usuário está ativo
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('ativo')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (profileError) {
-        console.error('Erro ao verificar status:', profileError);
-      }
-
-      if (profileData && profileData.ativo === false) {
-        toast({
-          title: "Acesso negado",
-          description: "Sua conta está inativa. Entre em contato com o administrador.",
-          variant: "destructive",
-        });
-        await supabase.auth.signOut();
-        navigate('/login');
-        setIsLoading(false);
-        return;
-      }
-
-      setSession(session);
-      setUser(session.user);
-      setIsLoading(false);
     };
 
-    checkSession();
+    initAuth();
 
-    // Set up auth state listener
+    // Set up auth state listener (não bloqueia inicialização)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!session?.user) {
@@ -93,30 +118,36 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           return;
         }
 
-        // Verificar status ativo em mudanças de autenticação
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('ativo')
-          .eq('user_id', session.user.id)
-          .single();
+        // Verificar status ativo em mudanças de autenticação (sem bloquear)
+        setTimeout(async () => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('ativo')
+            .eq('user_id', session.user.id)
+            .single();
 
-        if (profileData && profileData.ativo === false) {
-          toast({
-            title: "Acesso negado",
-            description: "Sua conta foi desativada.",
-            variant: "destructive",
-          });
-          await supabase.auth.signOut();
-          navigate('/login');
-          return;
-        }
+          if (profileData && profileData.ativo === false) {
+            toast({
+              title: "Acesso negado",
+              description: "Sua conta foi desativada.",
+              variant: "destructive",
+            });
+            await supabase.auth.signOut();
+            navigate('/login');
+            return;
+          }
+        }, 0);
 
         setSession(session);
         setUser(session.user);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(authTimeout);
+      subscription.unsubscribe();
+    };
   }, [navigate, toast]);
 
   // Show profile error as toast if needed
@@ -130,22 +161,23 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     }
   }, [profileError, toast]);
 
-  // Timeout de segurança para evitar loading infinito
+  // Contador regressivo para loading
+  const [loadingSeconds, setLoadingSeconds] = useState(5);
+
   useEffect(() => {
-    console.log('MainLayout Loading Status:', { 
-      isLoading, 
-      profileLoading, 
-      user: !!user 
-    });
+    if (!isLoading) return;
 
-    const loadingTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.warn('Loading timeout - finalizando com estado atual');
-        setIsLoading(false);
-      }
-    }, 10000); // 10 segundos
+    const interval = setInterval(() => {
+      setLoadingSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-    return () => clearTimeout(loadingTimeout);
+    return () => clearInterval(interval);
   }, [isLoading]);
 
 
@@ -155,9 +187,20 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       <div className="min-h-screen abstract-bg flex items-center justify-center">
         <Card className="glass-card">
           <CardContent className="p-8">
-            <div className="text-center">
+            <div className="text-center space-y-4">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Carregando...</p>
+              <p className="mt-4 text-muted-foreground">
+                Carregando... {loadingSeconds > 0 ? `(${loadingSeconds}s)` : ''}
+              </p>
+              {loadingSeconds === 0 && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/login')}
+                  className="mt-4"
+                >
+                  Ir para Login
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -168,13 +211,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full abstract-bg">
-        {profileLoading && (
-          <div className="fixed top-0 left-0 right-0 z-50">
-            <div className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 px-4 py-2 text-sm text-center backdrop-blur-sm border-b border-yellow-500/20">
-              Carregando perfil do usuário...
-            </div>
-          </div>
-        )}
         <AppSidebar userRole="user" />
         
         <div className="flex-1 flex flex-col relative z-50">

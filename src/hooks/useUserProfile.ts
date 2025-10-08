@@ -29,15 +29,62 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
   const [retryCount, setRetryCount] = useState(0);
 
   const fetchProfile = async (userId: string, attempt = 1): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
+    if (!userId) {
+      console.error('fetchProfile: userId is undefined');
+      setLoading(false);
+      return;
+    }
 
-      const { data, error: fetchError } = await supabase
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Promise.race com timeout de 8 segundos
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.warn('useUserProfile: Timeout ao buscar perfil do usuário');
+          resolve(null);
+        }, 8000);
+      });
+
+      const fetchPromise = supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
+
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+
+      // Timeout ocorreu
+      if (result === null) {
+        console.warn('Timeout ao buscar perfil, usando dados padrão');
+        setProfile({
+          user_id: userId,
+          email: user?.email || 'usuario@exemplo.com',
+          full_name: user?.user_metadata?.full_name || 'Usuário',
+          ativo: true
+        });
+        setLoading(false);
+        
+        // Retry em background (não bloqueia UI)
+        setTimeout(async () => {
+          try {
+            const { data } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', userId)
+              .single();
+            if (data) {
+              setProfile(data);
+            }
+          } catch (error) {
+            console.error('Erro no retry de perfil:', error);
+          }
+        }, 0);
+        return;
+      }
+
+      const { data, error: fetchError } = result;
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
@@ -50,26 +97,26 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
           });
           setLoading(false);
           return;
-        } else {
-          throw fetchError;
         }
-      } else {
-        setProfile(data);
-        setRetryCount(0);
+        
+        // Retry logic for network errors
+        if (attempt < 3 && isNetworkError(fetchError)) {
+          console.log(`Tentando novamente em 1000ms...`);
+          setTimeout(() => {
+            fetchProfile(userId, attempt + 1);
+          }, 1000);
+          return;
+        }
+        
+        throw fetchError;
       }
+
+      setProfile(data);
+      setRetryCount(0);
     } catch (err: any) {
       console.error(`Erro ao buscar perfil (tentativa ${attempt}):`, err);
       
-      // Retry logic for network errors com timeout reduzido
-      if (attempt < 3 && isNetworkError(err)) {
-        console.log(`Tentando novamente em 1000ms...`);
-        setTimeout(() => {
-          fetchProfile(userId, attempt + 1);
-        }, 1000);
-        return;
-      }
-      
-      // Após 3 tentativas, finalizar loading com fallback
+      // Após tentativas, finalizar loading com fallback
       setProfile({
         user_id: userId,
         email: user?.email || 'usuario@exemplo.com',
@@ -126,20 +173,6 @@ export const useUserProfile = (user: User | null): UseUserProfileReturn => {
   useEffect(() => {
     if (user?.id) {
       fetchProfile(user.id);
-      
-      // Timeout de segurança - forçar finalização após 5s
-      const timeoutId = setTimeout(() => {
-        console.warn('Timeout ao carregar perfil - usando fallback');
-        setProfile({
-          user_id: user.id,
-          email: user.email || 'usuario@exemplo.com',
-          full_name: user.user_metadata?.full_name || 'Usuário',
-          ativo: true
-        });
-        setLoading(false);
-      }, 5000);
-      
-      return () => clearTimeout(timeoutId);
     } else {
       setProfile(null);
       setError(null);
