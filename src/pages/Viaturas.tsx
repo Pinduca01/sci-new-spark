@@ -9,6 +9,8 @@ import { ViaturasDetails } from "@/components/ViaturasDetails";
 import { AddViatura } from "@/components/AddViatura";
 import { EditViatura } from "@/components/EditViatura";
 import { useUserRole } from "@/hooks/useUserRole";
+import { ExportarPDFViaturasSection } from "@/components/ExportarPDFViaturasSection";
+import { ExportarPDFEquipamentosSection } from "@/components/ExportarPDFEquipamentosSection";
 
 interface Viatura {
   id: string;
@@ -108,6 +110,12 @@ const Viaturas = () => {
             Adicionar Nova Viatura
           </Button>
         )}
+      </div>
+
+      {/* Seção de Exportação de PDFs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ExportarPDFViaturasSection />
+        <ExportarPDFEquipamentosSection />
       </div>
 
       {loading ? (

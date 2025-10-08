@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Package } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,10 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateChecklistMensalFormatoOficialPDF } from "@/utils/checklistPdfGenerator";
 import { toast } from "sonner";
 
-export function ExportarPDFMensalSection() {
+export function ExportarPDFEquipamentosSection() {
   const currentDate = new Date();
   const [selectedViatura, setSelectedViatura] = useState<string>("");
-  const [selectedTipo, setSelectedTipo] = useState<string>("TODOS");
   const [selectedMonth, setSelectedMonth] = useState<string>(String(currentDate.getMonth() + 1));
   const [selectedYear, setSelectedYear] = useState<string>(String(currentDate.getFullYear()));
 
@@ -58,13 +57,12 @@ export function ExportarPDFMensalSection() {
     const ano = parseInt(selectedYear);
     
     try {
-      // Buscar checklists do mês selecionado
+      // Buscar apenas checklists de EQUIPAMENTOS
       const { data: checklistsData, error } = await supabase
         .from('checklists_viaturas')
-        .select(`
-          *
-        `)
+        .select('*')
         .eq('viatura_id', selectedViatura)
+        .eq('tipo_checklist', 'EQUIPAMENTOS')
         .gte('data_checklist', `${ano}-${String(mes).padStart(2, '0')}-01`)
         .lt('data_checklist', mes === 12 ? `${ano + 1}-01-01` : `${ano}-${String(mes + 1).padStart(2, '0')}-01`)
         .order('data_checklist', { ascending: true });
@@ -72,7 +70,7 @@ export function ExportarPDFMensalSection() {
       if (error) throw error;
 
       if (!checklistsData || checklistsData.length === 0) {
-        toast.error(`Nenhum checklist encontrado para ${selectedMonth}/${selectedYear}`);
+        toast.error(`Nenhum checklist de equipamentos encontrado para ${meses.find(m => m.value === selectedMonth)?.label}/${selectedYear}`);
         return;
       }
 
@@ -80,13 +78,10 @@ export function ExportarPDFMensalSection() {
       const viatura = viaturas?.find(v => v.id === selectedViatura);
       const viaturaPlaca = viatura?.placa || 'VIATURA';
       
-      // Filtrar por tipo se necessário
-      const tipoFiltro = selectedTipo === 'TODOS' ? undefined : selectedTipo;
+      // Gerar PDF (sempre com tipo EQUIPAMENTOS)
+      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsData as any, 'EQUIPAMENTOS');
       
-      // Gerar PDF
-      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsData as any, tipoFiltro);
-      
-      toast.success(`PDF mensal ${tipoFiltro ? `de ${tipoFiltro}` : ''} gerado com sucesso!`);
+      toast.success('PDF de checklists de equipamentos gerado com sucesso!');
     } catch (error: any) {
       console.error('Erro ao gerar PDF:', error);
       toast.error(error.message || 'Erro ao gerar PDF mensal');
@@ -97,11 +92,11 @@ export function ExportarPDFMensalSection() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Download className="h-5 w-5" />
-          Exportar PDF Mensal (Formato Oficial)
+          <Package className="h-5 w-5" />
+          Exportar Checklists de Equipamentos
         </CardTitle>
         <CardDescription>
-          Gere relatórios consolidados de checklists por viatura no formato oficial
+          Gere relatórios consolidados de checklists de equipamentos
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -123,23 +118,8 @@ export function ExportarPDFMensalSection() {
             </Select>
           </div>
 
-          {/* Filtros de Tipo, Mês e Ano */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de Checklist</label>
-              <Select value={selectedTipo} onValueChange={setSelectedTipo}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TODOS">Todos os Tipos</SelectItem>
-                  <SelectItem value="CCI">CCI - Inspeção de CCIs</SelectItem>
-                  <SelectItem value="EQUIPAMENTOS">Equipamentos</SelectItem>
-                  <SelectItem value="CRS">CRS - Inspeção de CRS</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
+          {/* Filtros de Mês e Ano */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Mês</label>
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -180,7 +160,7 @@ export function ExportarPDFMensalSection() {
             disabled={!selectedViatura}
           >
             <Download className="h-4 w-4 mr-2" />
-            Gerar PDF Mensal
+            Gerar PDF de Equipamentos
           </Button>
         </div>
       </CardContent>
