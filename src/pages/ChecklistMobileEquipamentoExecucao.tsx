@@ -24,6 +24,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
   const [saving, setSaving] = useState(false);
   const [finalizado, setFinalizado] = useState(false);
   const [createdChecklistId, setCreatedChecklistId] = useState<string | null>(null);
+  const [showTimeoutError, setShowTimeoutError] = useState(false);
 
   // Offset configurável para compensar header fixo
   const SCROLL_OFFSET = 80;
@@ -61,6 +62,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
             navigate('/checklist-mobile/login');
             return;
           }
+          console.log('[ChecklistEquipamentoExecucao] Auth completa, definindo loading=false');
           setLoading(false);
         }
       } catch (error) {
@@ -74,7 +76,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
       console.log('[ChecklistEquipamentoExecucao] Desmontado');
       isMounted = false;
     };
-  }, [navigate]);
+  }, [navigate, roleLoading, canDoChecklist]);
 
   // Hook de execução específico para equipamentos (carrega template_checklist via tipos_checklist -> EQUIPAMENTOS)
   const {
@@ -91,6 +93,24 @@ export default function ChecklistMobileEquipamentoExecucao() {
   } = useChecklistEquipamentoExecution(viaturaId);
 
   const progress = getProgress();
+
+  // Timeout de segurança de 5 segundos
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (loading || roleLoading || execLoading) {
+        console.error('[ChecklistEquipamentoExecucao] ⚠️ TIMEOUT de 5s atingido!', {
+          loading,
+          roleLoading,
+          execLoading,
+          hasTemplate: !!template,
+          itemsCount: items.length
+        });
+        setShowTimeoutError(true);
+        setLoading(false);
+      }
+    }, 5000);
+    return () => clearTimeout(timeoutId);
+  }, [loading, roleLoading, execLoading, template, items.length]);
 
   // Agrupar itens por categoria
   const itemsByCategory = useMemo(() => {
@@ -146,6 +166,13 @@ export default function ChecklistMobileEquipamentoExecucao() {
 
     lastAnsweredItemIdRef.current = null;
   }, [items, itemsByCategory]);
+
+  const handleRetry = () => {
+    console.log('[Checklist Equipamentos] Tentando novamente...');
+    setShowTimeoutError(false);
+    setLoading(true);
+    window.location.reload();
+  };
 
   const handleSalvarOffline = async () => {
     try {
@@ -349,11 +376,39 @@ export default function ChecklistMobileEquipamentoExecucao() {
     }
   };
 
+  // Tela de timeout com opção de retry
+  if (showTimeoutError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center space-y-4">
+            <div className="h-12 w-12 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <h2 className="text-xl font-semibold">Tempo esgotado</h2>
+            <p className="text-muted-foreground">
+              Não foi possível carregar o checklist. Verifique sua conexão com a internet.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button variant="outline" onClick={() => navigate(`/checklist-mobile/tipo/${viaturaId}`)}>
+                Voltar
+              </Button>
+              <Button onClick={handleRetry}>
+                Tentar Novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading || roleLoading || execLoading) {
     return (
       <div className="min-h-screen p-6 flex flex-col items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="mt-4 text-sm text-muted-foreground">Carregando execução do checklist...</p>
+        <p className="mt-2 text-xs text-muted-foreground">Aguarde alguns segundos...</p>
       </div>
     );
   }

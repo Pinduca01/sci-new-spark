@@ -38,19 +38,25 @@ export const useChecklistEquipamentoExecution = (viaturaId?: string | null) => {
   }, []);
 
   const loadChecklistData = async (signal?: AbortSignal, isMounted: boolean = true) => {
+    console.log('[useChecklistEquipamentoExecution] 🔄 Iniciando carregamento...');
     setLoading(true);
     
-    // Timeout de segurança
+    // Timeout de segurança reduzido para 8s
     const timeoutId = setTimeout(() => {
       if (isMounted) {
-        console.warn('[useChecklistEquipamentoExecution] Timeout de 10s atingido');
+        console.error('[useChecklistEquipamentoExecution] ⚠️ Timeout de 8s atingido');
         setLoading(false);
+        toast.error('Tempo limite excedido ao carregar checklist');
       }
-    }, 10000);
+    }, 8000);
     
     try {
-      if (signal?.aborted) return;
-      console.log('[Checklist Equipamento] Iniciando carregamento template CCI Equipamentos');
+      if (signal?.aborted) {
+        console.log('[useChecklistEquipamentoExecution] Request abortado');
+        return;
+      }
+      
+      console.log('[useChecklistEquipamentoExecution] 📋 Buscando template CCI Equipamentos...');
       
       // Buscar template de EQUIPAMENTOS CCI via tipos_checklist
       const { data: tipoEquip, error: tipoError } = await supabase
@@ -60,17 +66,19 @@ export const useChecklistEquipamentoExecution = (viaturaId?: string | null) => {
         .maybeSingle();
 
       if (tipoError) {
-        console.error('[Checklist Equipamento] Erro ao buscar tipo:', tipoError);
+        console.error('[useChecklistEquipamentoExecution] ❌ Erro ao buscar tipo:', tipoError);
         throw tipoError;
       }
 
       if (!tipoEquip) {
-        console.warn('[Checklist Equipamento] Tipo CCI Equipamentos não encontrado');
+        console.error('[useChecklistEquipamentoExecution] ❌ Tipo CCI Equipamentos não encontrado');
         throw new Error('Template de equipamentos não encontrado');
       }
 
-      console.log('[Checklist Equipamento] Tipo encontrado:', tipoEquip);
+      console.log('[useChecklistEquipamentoExecution] ✅ Tipo encontrado:', tipoEquip.id);
 
+      console.log('[useChecklistEquipamentoExecution] 📦 Buscando itens do template...');
+      
       const { data: itensTemplate, error: itensError } = await supabase
         .from('template_checklist')
         .select('id, item, categoria, ordem')
@@ -78,16 +86,16 @@ export const useChecklistEquipamentoExecution = (viaturaId?: string | null) => {
         .order('ordem', { ascending: true });
 
       if (itensError) {
-        console.error('[Checklist Equipamento] Erro ao buscar itens:', itensError);
+        console.error('[useChecklistEquipamentoExecution] ❌ Erro ao buscar itens:', itensError);
         throw itensError;
       }
 
       if (!itensTemplate || itensTemplate.length === 0) {
-        console.warn('[Checklist Equipamento] Nenhum item encontrado');
+        console.error('[useChecklistEquipamentoExecution] ❌ Nenhum item encontrado');
         throw new Error('Nenhum item encontrado para checklist de equipamentos');
       }
 
-      console.log('[Checklist Equipamento] Itens carregados:', itensTemplate.length);
+      console.log('[useChecklistEquipamentoExecution] ✅ Itens carregados:', itensTemplate.length);
 
       const builtTemplate: ChecklistTemplate = {
         id: tipoEquip.id,
@@ -100,15 +108,21 @@ export const useChecklistEquipamentoExecution = (viaturaId?: string | null) => {
         }))
       };
 
-      console.info('[Checklist Equipamento] Template montado:', tipoEquip.nome, 'com', itensTemplate.length, 'itens');
+      console.log('[useChecklistEquipamentoExecution] ✅ Template montado:', tipoEquip.nome, 'com', itensTemplate.length, 'itens');
+
+      if (!isMounted) return;
 
       setTemplate(builtTemplate);
       initializeItems(builtTemplate.itens as any);
       loadAutoSavedProgress();
-      setLoading(false);
+      
     } catch (error: any) {
-      if (error.name === 'AbortError') return;
-      console.error('Erro ao carregar checklist de equipamento:', error);
+      if (error.name === 'AbortError') {
+        console.log('[useChecklistEquipamentoExecution] Request abortado');
+        return;
+      }
+      
+      console.error('[useChecklistEquipamentoExecution] ❌ Erro ao carregar:', error);
       
       if (isMounted) {
         toast.error(error.message || 'Erro ao carregar checklist');
@@ -126,6 +140,7 @@ export const useChecklistEquipamentoExecution = (viaturaId?: string | null) => {
     } finally {
       clearTimeout(timeoutId);
       if (isMounted) {
+        console.log('[useChecklistEquipamentoExecution] ✅ Finalizando loading...');
         setLoading(false);
       }
     }
