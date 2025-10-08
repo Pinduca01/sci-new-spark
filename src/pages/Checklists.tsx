@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useChecklistsStats } from "@/hooks/useChecklistsStats";
 import { TemplatesList } from "@/components/checklist-templates/TemplatesList";
+import { ExportarPDFMensalSection } from "@/components/ExportarPDFMensalSection";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -406,11 +407,13 @@ export default function Checklists() {
 
         {/* Tab Relatórios */}
         <TabsContent value="relatorios" className="space-y-4">
+          <ExportarPDFMensalSection />
+          
           <Card>
             <CardHeader>
-              <CardTitle>Relatórios e Análises</CardTitle>
+              <CardTitle>Análises e Estatísticas</CardTitle>
               <CardDescription>
-                Em breve: relatórios automáticos, análises de conformidade e exportações
+                Em breve: análises avançadas de conformidade e tendências
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
