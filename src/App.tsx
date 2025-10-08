@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { ThemeProvider } from "next-themes";
 import AuthErrorHandler from "@/components/AuthErrorHandler";
@@ -68,6 +68,7 @@ const App = () => (
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
           <Route path="/checklist-mobile/login" element={<ChecklistMobileLogin />} />
+          <Route path="/checklist-mobile" element={<Navigate to="/checklist-mobile/viaturas" replace />} />
           
           <Route path="/checklist-mobile/viaturas" element={<ErrorBoundary><ChecklistMobile /></ErrorBoundary>} />
           <Route path="/checklist-mobile/tipo/:viaturaId" element={<ErrorBoundary><ChecklistMobileTipoSelecao /></ErrorBoundary>} />
