@@ -103,7 +103,7 @@ export default function ChecklistMobileTipoSelecao() {
           {/* Card de Equipamentos - comum para todos */}
           <Card 
             className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary"
-            onClick={() => navigate('/checklist-mobile/equipamentos', { state: { viaturaId } })}
+            onClick={() => navigate('/checklist-mobile/equipamentos/execucao', { state: { viaturaId } })}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

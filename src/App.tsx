@@ -69,6 +69,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/checklist-mobile/login" element={<ChecklistMobileLogin />} />
           <Route path="/checklist-mobile" element={<Navigate to="/checklist-mobile/viaturas" replace />} />
+          <Route path="/checklist-mobile/equipamentos" element={<Navigate to="/checklist-mobile/equipamentos/execucao" replace />} />
           
           <Route path="/checklist-mobile/viaturas" element={<ErrorBoundary><ChecklistMobile /></ErrorBoundary>} />
           <Route path="/checklist-mobile/tipo/:viaturaId" element={<ErrorBoundary><ChecklistMobileTipoSelecao /></ErrorBoundary>} />

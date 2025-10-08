@@ -361,7 +361,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
   if (!template) {
     return (
       <div className="min-h-screen p-6">
-        <Button variant="outline" onClick={() => navigate('/checklist-mobile/equipamentos')}>Voltar</Button>
+        <Button variant="outline" onClick={() => navigate(`/checklist-mobile/tipo/${viaturaId}`)}>Voltar</Button>
         <Card className="mt-4">
           <CardContent className="pt-6">
             <p className="text-center text-destructive">Erro ao carregar template do checklist. Verifique sua conexão.</p>
@@ -392,7 +392,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
       <div className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/checklist-mobile/equipamentos')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/checklist-mobile/tipo/${viaturaId}`)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
