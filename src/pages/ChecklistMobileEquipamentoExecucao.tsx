@@ -381,7 +381,7 @@ export default function ChecklistMobileEquipamentoExecucao() {
           {viaturaId ? (
             <Button onClick={() => navigate(`/checklist-mobile/historico/${viaturaId}`)} className="min-w-[160px]">Ver detalhes</Button>
           ) : null}
-          <Button variant="outline" onClick={() => navigate('/checklist-mobile')} className="min-w-[160px]">Voltar ao início</Button>
+          <Button variant="outline" onClick={() => navigate('/checklist-mobile/viaturas')} className="min-w-[160px]">Voltar ao início</Button>
         </div>
       </div>
     );

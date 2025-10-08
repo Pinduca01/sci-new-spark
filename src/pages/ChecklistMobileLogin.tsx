@@ -171,7 +171,7 @@ const ChecklistMobileLogin = () => {
       if (!isOnline && offlineAuthAvailable) {
         const offlineData = await loginOffline(email, password);
         toast.success('Login offline realizado com sucesso!');
-        navigate('/checklist-mobile');
+        navigate('/checklist-mobile/viaturas');
         return;
       }
 

@@ -76,7 +76,7 @@ export default function ChecklistMobileSyncStatus() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/checklist-mobile')}
+            onClick={() => navigate('/checklist-mobile/viaturas')}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>

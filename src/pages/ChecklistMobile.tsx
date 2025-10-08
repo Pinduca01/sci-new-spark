@@ -52,7 +52,7 @@ const ChecklistMobile = () => {
         // Verificar se tem permissão para checklist
         if (!canDoChecklist) {
           toast.error('Você não tem permissão para acessar checklists');
-          navigate('/login');
+          navigate('/checklist-mobile/login');
           return;
         }
 

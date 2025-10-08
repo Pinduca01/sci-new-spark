@@ -76,7 +76,7 @@ export default function ChecklistMobileViatura() {
     return (
       <div className="max-w-2xl mx-auto p-4">
         <div className="flex items-center gap-2 mb-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/checklist-mobile')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/checklist-mobile/viaturas')}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-bold text-lg">Checklist de Viatura</h1>
@@ -87,7 +87,7 @@ export default function ChecklistMobileViatura() {
           </AlertDescription>
         </Alert>
         <div className="mt-4">
-          <Button onClick={() => navigate('/checklist-mobile')}>Voltar para lista</Button>
+          <Button onClick={() => navigate('/checklist-mobile/viaturas')}>Voltar para lista</Button>
         </div>
       </div>
     );
@@ -337,7 +337,7 @@ export default function ChecklistMobileViatura() {
         <p className="text-muted-foreground mb-6">Registro concluído no SCI Core{createdChecklistId ? '' : ' (offline)'}.</p>
         <div className="flex gap-3">
           <Button onClick={() => navigate(`/checklist-mobile/historico/${id}`)} className="min-w-[160px]">Ver detalhes</Button>
-          <Button variant="outline" onClick={() => navigate('/checklist-mobile')} className="min-w-[160px]">Voltar ao início</Button>
+          <Button variant="outline" onClick={() => navigate('/checklist-mobile/viaturas')} className="min-w-[160px]">Voltar ao início</Button>
         </div>
       </div>
     );
@@ -356,7 +356,7 @@ export default function ChecklistMobileViatura() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/checklist-mobile')}
+            onClick={() => navigate('/checklist-mobile/viaturas')}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
