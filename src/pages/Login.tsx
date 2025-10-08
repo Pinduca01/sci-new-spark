@@ -62,20 +62,32 @@ const Login = () => {
   useEffect(() => {
     // Check if the user is already logged in
     const checkAuth = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      // Timeout de segurança de 10 segundos
+      const timeoutId = setTimeout(() => {
+        console.warn('Login: Timeout ao verificar autenticação');
+        setIsCheckingAuth(false);
+      }, 10000);
 
-      if (error) {
-        toast({
-          title: "Erro ao verificar a sessão",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-      if (session?.user) {
-        navigate('/dashboard');
+        if (error) {
+          toast({
+            title: "Erro ao verificar a sessão",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+
+        if (session?.user) {
+          navigate('/dashboard');
+        }
+      } catch (error: any) {
+        console.error('Erro ao verificar autenticação:', error);
+      } finally {
+        clearTimeout(timeoutId);
+        setIsCheckingAuth(false);
       }
-      setIsCheckingAuth(false);
     };
 
     checkAuth();
@@ -155,7 +167,7 @@ const Login = () => {
           title: "Login realizado com sucesso",
           description: "Redirecionando...",
         });
-        navigate('/checklist-mobile');
+        navigate('/checklist-mobile/viaturas');
       } else if (role === 'admin' || role === 'gs_base' || role === 'ba_ce' || role === 'ba_lr') {
         // Admin, GS, BA-CE e BA-LR vão para o dashboard
         toast({
