@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { generateChecklistMensalFormatoOficialPDF } from "@/utils/checklistPdfGenerator";
 import { toast } from "sonner";
+import { ChecklistDetalhado } from "@/hooks/useChecklistsHistorico";
 
 export function ExportarPDFEquipamentosSection() {
   const currentDate = new Date();
@@ -47,6 +48,33 @@ export function ExportarPDFEquipamentosSection() {
     return { value: String(ano), label: String(ano) };
   });
 
+  const transformarChecklistParaPDF = (checklistRaw: any, viaturaPlaca: string): ChecklistDetalhado => {
+    return {
+      id: checklistRaw.id,
+      tipo: 'viatura',
+      tipo_detalhe: checklistRaw.tipo_checklist || 'EQUIPAMENTOS',
+      data: checklistRaw.data_checklist,
+      hora: checklistRaw.hora_checklist || '00:00',
+      responsavel: checklistRaw.bombeiro_responsavel || 'N/A',
+      equipe: checklistRaw.equipe,
+      status: checklistRaw.status_geral || 'em_andamento',
+      total_itens: Array.isArray(checklistRaw.itens_checklist) ? checklistRaw.itens_checklist.length : 0,
+      itens_conformes: Array.isArray(checklistRaw.itens_checklist) 
+        ? checklistRaw.itens_checklist.filter((i: any) => i.status === 'conforme').length 
+        : 0,
+      itens_nao_conformes: Array.isArray(checklistRaw.itens_checklist) 
+        ? checklistRaw.itens_checklist.filter((i: any) => i.status === 'nao_conforme').length 
+        : 0,
+      observacoes: checklistRaw.observacoes_gerais,
+      viatura_id: checklistRaw.viatura_id,
+      viatura_placa: viaturaPlaca,
+      itens: Array.isArray(checklistRaw.itens_checklist) ? checklistRaw.itens_checklist : [],
+      created_at: checklistRaw.created_at,
+      updated_at: checklistRaw.updated_at,
+      timestamp_conclusao: checklistRaw.timestamp_conclusao
+    };
+  };
+
   const handleGerarPDFMensal = async () => {
     if (!selectedViatura) {
       toast.error("Selecione uma viatura");
@@ -78,8 +106,13 @@ export function ExportarPDFEquipamentosSection() {
       const viatura = viaturas?.find(v => v.id === selectedViatura);
       const viaturaPlaca = viatura?.placa || 'VIATURA';
       
+      // Transformar dados para o formato esperado
+      const checklistsTransformados = checklistsData.map(item => 
+        transformarChecklistParaPDF(item, viaturaPlaca)
+      );
+      
       // Gerar PDF (sempre com tipo EQUIPAMENTOS)
-      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsData as any, 'EQUIPAMENTOS');
+      generateChecklistMensalFormatoOficialPDF(viaturaPlaca, mes, ano, checklistsTransformados, 'EQUIPAMENTOS');
       
       toast.success('PDF de checklists de equipamentos gerado com sucesso!');
     } catch (error: any) {
