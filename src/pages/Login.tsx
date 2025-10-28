@@ -162,13 +162,13 @@ const Login = () => {
       const role = roleData.role;
       
       if (role === 'ba_mc' || role === 'ba_2') {
-        // BA-MC e BA-2 vão para o app mobile (domínio separado)
+        // BA-MC e BA-2 vão para o app mobile (repositório separado)
         toast({
           title: "Redirecionando para app mobile",
           description: "Você será direcionado para o aplicativo mobile...",
         });
-        // TODO: Atualizar com URL real do mobile em produção
-        window.location.href = 'https://mobile.seudominio.com/login';
+        // Redirecionamento para o app mobile no GitHub Pages ou Vercel
+        window.location.href = 'https://pinduca01.github.io/sci-core-mobile-app/';
         return;
       } else if (role === 'admin' || role === 'gs_base' || role === 'ba_ce' || role === 'ba_lr') {
         // Admin, GS, BA-CE e BA-LR vão para o dashboard

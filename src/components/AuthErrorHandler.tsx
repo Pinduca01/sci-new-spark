@@ -82,9 +82,10 @@ export const AuthErrorHandler = () => {
           .eq('user_id', session.user.id)
           .single();
         
-        // Se for BA-MC ou BA-2, redirecionar para login mobile
+        // Se for BA-MC ou BA-2, redirecionar para app mobile separado
         if (roleData?.role === 'ba_mc' || roleData?.role === 'ba_2') {
-          redirectPath = '/checklist-mobile/login';
+          window.location.href = 'https://pinduca01.github.io/sci-core-mobile-app/';
+          return;
         }
       }
       
