@@ -162,12 +162,14 @@ const Login = () => {
       const role = roleData.role;
       
       if (role === 'ba_mc' || role === 'ba_2') {
-        // BA-MC e BA-2 vão para o checklist mobile
+        // BA-MC e BA-2 vão para o app mobile (domínio separado)
         toast({
-          title: "Login realizado com sucesso",
-          description: "Redirecionando...",
+          title: "Redirecionando para app mobile",
+          description: "Você será direcionado para o aplicativo mobile...",
         });
-        navigate('/checklist-mobile/viaturas');
+        // TODO: Atualizar com URL real do mobile em produção
+        window.location.href = 'https://mobile.seudominio.com/login';
+        return;
       } else if (role === 'admin' || role === 'gs_base' || role === 'ba_ce' || role === 'ba_lr') {
         // Admin, GS, BA-CE e BA-LR vão para o dashboard
         toast({

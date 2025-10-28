@@ -27,16 +27,6 @@ import NotFound from "./pages/NotFound";
 import TestBombeiroSelector from "./components/TestBombeiroSelector";
 import TestSupabaseConnection from "./components/TestSupabaseConnection";
 import TestEquipeData from "./components/TestEquipeData";
-const ChecklistMobileLogin = lazy(() => import("./pages/ChecklistMobileLogin"));
-const ChecklistMobile = lazy(() => import("./pages/ChecklistMobile"));
-
-const ChecklistMobileTipoSelecao = lazy(() => import("./pages/ChecklistMobileTipoSelecao"));
-const ChecklistMobileEquipamentos = lazy(() => import("./pages/ChecklistMobileEquipamentos"));
-const ChecklistMobileEquipamentoExecucao = lazy(() => import("./pages/ChecklistMobileEquipamentoExecucao"));
-const ChecklistMobileViatura = lazy(() => import("./pages/ChecklistMobileViatura"));
-const ChecklistMobileSyncStatus = lazy(() => import("./pages/ChecklistMobileSyncStatus"));
-const ChecklistMobileHistorico = lazy(() => import("./pages/ChecklistMobileHistorico"));
-const ChecklistMobileMeuHistorico = lazy(() => import("./pages/ChecklistMobileMeuHistorico"));
 import AdminCreateUsers from "./pages/AdminCreateUsers";
 
 
@@ -67,18 +57,6 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/checklist-mobile/login" element={<ChecklistMobileLogin />} />
-          <Route path="/checklist-mobile" element={<Navigate to="/checklist-mobile/viaturas" replace />} />
-          <Route path="/checklist-mobile/equipamentos" element={<Navigate to="/checklist-mobile/equipamentos/execucao" replace />} />
-          
-          <Route path="/checklist-mobile/viaturas" element={<ErrorBoundary><ChecklistMobile /></ErrorBoundary>} />
-          <Route path="/checklist-mobile/tipo/:viaturaId" element={<ErrorBoundary><ChecklistMobileTipoSelecao /></ErrorBoundary>} />
-          <Route path="/checklist-mobile/equipamentos" element={<ErrorBoundary><ChecklistMobileEquipamentos /></ErrorBoundary>} />
-          <Route path="/checklist-mobile/equipamentos/execucao" element={<ErrorBoundary><ChecklistMobileEquipamentoExecucao /></ErrorBoundary>} />
-          <Route path="/checklist-mobile/viatura/:id" element={<ErrorBoundary><ChecklistMobileViatura /></ErrorBoundary>} />
-          <Route path="/checklist-mobile/historico/:viaturaId" element={<ErrorBoundary><ChecklistMobileHistorico /></ErrorBoundary>} />
-          <Route path="/checklist-mobile/meu-historico" element={<ErrorBoundary><ChecklistMobileMeuHistorico /></ErrorBoundary>} />
-          <Route path="/checklist-mobile/sync" element={<ErrorBoundary><ChecklistMobileSyncStatus /></ErrorBoundary>} />
           <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
           <Route path="/pessoal" element={<MainLayout><ControlePessoal /></MainLayout>} />
           <Route path="/pessoal/taf" element={<MainLayout><TAF /></MainLayout>} />
